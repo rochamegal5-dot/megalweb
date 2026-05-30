@@ -447,12 +447,24 @@
         // ==========================================
     // MÓDULO REPARTIDORES (CRUD SUPABASE)
     // ==========================================
+
     async function cargarRepartidores() {
         const { data, error } = await supabaseClient.from('repartidores').select('*').order('nombre');
-        if(error) { console.error("Error cargando repartidores:", error); return; }
+        
+        // Si Supabase tira un error, lo mostramos por pantalla
+        if(error) { 
+            alert('Error al cargar repartidores: ' + error.message); 
+            return; 
+        }
         
         const tbody = document.getElementById('tablaRepartidores');
         tbody.innerHTML = '';
+        
+        // Si no hay datos, mostramos un mensaje
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay repartidores cargados.</td></tr>';
+            return;
+        }
         
         data.forEach(rep => {
             const tr = document.createElement('tr');
