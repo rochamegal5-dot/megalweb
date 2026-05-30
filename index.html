@@ -127,90 +127,84 @@
             <div id="view-marketing" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">📣 Marketing IA</h2><p class="text-gray-500">Módulo en construcción...</p></div>
 
     <!--GPS CONECTADO A SUPABASE-->
-    <div id="view-gps" class="view-section hidden">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">📍 Rastreo Vehicular en Vivo</h2>
-        
-        <div class="flex border-b border-gray-200 mb-4">
-            <button onclick="mostrarTabGPS('vivo')" id="tabGPSVivo" class="py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600">📍 En Vivo</button>
-            <button onclick="mostrarTabGPS('historial')" id="tabGPSHist" class="py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent">📊 Historial del Día</button>
-        </div>
+<div id="view-gps" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">📍 Rastreo Vehicular</h2>
+    
+    <div class="flex border-b border-gray-200 mb-4">
+        <button onclick="mostrarTabGPS('vivo')" id="tabGPSVivo" class="py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600">📍 En Vivo</button>
+        <button onclick="mostrarTabGPS('historial')" id="tabGPSHist" class="py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent">📊 Historial</button>
+    </div>
 
-        <div id="gpsVivo">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div class="lg:col-span-3 bg-white p-2 rounded-lg shadow-sm relative" style="min-height: 550px;">
-                    <div id="gpsMap" style="height: 100%; width: 100%; border-radius: 0.5rem; z-index: 1;"></div>
-                    <div class="absolute top-4 right-4 z-10">
-                        <div class="bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md text-center">
-                            <p class="text-xs text-gray-500 font-bold">VELOCIDAD</p>
-                            <p id="gpsSpeed" class="text-3xl font-black text-blue-700">0</p>
-                            <p class="text-xs text-gray-500">km/h</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 class="font-bold text-gray-700 mb-2">🚚 Vehículos Activos</h3>
-                        <select id="selRepartidor" onchange="centrarEnRepartidor(this.value)" class="w-full border rounded p-2 text-sm mb-2">
-                            <option value="">-- Todos --</option>
-                        </select>
-                        <div id="listaEstadosRep" class="space-y-2 mt-3 max-h-48 overflow-y-auto"></div>
-                    </div>
-                                    <!-- AGREGAR PUNTO DE RUTA -->
-                <div class="bg-white p-4 rounded-lg shadow-sm">
-                    <h3 class="font-bold text-gray-700 mb-3">📌 Agregar Punto de Ruta</h3>
-                    <p class="text-xs text-gray-500 mb-2">Hacé clic en el mapa para obtener las coordenadas automáticamente.</p>
-                    <div class="space-y-2">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600">Nombre del Punto *</label>
-                            <input type="text" id="mkNombre" class="mt-1 block w-full px-2 py-1 border rounded text-sm" placeholder="Ej: Cliente Mides - Calle 18">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">Latitud</label>
-                                <input type="number" id="mkLat" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-600">Longitud</label>
-                                <input type="number" id="mkLng" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly>
-                            </div>
-                        </div>
-                        <button onclick="guardarMarcador()" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold text-sm w-full cursor-pointer">Guardar Punto en Ruta</button>
-                    </div>
-                </div>
-
-                <!-- PUNTOS REGISTRADOS EN LA RUTA -->
-                <div class="bg-white p-4 rounded-lg shadow-sm max-h-48 overflow-y-auto">
-                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📍 Puntos de Referencia</h3>
-                    <div id="listaMarcadores" class="space-y-2 text-xs">
-                        <p class="text-gray-400 text-center">Cargando puntos...</p>
-                    </div>
-                </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm max-h-64 overflow-y-auto">
-                        <h3 class="font-bold text-gray-700 mb-3 text-sm">📋 Registro de Actividad</h3>
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead><tr class="bg-gray-100"><th class="p-1 border">Hora</th><th class="p-1 border">Repartidor</th><th class="p-1 border">Velocidad</th></tr></thead>
-                            <tbody id="tablaVivoGPS"></tbody>
-                        </table>
+    <!-- PESTAÑA EN VIVO (Sin líneas, solo puntos) -->
+    <div id="gpsVivo">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 bg-white p-2 rounded-lg shadow-sm relative" style="min-height: 550px;">
+                <div id="gpsMap" style="height: 100%; width: 100%; border-radius: 0.5rem; z-index: 1;"></div>
+                <div class="absolute top-4 right-4 z-10">
+                    <div class="bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md text-center">
+                        <p class="text-xs text-gray-500 font-bold">VELOCIDAD</p>
+                        <p id="gpsSpeed" class="text-3xl font-black text-blue-700">0</p>
+                        <p class="text-xs text-gray-500">km/h</p>
                     </div>
                 </div>
             </div>
+
+            <div class="space-y-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-2">🚚 Vehículos</h3>
+                    <select id="selRepartidor" onchange="centrarEnRepartidor(this.value)" class="w-full border rounded p-2 text-sm mb-2">
+                        <option value="">-- Todos --</option>
+                    </select>
+                    <div id="listaEstadosRep" class="space-y-2 mt-3 max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <!-- AGREGAR PUNTO DE RUTA -->
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-3">📌 Agregar Punto</h3>
+                    <p class="text-xs text-gray-500 mb-2">Hacé clic en el mapa para obtener coordenadas.</p>
+                    <div class="space-y-2">
+                        <div><label class="block text-xs font-bold text-gray-600">Nombre *</label><input type="text" id="mkNombre" class="mt-1 block w-full px-2 py-1 border rounded text-sm" placeholder="Ej: Cliente Mides"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="block text-xs font-bold text-gray-600">Latitud</label><input type="number" id="mkLat" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly></div>
+                            <div><label class="block text-xs font-bold text-gray-600">Longitud</label><input type="number" id="mkLng" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly></div>
+                        </div>
+                        <button onclick="guardarMarcador()" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold text-sm w-full cursor-pointer">Guardar Punto</button>
+                    </div>
+                </div>
+                
+                <!-- PUNTOS REGISTRADOS -->
+                <div class="bg-white p-4 rounded-lg shadow-sm max-h-40 overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📍 Puntos de Referencia</h3>
+                    <div id="listaMarcadores" class="space-y-2 text-xs">
+                        <p class="text-gray-400 text-center">Cargando...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-sm max-h-56 overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📋 Registro en Vivo</h3>
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead><tr class="bg-gray-100"><th class="p-1 border">Hora</th><th class="p-1 border">Repartidor</th><th class="p-1 border">Velocidad</th></tr></thead>
+                        <tbody id="tablaVivoGPS"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- PESTAÑA HISTORIAL (Con líneas, controles y tabla de incidentes) -->
+    <div id="gpsHistorial" class="hidden">
         <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex gap-4 items-center w-full md:w-auto flex-wrap">
-                <h3 class="font-bold text-gray-700 whitespace-nowrap">📊 Recorridos e Incidentes</h3>
                 <select id="histRepartidorId" class="border rounded p-2 text-sm flex-1 md:flex-none">
                     <option value="">-- Seleccione Repartidor --</option>
                 </select>
                 <input type="date" id="histFecha" class="border rounded p-2 text-sm cursor-pointer">
                 <button onclick="generarInformeDiario()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">📊 Generar Informe</button>
             </div>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">🖨️ Imprimir</button>
         </div>
-            
+        
         <div id="gpsMapHist" style="height: 400px; width: 100%;" class="bg-gray-200 mb-4 rounded-lg shadow-sm"></div>
         
-        <!-- Tarjetas de Resumen -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div class="bg-red-50 p-4 rounded-lg border border-red-200 text-center">
                 <p class="text-xs font-bold text-red-700 uppercase">Exceso de Velocidad (>45 km/h)</p>
@@ -226,9 +220,8 @@
             </div>
         </div>
 
-        <!-- Tabla de Incidentes -->
         <div class="bg-white p-4 rounded-lg shadow-sm">
-            <h3 class="font-bold text-gray-700 mb-4 text-lg">📋 Registro de Incidentes - <span id="histNombreRep" class="text-blue-600">Repartidor</span></h3>
+            <h3 class="font-bold text-gray-700 mb-4 text-lg">📋 Registro de Incidentes</h3>
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-gray-200">
@@ -244,7 +237,8 @@
             </table>
         </div>
     </div>
-          
+</div>
+        
 
         </main>
     </div>
@@ -290,11 +284,18 @@
     function mostrarTabGPS(tab) {
         document.getElementById('gpsVivo').classList.toggle('hidden', tab !== 'vivo');
         document.getElementById('gpsHistorial').classList.toggle('hidden', tab !== 'historial');
+        
         document.getElementById('tabGPSVivo').className = tab === 'vivo' ? 'py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600' : 'py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent';
         document.getElementById('tabGPSHist').className = tab === 'historial' ? 'py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600' : 'py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent';
         
-        if(tab === 'historial') { setTimeout(() => { if(gpsMapHist) gpsMapHist.invalidateSize(); dibujarHistorial(); }, 100); }
+        // Arreglar el tamaño del mapa cuando se cambia de pestaña
+        setTimeout(() => {
+            if(tab === 'vivo' && gpsMap) gpsMap.invalidateSize();
+            if(tab === 'historial' && gpsMapHist) gpsMapHist.invalidateSize();
+        }, 200);
     }
+    
+
 
     // ==========================================
     // INICIALIZACIÓN DE MAPAS
@@ -320,9 +321,11 @@
             }
         });
 
-        // Mapa GPS Historial
+                // Mapa GPS Historial
         gpsMapHist = L.map('gpsMapHist').setView(ROCHA_CENTER, 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gpsMapHist);
+
+      
     }
 
     // ==========================================
