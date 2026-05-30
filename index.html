@@ -359,7 +359,7 @@
         trailData.set(id, trail);
 
         actualizarMarcador(id);
-        actualizarTrail(id);
+       // actualizarTrail(id);
         actualizarUI();
         agregarLogVivo(rep.nombre, (rep.velocidad * 3.6).toFixed(0));
     }
@@ -387,8 +387,8 @@
             markers.set(id, marker);
 
             // Trail en Mapa GPS
-            const trail = L.polyline(trailData.get(id) || [], { color: rep.color, weight: 5, opacity: 0.7 }).addTo(gpsMap);
-            trails.set(id, trail);
+            //const trail = L.polyline(trailData.get(id) || [], { color: rep.color, weight: 5, opacity: 0.7 }).addTo(gpsMap);
+            //trails.set(id, trail);
 
             // Marcadores en Mapa Dashboard (Resumen)
             L.marker([rep.latitud, rep.longitud], { icon: crearIcono(rep.color, true) }).addTo(dashMap)
