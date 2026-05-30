@@ -196,19 +196,18 @@
                 </div>
             </div>
         </div>
-
-            <div id="gpsHistorial" class="hidden">
         <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex gap-4 items-center w-full md:w-auto">
+            <div class="flex gap-4 items-center w-full md:w-auto flex-wrap">
                 <h3 class="font-bold text-gray-700 whitespace-nowrap">📊 Recorridos e Incidentes</h3>
                 <select id="histRepartidorId" class="border rounded p-2 text-sm flex-1 md:flex-none">
                     <option value="">-- Seleccione Repartidor --</option>
                 </select>
+                <input type="date" id="histFecha" class="border rounded p-2 text-sm cursor-pointer">
                 <button onclick="generarInformeDiario()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">📊 Generar Informe</button>
             </div>
             <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">🖨️ Imprimir</button>
         </div>
-        
+            
         <div id="gpsMapHist" style="height: 400px; width: 100%;" class="bg-gray-200 mb-4 rounded-lg shadow-sm"></div>
         
         <!-- Tarjetas de Resumen -->
@@ -720,41 +719,52 @@
             else alert('Error al eliminar');
         }
     }
-
         // ==========================================
-    // INFORME DIARIO GPS (HISTORIAL)
+    // INFORME DIARIO GPS (HISTORIAL + PUNTOS)
     // ==========================================
     let histMarkers = L.layerGroup();
+    const RADIO_PUNTO_RUTA = 10; // Metros para considerar que pasó por el punto
 
     async function generarInformeDiario() {
         const repId = document.getElementById('histRepartidorId').value;
-        if(!repId) { alert('Seleccioná un repartidor'); return; }
+        const fecha = document.getElementById('histFecha').value; // YYYY-MM-DD
+        
+        if(!repId || !fecha) { alert('Seleccioná un repartidor y una fecha'); return; }
 
         const rep = repartidores.get(repId);
         document.getElementById('histNombreRep').textContent = rep.nombre;
 
-        // Obtener fecha de hoy en formato YYYY-MM-DD para Uruguay (UTC-3)
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const fechaStr = `${yyyy}-${mm}-${dd}`;
+        // Calcular inicio y fin del día seleccionado (UTC)
+        const startOfDay = `${fecha}T00:00:00.000Z`;
+        const endOfDay = `${fecha}T23:59:59.999Z`;
 
-        // Consultar Supabase: ubicaciones de hoy para este repartidor
+        // 1. Obtener ubicaciones del día
         const { data, error } = await supabaseClient
             .from('ubicaciones')
             .select('*')
             .eq('repartidor_id', repId)
-            .gte('timestamp', `${fechaStr}T00:00:00.000Z`)
+            .gte('timestamp', startOfDay)
+            .lte('timestamp', endOfDay)
             .order('timestamp', { ascending: true });
 
         if(error) { alert('Error al obtener datos: ' + error.message); return; }
-        if(data.length === 0) { alert('No hay datos de recorrido para hoy.'); return; }
+        if(data.length === 0) { alert('No hay datos de recorrido para esa fecha.'); return; }
+
+        // 2. Obtener Puntos de Ruta
+        const { data: puntosRuta } = await supabaseClient.from('puntos_ruta').select('*');
 
         // Limpiar mapa y capas
         if(histMarkers) gpsMapHist.removeLayer(histMarkers);
         histMarkers = L.layerGroup().addTo(gpsMapHist);
         
+        // Dibujar los puntos de ruta en el mapa de historial como referencia
+        if(puntosRuta) {
+            puntosRuta.forEach(pt => {
+                L.circle([pt.latitud, pt.longitud], {radius: RADIO_PUNTO_RUTA, color: '#1e40af', fillColor: '#93c5fd', fillOpacity: 0.3, weight: 1})
+                 .bindPopup(`<b>Punto Ruta:</b> ${pt.nombre}`).addTo(histMarkers);
+            });
+        }
+
         const tbody = document.getElementById('tablaIncidentesGPS');
         tbody.innerHTML = '';
         
@@ -767,79 +777,116 @@
         const coords = data.map(u => [u.latitud, u.longitud]);
         L.polyline(coords, { color: rep.color, weight: 4, opacity: 0.8 }).addTo(histMarkers);
 
-        // Analizar datos punto por punto
+        // Variables para rastrear detenciones y visitas a puntos
         let stopStartTime = null;
         let stopStartIndex = -1;
+        let visitedWaypoints = {}; // Controlar si ya registramos el ingreso a un punto
 
+        // Analizar datos punto por punto
         for (let i = 0; i < data.length; i++) {
             const p = data[i];
             const pTime = new Date(p.timestamp);
-            const speedKmh = p.velocidad * 3.6; // m/s a km/h
+            const speedKmh = p.velocidad * 3.6; 
 
-            // 1. DETECCIÓN DE EXCESO DE VELOCIDAD (> 45 km/h)
+            // --- DETECCIÓN DE EXCESO DE VELOCIDAD ---
             if (speedKmh > 45) {
                 excesosCount++;
                 incidents.push({
                     time: pTime,
                     type: 'Exceso de Velocidad',
-                    detail: `${speedKmh.toFixed(1)} km/h`,
-                    lat: p.latitud, lng: p.longitud
+                    detail: `${speedKmh.toFixed(1)} km/h`
                 });
-                // Marcador rojo en el mapa
                 L.circleMarker([p.latitud, p.longitud], {radius: 6, color: '#dc2626', fillColor: '#fca5a5', fillOpacity: 1})
-                 .bindPopup(`<b>Exceso:</b> ${speedKmh.toFixed(1)} km/h <br>${pTime.toLocaleTimeString('es-UY')}`).addTo(histMarkers);
+                 .bindPopup(`<b>Exceso:</b> ${speedKmh.toFixed(1)} km/h`).addTo(histMarkers);
             }
 
-            // 2. DETECCIÓN DE DETENCIÓN PROLONGADA (> 3 minutos)
-            const isStopped = !p.en_movimiento || p.velocidad < 0.5; // Margen de 0.5 m/s
+            // --- DETECCIÓN DE VISITA A PUNTO DE RUTA (Radio 50m) ---
+            if (puntosRuta) {
+                puntosRuta.forEach(wp => {
+                    const distToWp = gpsMapHist.distance(L.latLng(p.latitud, p.longitud), L.latLng(wp.latitud, wp.longitud));
+                    
+                    // Si entra al radio del punto
+                    if (distToWp <= RADIO_PUNTO_RUTA) {
+                        if (!visitedWaypoints[wp.id]) {
+                            visitedWaypoints[wp.id] = true; // Marcar como visitado
+                            incidents.push({
+                                time: pTime,
+                                type: '📍 Paso por Punto de Ruta',
+                                detail: `Ingresó a: ${wp.nombre}`
+                            });
+                        }
+                    } else if (distToWp > RADIO_PUNTO_RUTA * 2) {
+                        // Si se aleja lo suficiente, reseteamos por si vuelve a pasar después
+                        visitedWaypoints[wp.id] = false; 
+                    }
+                });
+            }
+
+            // --- DETECCIÓN DE DETENCIÓN PROLONGADA (> 3 minutos) ---
+            const isStopped = !p.en_movimiento || p.velocidad < 0.5; 
             
             if (isStopped) {
                 if (!stopStartTime) {
-                    stopStartTime = pTime; // Empezó a frenar
+                    stopStartTime = pTime; 
                     stopStartIndex = i;
                 }
             } else {
-                if (stopStartTime) { // Empezó a moverse de nuevo, calculamos cuánto estuvo frenado
+                if (stopStartTime) { 
                     const durationMs = pTime - stopStartTime;
                     const durationMins = durationMs / (1000 * 60);
                     
                     if (durationMins >= 3) {
                         detencionesCount++;
+                        
+                        // Verificar si la detención fue en un Punto de Ruta
+                        const stopLat = data[stopStartIndex].latitud;
+                        const stopLng = data[stopStartIndex].longitud;
+                        let stopPlaceName = null;
+                        
+                        if (puntosRuta) {
+                            puntosRuta.forEach(wp => {
+                                const distToWp = gpsMapHist.distance(L.latLng(stopLat, stopLng), L.latLng(wp.latitud, wp.longitud));
+                                if(distToWp <= RADIO_PUNTO_RUTA) stopPlaceName = wp.nombre;
+                            });
+                        }
+
+                        const detDetail = stopPlaceName 
+                            ? `Detenido ${durationMins.toFixed(1)} min en PUNTO: ${stopPlaceName}` 
+                            : `Detenido ${durationMins.toFixed(1)} min (Zona sin punto asignado)`;
+
                         incidents.push({
                             time: stopStartTime,
-                            type: 'Detención Prolongada',
-                            detail: `Detenido ${durationMins.toFixed(1)} minutos`,
-                            lat: data[stopStartIndex].latitud, lng: data[stopStartIndex].longitud
+                            type: '🛑 Detención Prolongada' + (stopPlaceName ? ' en Ruta' : ''),
+                            detail: detDetail
                         });
+                        
                         // Marcador naranja en el mapa
-                        L.circleMarker([data[stopStartIndex].latitud, data[stopStartIndex].longitud], {radius: 6, color: '#ea580c', fillColor: '#fed7aa', fillOpacity: 1})
-                         .bindPopup(`<b>Detención:</b> ${durationMins.toFixed(1)} min<br>${stopStartTime.toLocaleTimeString('es-UY')}`).addTo(histMarkers);
+                        L.circleMarker([stopLat, stopLng], {radius: 8, color: '#ea580c', fillColor: '#fed7aa', fillOpacity: 1})
+                         .bindPopup(`<b>Detención:</b> ${durationMins.toFixed(1)} min<br>${stopPlaceName ? 'Punto: '+stopPlaceName : 'Sin punto'}`).addTo(histMarkers);
                     }
                     stopStartTime = null; // Reset
                 }
             }
 
-            // 3. CÁLCULO DE DISTANCIA
+            // --- CÁLCULO DE DISTANCIA ---
             if (i > 0) {
                 const prev = data[i-1];
                 const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud));
-                // Solo sumar si la precisión es razonable y no está detenido (evitar sumar ruido GPS)
                 if(p.precision_gps < 30 && p.en_movimiento) {
                     distanciaTotal += dist;
                 }
             }
         }
 
-        // Si termina el recorrido y sigue detenido, contamos la última detención
+        // Si termina el informe y sigue detenido
         if (stopStartTime) {
-            const durationMins = (new Date() - stopStartTime) / (1000 * 60);
+            const durationMins = (new Date(endOfDay) - stopStartTime) / (1000 * 60);
             if (durationMins >= 3) {
                 detencionesCount++;
                 incidents.push({
                     time: stopStartTime,
-                    type: 'Detención Prolongada (Aún detenido)',
-                    detail: `${durationMins.toFixed(1)} minutos`,
-                    lat: data[data.length-1].latitud, lng: data[data.length-1].longitud
+                    type: '🛑 Detención Prolongada (Aún detenido)',
+                    detail: `Lleva ${durationMins.toFixed(1)} minutos detenido`
                 });
             }
         }
@@ -850,24 +897,28 @@
         // Pintar tabla de incidentes
         incidents.forEach(inc => {
             const tr = document.createElement('tr');
-            const typeColor = inc.type.includes('Exceso') ? 'text-red-700 font-bold' : 'text-orange-700 font-bold';
+            let typeColor = 'text-gray-700';
+            if(inc.type.includes('Exceso')) typeColor = 'text-red-700 font-bold';
+            if(inc.type.includes('Detención')) typeColor = 'text-orange-700 font-bold';
+            if(inc.type.includes('Punto')) typeColor = 'text-blue-700 font-bold';
+            
             tr.innerHTML = `
                 <td class="p-2 border">${inc.time.toLocaleTimeString('es-UY')}</td>
                 <td class="p-2 border ${typeColor}">${inc.type}</td>
                 <td class="p-2 border">${inc.detail}</td>
                 <td class="p-2 border text-center text-gray-400 italic" title="Módulo de ventas no implementado">Pendiente</td>
             `;
-            tbody.appendChild(tr);
+            tbody.appendChild(inc);
         });
 
         if(incidents.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-green-600 font-bold">Sin incidentes el día de hoy. Conducción responsable.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-green-600 font-bold">Sin incidentes en esa fecha. Conducción responsable.</td></tr>';
         }
 
         // Actualizar estadísticas
         document.getElementById('statExceso').textContent = excesosCount;
         document.getElementById('statDetenciones').textContent = detencionesCount;
-        document.getElementById('statDistancia').textContent = (distanciaTotal / 1000).toFixed(1); // Pasar metros a km
+        document.getElementById('statDistancia').textContent = (distanciaTotal / 1000).toFixed(1);
 
         // Ajustar mapa al recorrido
         if(coords.length > 0) {
@@ -875,6 +926,8 @@
             setTimeout(() => { gpsMapHist.invalidateSize(); }, 200);
         }
     }
+    
+     
 </script>
 </body>
 </html>
