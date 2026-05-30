@@ -71,7 +71,55 @@
             <div id="view-proveedores" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🚚 Proveedores y Remitos</h2><p class="text-gray-500">Módulo en construcción...</p></div>
             <div id="view-stock" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🗄️ Stock en Depósito Central</h2><p class="text-gray-500">Módulo en construcción...</p></div>
             <div id="view-ventas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">💰 Punto de Venta</h2><p class="text-gray-500">Módulo en construcción...</p></div>
-            <div id="view-repartidores" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🛵 Gestión de Repartidores</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+            <div id="view-repartidores" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">🛵 Gestión de Repartidores</h2>
+    
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <input type="hidden" id="repIdEditando">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre del Repartidor *</label>
+                <input type="text" id="repNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: JUAN PEREZ">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Teléfono</label>
+                <input type="text" id="repTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Ej: 099123456">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Vehículo</label>
+                <input type="text" id="repVehiculo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: Toyota Hilux">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Patente</label>
+                <input type="text" id="repPatente" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: RCH 1234">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Color en Mapa GPS *</label>
+                <input type="color" id="repColor" class="mt-1 block w-full h-10 px-1 py-1 border rounded-md shadow-sm cursor-pointer" value="#3b82f6">
+            </div>
+        </div>
+        <div class="flex gap-4 mt-4">
+            <button onclick="guardarRepartidor()" id="btnGuardarRep" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Repartidor</button>
+            <button onclick="cancelarEdicionRep()" id="btnCancelarRep" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+        </div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Repartidores</h3>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-2 border">Color</th>
+                    <th class="p-2 border">Nombre</th>
+                    <th class="p-2 border">Teléfono</th>
+                    <th class="p-2 border">Vehículo / Patente</th>
+                    <th class="p-2 border text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaRepartidores"></tbody>
+        </table>
+    </div>
+</div>
             <div id="view-finanzas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🏦 Finanzas y Contabilidad</h2><p class="text-gray-500">Módulo en construcción...</p></div>
             <div id="view-marketing" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">📣 Marketing IA</h2><p class="text-gray-500">Módulo en construcción...</p></div>
 
