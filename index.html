@@ -156,7 +156,36 @@
                         </select>
                         <div id="listaEstadosRep" class="space-y-2 mt-3 max-h-48 overflow-y-auto"></div>
                     </div>
+                                    <!-- AGREGAR PUNTO DE RUTA -->
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-3">📌 Agregar Punto de Ruta</h3>
+                    <p class="text-xs text-gray-500 mb-2">Hacé clic en el mapa para obtener las coordenadas automáticamente.</p>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600">Nombre del Punto *</label>
+                            <input type="text" id="mkNombre" class="mt-1 block w-full px-2 py-1 border rounded text-sm" placeholder="Ej: Cliente Mides - Calle 18">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600">Latitud</label>
+                                <input type="number" id="mkLat" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600">Longitud</label>
+                                <input type="number" id="mkLng" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly>
+                            </div>
+                        </div>
+                        <button onclick="guardarMarcador()" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold text-sm w-full cursor-pointer">Guardar Punto en Ruta</button>
+                    </div>
+                </div>
 
+                <!-- PUNTOS REGISTRADOS EN LA RUTA -->
+                <div class="bg-white p-4 rounded-lg shadow-sm max-h-48 overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📍 Puntos de Referencia</h3>
+                    <div id="listaMarcadores" class="space-y-2 text-xs">
+                        <p class="text-gray-400 text-center">Cargando puntos...</p>
+                    </div>
+                </div>
                     <div class="bg-white p-4 rounded-lg shadow-sm max-h-64 overflow-y-auto">
                         <h3 class="font-bold text-gray-700 mb-3 text-sm">📋 Registro de Actividad</h3>
                         <table class="w-full text-left border-collapse text-xs">
