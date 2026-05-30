@@ -282,6 +282,7 @@
             }
 
             renderizarMapas();
+            cargarRepartidores();
             actualizarUI();
             document.getElementById('headerStatus').innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div> Conectado a Supabase';
 
@@ -447,49 +448,53 @@
         setInterval(actualizarUI, 10000); // Actualizar tiempos cada 10s
     });
 
-        // ==========================================
+
+       // ==========================================
     // MÓDULO REPARTIDORES (CRUD SUPABASE)
     // ==========================================
+    
     async function cargarRepartidores() {
-        console.log("Ejecutando cargarRepartidores..."); // <--- AGREGAR ESTA LÍNEA
+        console.log("Cargando lista de repartidores...");
         const { data, error } = await supabaseClient.from('repartidores').select('*').order('nombre');
         
         if(error) { 
-            console.error("Error de Supabase:", error); // <--- AGREGAR ESTA LÍNEA
+            console.error("Error de Supabase:", error);
             alert('Error al cargar repartidores: ' + error.message); 
             return; 
         }
         
-        console.log("Repartidores encontrados:", data); // <--- AGREGAR ESTA LÍNEA
-        // ... el resto del código sigue igual ...
-
-      
         const tbody = document.getElementById('tablaRepartidores');
-        tbody.innerHTML = '';
+        if(!tbody) {
+            console.error("No se encontró el elemento tablaRepartidores en el HTML");
+            return;
+        }
         
-        // Si no hay datos, mostramos un mensaje
+        tbody.innerHTML = ''; // Limpiar tabla
+        
         if(data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay repartidores cargados.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay repartidores cargados en Supabase.</td></tr>';
             return;
         }
         
         data.forEach(rep => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="p-2 border text-center"><div class="w-6 h-6 rounded-full mx-auto" style="background:${rep.color}"></div></td>
-                <td class="p-2 border font-bold">${rep.nombre}</td>
+                <td class="p-2 border text-center"><div class="w-6 h-6 rounded-full mx-auto border border-gray-300" style="background:${rep.color}"></div></td>
+                <td class="p-2 border font-semibold">${rep.nombre}</td>
                 <td class="p-2 border">${rep.telefono || '-'}</td>
                 <td class="p-2 border">${rep.vehiculo || '-'} (${rep.patente || '-'})</td>
-                <td class="p-2 border text-center">
-                    <button onclick="editarRepartidor('${rep.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600">✏️ Editar</button>
-                    <button onclick="eliminarRepartidor('${rep.id}', '${rep.nombre}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">🗑️ Eliminar</button>
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="editarRepartidor('${rep.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600 cursor-pointer">✏️ Editar</button>
+                    <button onclick="eliminarRepartidor('${rep.id}', '${rep.nombre}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 cursor-pointer">🗑️ Eliminar</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+        console.log("Repartidores cargados exitosamente:", data.length);
     }
 
-    async function guardarRepartidor() {
+    function guardarRepartidor() {
+        alert("Botón guardar presionado. Procesando...");
         const id = document.getElementById('repIdEditando').value;
         const nombre = document.getElementById('repNombre').value.trim();
         const telefono = document.getElementById('repTelefono').value.trim();
@@ -502,17 +507,20 @@
         const repData = { nombre, telefono, vehiculo, patente, color, activo: true };
 
         if(id) {
-            // ACTUALIZAR
-            const { error } = await supabaseClient.from('repartidores').update(repData).eq('id', id);
-            if(error) { alert('Error al actualizar: ' + error.message); return; }
+            supabaseClient.from('repartidores').update(repData).eq('id', id).then(({error}) => {
+                if(error) { alert('Error al actualizar: ' + error.message); return; }
+                alert('Repartidor actualizado correctamente');
+                cancelarEdicionRep();
+                cargarRepartidores();
+            });
         } else {
-            // CREAR
-            const { error } = await supabaseClient.from('repartidores').insert(repData);
-            if(error) { alert('Error al guardar: ' + error.message); return; }
+            supabaseClient.from('repartidores').insert(repData).then(({error}) => {
+                if(error) { alert('Error al guardar: ' + error.message); return; }
+                alert('Repartidor guardado correctamente');
+                cancelarEdicionRep();
+                cargarRepartidores();
+            });
         }
-
-        cancelarEdicionRep();
-        cargarRepartidores();
     }
 
     async function editarRepartidor(id) {
@@ -542,14 +550,15 @@
         document.getElementById('btnGuardarRep').textContent = 'Guardar Repartidor';
     }
 
-    async function eliminarRepartidor(id, nombre) {
+    function eliminarRepartidor(id, nombre) {
         if(confirm(`¿Estás seguro de eliminar a ${nombre}? Se borrarán sus ubicaciones GPS también.`)) {
-            // Eliminar ubicaciones primero (por restricción de clave foránea)
-            await supabaseClient.from('ubicaciones').delete().eq('repartidor_id', id);
-            // Eliminar repartidor
-            const { error } = await supabaseClient.from('repartidores').delete().eq('id', id);
-            if(error) { alert('Error al eliminar: ' + error.message); return; }
-            cargarRepartidores();
+            supabaseClient.from('ubicaciones').delete().eq('repartidor_id', id).then(() => {
+                supabaseClient.from('repartidores').delete().eq('id', id).then(({error}) => {
+                    if(error) { alert('Error al eliminar: ' + error.message); return; }
+                    alert('Repartidor eliminado');
+                    cargarRepartidores();
+                });
+            });
         }
     }
 </script>
