@@ -443,6 +443,96 @@
         initSupabase();
         setInterval(actualizarUI, 10000); // Actualizar tiempos cada 10s
     });
+
+        // ==========================================
+    // MÓDULO REPARTIDORES (CRUD SUPABASE)
+    // ==========================================
+    async function cargarRepartidores() {
+        const { data, error } = await supabaseClient.from('repartidores').select('*').order('nombre');
+        if(error) { console.error("Error cargando repartidores:", error); return; }
+        
+        const tbody = document.getElementById('tablaRepartidores');
+        tbody.innerHTML = '';
+        
+        data.forEach(rep => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border text-center"><div class="w-6 h-6 rounded-full mx-auto" style="background:${rep.color}"></div></td>
+                <td class="p-2 border font-bold">${rep.nombre}</td>
+                <td class="p-2 border">${rep.telefono || '-'}</td>
+                <td class="p-2 border">${rep.vehiculo || '-'} (${rep.patente || '-'})</td>
+                <td class="p-2 border text-center">
+                    <button onclick="editarRepartidor('${rep.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600">✏️ Editar</button>
+                    <button onclick="eliminarRepartidor('${rep.id}', '${rep.nombre}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">🗑️ Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function guardarRepartidor() {
+        const id = document.getElementById('repIdEditando').value;
+        const nombre = document.getElementById('repNombre').value.trim();
+        const telefono = document.getElementById('repTelefono').value.trim();
+        const vehiculo = document.getElementById('repVehiculo').value.trim();
+        const patente = document.getElementById('repPatente').value.trim();
+        const color = document.getElementById('repColor').value;
+
+        if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+        const repData = { nombre, telefono, vehiculo, patente, color, activo: true };
+
+        if(id) {
+            // ACTUALIZAR
+            const { error } = await supabaseClient.from('repartidores').update(repData).eq('id', id);
+            if(error) { alert('Error al actualizar: ' + error.message); return; }
+        } else {
+            // CREAR
+            const { error } = await supabaseClient.from('repartidores').insert(repData);
+            if(error) { alert('Error al guardar: ' + error.message); return; }
+        }
+
+        cancelarEdicionRep();
+        cargarRepartidores();
+    }
+
+    async function editarRepartidor(id) {
+        const { data, error } = await supabaseClient.from('repartidores').select('*').eq('id', id).single();
+        if(error) { alert('Error al buscar repartidor'); return; }
+        
+        document.getElementById('repIdEditando').value = data.id;
+        document.getElementById('repNombre').value = data.nombre;
+        document.getElementById('repTelefono').value = data.telefono || '';
+        document.getElementById('repVehiculo').value = data.vehiculo || '';
+        document.getElementById('repPatente').value = data.patente || '';
+        document.getElementById('repColor').value = data.color || '#3b82f6';
+        
+        document.getElementById('btnCancelarRep').classList.remove('hidden');
+        document.getElementById('btnGuardarRep').textContent = '✏️ Actualizar Repartidor';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelarEdicionRep() {
+        document.getElementById('repIdEditando').value = '';
+        document.getElementById('repNombre').value = '';
+        document.getElementById('repTelefono').value = '';
+        document.getElementById('repVehiculo').value = '';
+        document.getElementById('repPatente').value = '';
+        document.getElementById('repColor').value = '#3b82f6';
+        document.getElementById('btnCancelarRep').classList.add('hidden');
+        document.getElementById('btnGuardarRep').textContent = 'Guardar Repartidor';
+    }
+
+    async function eliminarRepartidor(id, nombre) {
+        if(confirm(`¿Estás seguro de eliminar a ${nombre}? Se borrarán sus ubicaciones GPS también.`)) {
+            // Eliminar ubicaciones primero (por restricción de clave foránea)
+            await supabaseClient.from('ubicaciones').delete().eq('repartidor_id', id);
+            // Eliminar repartidor
+            const { error } = await supabaseClient.from('repartidores').delete().eq('id', id);
+            if(error) { alert('Error al eliminar: ' + error.message); return; }
+            cargarRepartidores();
+        }
+    }
 </script>
 </body>
 </html>
