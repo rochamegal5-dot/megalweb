@@ -116,10 +116,13 @@
                     <th class="p-2 border text-center">Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tablaRepartidores"></tbody>
+            <!-- AsegURATE DE QUE ESTE ID SEA EXACTAMENTE ESTE -->
+            <tbody id="tablaRepartidores"></tbody> 
         </table>
     </div>
 </div>
+            
+          
             <div id="view-finanzas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🏦 Finanzas y Contabilidad</h2><p class="text-gray-500">Módulo en construcción...</p></div>
             <div id="view-marketing" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">📣 Marketing IA</h2><p class="text-gray-500">Módulo en construcción...</p></div>
 
@@ -447,16 +450,20 @@
         // ==========================================
     // MÓDULO REPARTIDORES (CRUD SUPABASE)
     // ==========================================
-
     async function cargarRepartidores() {
+        console.log("Ejecutando cargarRepartidores..."); // <--- AGREGAR ESTA LÍNEA
         const { data, error } = await supabaseClient.from('repartidores').select('*').order('nombre');
         
-        // Si Supabase tira un error, lo mostramos por pantalla
         if(error) { 
+            console.error("Error de Supabase:", error); // <--- AGREGAR ESTA LÍNEA
             alert('Error al cargar repartidores: ' + error.message); 
             return; 
         }
         
+        console.log("Repartidores encontrados:", data); // <--- AGREGAR ESTA LÍNEA
+        // ... el resto del código sigue igual ...
+
+      
         const tbody = document.getElementById('tablaRepartidores');
         tbody.innerHTML = '';
         
