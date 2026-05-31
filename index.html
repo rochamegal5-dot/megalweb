@@ -221,7 +221,7 @@
         </div>
 
         <div class="bg-white p-4 rounded-lg shadow-sm">
-            <h3 class="font-bold text-gray-700 mb-4 text-lg">📋 Registro de Incidentes</h3>
+            <h3 class="font-bold text-gray-700 mb-4 text-lg">📋 Registro de Incidentes - <span id="histNombreRep" class="text-blue-600"></span></h3>
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-gray-200">
@@ -739,6 +739,7 @@
         try {
             const repId = document.getElementById('histRepartidorId').value;
             const fecha = document.getElementById('histFecha').value;
+
             
             if(!repId || !fecha) { 
                 alert('Por favor, seleccioná un repartidor y una fecha.'); 
@@ -747,10 +748,10 @@
 
             const rep = repartidores.get(repId);
             if(!rep) { alert('Repartidor no encontrado en la memoria'); return; }
-            
-            document.getElementById('histNombreRep').textContent = rep.nombre;
-
-            const startOfDay = `${fecha}T00:00:00.000Z`;
+                        const histNameEl = document.getElementById('histNombreRep');
+            if(histNameEl) histNameEl.textContent = rep.nombre;
+                
+             const startOfDay = `${fecha}T00:00:00.000Z`;
             const endOfDay = `${fecha}T23:59:59.999Z`;
 
             // Consultar Supabase
