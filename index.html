@@ -203,8 +203,8 @@
                     <option value="">-- Seleccione Repartidor --</option>
                 </select>
                 <input type="date" id="histFecha" class="border rounded p-2 text-sm cursor-pointer">
-                <button onclick="generarInformeDiario()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">📊 Generar Informe</button>
-               </div>
+                <button onclick="generarInforme()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">📊 Generar Informe</button>
+          </div>
         </div>
         
         <div id="gpsMapHist" style="height: 400px; width: 100%;" class="bg-gray-200 mb-4 rounded-lg shadow-sm"></div>
@@ -721,35 +721,33 @@
     }
 
     // --- INFORME HISTORIAL ---
-        async function generarInformeDiario() {
-        alert("Iniciando generación de informe..."); // Si no ves esto, el JS está roto por otro lado
-
+        async function generarInforme() {
+        alert("Botón detectado. Iniciando búsqueda en Supabase...");
+        
         try {
             const repId = document.getElementById('histRepartidorId').value;
             const fecha = document.getElementById('histFecha').value;
             
             if(!repId || !fecha) { 
-                alert('Por favor, seleccioná un repartidor y una fecha.'); 
+                alert('Seleccioná un repartidor y una fecha.'); 
                 return; 
             }
 
             const rep = repartidores.get(repId);
-            if(!rep) { alert('Repartidor no encontrado en la memoria'); return; }
+            if(!rep) { alert('Repartidor no encontrado'); return; }
             
             const histNameEl = document.getElementById('histNombreRep');
             if(histNameEl) histNameEl.textContent = rep.nombre;
 
             const startDate = new Date(`${fecha}T00:00:00`);
             const endDate = new Date(`${fecha}T23:59:59`);
-            const startOfDay = startDate.toISOString();
-            const endOfDay = endDate.toISOString();
 
             const { data, error } = await supabaseClient
                 .from('ubicaciones')
                 .select('*')
                 .eq('repartidor_id', repId)
-                .gte('timestamp', startOfDay)
-                .lte('timestamp', endOfDay)
+                .gte('timestamp', startDate.toISOString())
+                .lte('timestamp', endDate.toISOString())
                 .order('timestamp', { ascending: true })
                 .limit(50000);
 
@@ -834,7 +832,7 @@
 
                 if (i > 0) {
                     const prev = data[i-1];
-                    const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud));
+                    const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud]));
                     if(p.precision_gps < 30 && p.en_movimiento) distanciaTotal += dist;
                 }
             }
@@ -868,6 +866,8 @@
             alert("Error al generar informe: " + e.message);
         }
     }
+    /////    
+   
 
  
     function verIncidenteEnMapa(lat, lng, titulo) {
