@@ -412,6 +412,12 @@
        // actualizarTrail(id);
         actualizarUI();
         agregarLogVivo(rep.nombre, (rep.velocidad * 3.6).toFixed(0));
+                // --- CENTRAR MAPA AUTOMÁTICAMENTE EN VIVO ---
+        // Si el repartidor que se movió es el que está seleccionado, el mapa lo sigue
+        const selectedRepId = document.getElementById('selRepartidor').value;
+        if (id === selectedRepId) {
+            gpsMap.panTo([data.latitud, data.longitud], { animate: true, duration: 0.5 });
+        }
     }
 
     // ==========================================
@@ -762,18 +768,37 @@
             const startDate = new Date(fecha + 'T00:00:00');
             const endDate = new Date(fecha + 'T23:59:59');
 
-            const { data, error } = await supabaseClient
-                .from('ubicaciones')
-                .select('*')
-                .eq('repartidor_id', repId)
-                .gte('timestamp', startDate.toISOString())
-                .lte('timestamp', endDate.toISOString())
-                .order('timestamp', { ascending: true })
-                .limit(50000);
+            // SISTEMA DE PAGINACIÓN: Traer TODOS los registros del día sin límite
+            let allData = [];
+            let page = 0;
+            const limit = 1000; // Supabase permite hasta 1000 por defecto
+            let hasMore = true;
 
-            if(error) throw new Error('Supabase: ' + error.message);
-            if(data.length === 0) { alert('No hay datos de recorrido para esa fecha.'); return; }
+            while(hasMore) {
+                const from = page * limit;
+                const to = from + limit - 1;
+                
+                const { data, error } = await supabaseClient
+                    .from('ubicaciones')
+                    .select('*')
+                    .eq('repartidor_id', repId)
+                    .gte('timestamp', startDate.toISOString())
+                    .lte('timestamp', endDate.toISOString())
+                    .order('timestamp', { ascending: true })
+                    .range(from, to);
 
+                if(error) throw new Error('Supabase: ' + error.message);
+                
+                if(data.length === 0) { 
+                    hasMore = false; 
+                } else { 
+                    allData = allData.concat(data); 
+                    if(data.length < limit) { hasMore = false; } 
+                }
+                page++;
+            }
+
+          
             const { data: puntosRuta } = await supabaseClient.from('puntos_ruta').select('*');
 
             if(histMarkers) gpsMapHist.removeLayer(histMarkers);
