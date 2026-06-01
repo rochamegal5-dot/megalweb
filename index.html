@@ -719,19 +719,39 @@
             if(!error) cargarPuntosRuta(); else alert('Error al eliminar');
         }
     }
+    // ==========================================
+    // PANTALLA COMPLETA GPS
+    // ==========================================
+    function abrirRastreoPantallaCompleta() {
+        const sidebar = document.getElementById('mainSidebar');
+        const header = document.getElementById('mainHeader');
+        if(sidebar) sidebar.style.display = 'none';
+        if(header) header.style.display = 'none';
+        const btnVolver = document.getElementById('btnVolverERP');
+        if(btnVolver) btnVolver.classList.remove('hidden');
+        mostrarSeccion('gps');
+        setTimeout(() => {
+            if(gpsMap) gpsMap.invalidateSize();
+            if(gpsMapHist) gpsMapHist.invalidateSize();
+        }, 300);
+    }
 
-    // --- INFORME HISTORIAL ---
-        async function generarInforme() {
-        alert("Botón detectado. Iniciando búsqueda en Supabase...");
-        
+    function volverAERP() {
+        const sidebar = document.getElementById('mainSidebar');
+        const header = document.getElementById('mainHeader');
+        if(sidebar) sidebar.style.display = 'flex';
+        if(header) header.style.display = 'flex';
+        const btnVolver = document.getElementById('btnVolverERP');
+        if(btnVolver) btnVolver.classList.add('hidden');
+        mostrarSeccion('resumen');
+    }
+
+    // --- INFORME HISTORIAL (SIN ERRORES DE SINTAXIS) ---
+    async function generarInforme() {
         try {
             const repId = document.getElementById('histRepartidorId').value;
             const fecha = document.getElementById('histFecha').value;
-            
-            if(!repId || !fecha) { 
-                alert('Seleccioná un repartidor y una fecha.'); 
-                return; 
-            }
+            if(!repId || !fecha) { alert('Seleccioná un repartidor y una fecha.'); return; }
 
             const rep = repartidores.get(repId);
             if(!rep) { alert('Repartidor no encontrado'); return; }
@@ -739,8 +759,8 @@
             const histNameEl = document.getElementById('histNombreRep');
             if(histNameEl) histNameEl.textContent = rep.nombre;
 
-            const startDate = new Date(`${fecha}T00:00:00`);
-            const endDate = new Date(`${fecha}T23:59:59`);
+            const startDate = new Date(fecha + 'T00:00:00');
+            const endDate = new Date(fecha + 'T23:59:59');
 
             const { data, error } = await supabaseClient
                 .from('ubicaciones')
@@ -777,39 +797,43 @@
                 const pTime = new Date(p.timestamp);
                 const speedKmh = p.velocidad * 3.6; 
 
+                // Cada 15 minutos
                 if (!lastTimeMarker || (pTime - lastTimeMarker) >= (15 * 60 * 1000)) {
                     const timeStr = pTime.toLocaleTimeString('es-UY', {hour: '2-digit', minute:'2-digit'});
-                    L.marker([p.latitud, p.longitud], {
-                        icon: L.divIcon({ className: '', html: `<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc;">🕐 ${timeStr}</div>`, iconAnchor: [0, 20] })
-                    }).addTo(histMarkers);
+                    const iconHtml = '<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc;">🕐 ' + timeStr + '</div>';
+                    L.marker([p.latitud, p.longitud], { icon: L.divIcon({ className: '', html: iconHtml, iconAnchor: [0, 20] }) }).addTo(histMarkers);
                     lastTimeMarker = pTime;
                     boundsCoords.push([p.latitud, p.longitud]);
                 }
 
+                // Cada 5 min en tabla
                 if (i > 0 && i % 60 === 0) {
-                    incidents.push({ time: pTime, type: '🛣️ En Ruta', detail: `Vel: ${speedKmh.toFixed(0)} km/h`, lat: p.latitud, lng: p.longitud, isRoutine: true });
+                    incidents.push({ time: pTime, type: 'En Ruta', detail: 'Vel: ' + speedKmh.toFixed(0) + ' km/h', lat: p.latitud, lng: p.longitud, isRoutine: true });
                 }
 
+                // Exceso
                 if (speedKmh > 45) {
                     excesosCount++;
-                    incidents.push({ time: pTime, type: 'Exceso Velocidad', detail: `${speedKmh.toFixed(1)} km/h`, lat: p.latitud, lng: p.longitud });
+                    incidents.push({ time: pTime, type: 'Exceso Velocidad', detail: speedKmh.toFixed(1) + ' km/h', lat: p.latitud, lng: p.longitud });
                     L.circleMarker([p.latitud, p.longitud], {radius: 6, color: '#dc2626', fillColor: '#fca5a5', fillOpacity: 1}).addTo(histMarkers);
                     boundsCoords.push([p.latitud, p.longitud]);
                 }
 
+                // Puntos de ruta
                 if (puntosRuta && puntosRuta.length > 0) {
                     puntosRuta.forEach(wp => {
                         const distToWp = gpsMapHist.distance(L.latLng(p.latitud, p.longitud), L.latLng(wp.latitud, wp.longitud));
                         if (distToWp <= 50) {
                             if (!visitedWaypoints[wp.id]) {
                                 visitedWaypoints[wp.id] = true;
-                                incidents.push({ time: pTime, type: '📍 Punto Ruta', detail: wp.nombre, lat: wp.latitud, lng: wp.longitud });
+                                incidents.push({ time: pTime, type: 'Punto Ruta', detail: 'Ingresó a: ' + wp.nombre, lat: wp.latitud, lng: wp.longitud });
                                 boundsCoords.push([wp.latitud, wp.longitud]);
                             }
                         } else { visitedWaypoints[wp.id] = false; }
                     });
                 }
 
+                // Detención
                 const isStopped = !p.en_movimiento || p.velocidad < 0.5; 
                 if (isStopped) {
                     if (!stopStartTime) { stopStartTime = pTime; stopStartIndex = i; }
@@ -821,8 +845,13 @@
                             const stopLat = data[stopStartIndex].latitud;
                             const stopLng = data[stopStartIndex].longitud;
                             let stopPlaceName = null;
-                            if (puntosRuta) { puntosRuta.forEach(wp => { if(gpsMapHist.distance(L.latLng(stopLat, stopLng), L.latLng(wp.latitud, wp.longitud)) <= 50) stopPlaceName = wp.nombre; }); }
-                            incidents.push({ time: stopStartTime, type: '🛑 Detención', detail: stopPlaceName ? `Detenido ${durationMins.toFixed(1)} min en: ${stopPlaceName}` : `Detenido ${durationMins.toFixed(1)} min`, lat: stopLat, lng: stopLng });
+                            if (puntosRuta) { 
+                                puntosRuta.forEach(wp => { 
+                                    if(gpsMapHist.distance(L.latLng(stopLat, stopLng), L.latLng(wp.latitud, wp.longitud)) <= 50) stopPlaceName = wp.nombre; 
+                                }); 
+                            }
+                            const detDetail = stopPlaceName ? 'Detenido ' + durationMins.toFixed(1) + ' min en: ' + stopPlaceName : 'Detenido ' + durationMins.toFixed(1) + ' min';
+                            incidents.push({ time: stopStartTime, type: 'Detencion Prolongada', detail: detDetail, lat: stopLat, lng: stopLng });
                             L.circleMarker([stopLat, stopLng], {radius: 8, color: '#ea580c', fillColor: '#fed7aa', fillOpacity: 1}).addTo(histMarkers);
                             boundsCoords.push([stopLat, stopLng]);
                         }
@@ -830,23 +859,40 @@
                     }
                 }
 
+                // Distancia
                 if (i > 0) {
                     const prev = data[i-1];
-                    const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud]));
+                    const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud));
                     if(p.precision_gps < 30 && p.en_movimiento) distanciaTotal += dist;
                 }
             }
 
+            // Pintar tabla (USANDO CONCATENACIÓN PARA EVITAR ERRORES DE COMILLAS)
             incidents.sort((a, b) => a.time - b.time);
             incidents.forEach(inc => {
                 const tr = document.createElement('tr');
-                let rowBgColor = ''; let typeColor = 'text-gray-700';
-                if(inc.isRoutine) { rowBgColor = 'bg-gray-50'; typeColor = 'text-gray-500'; }
-                if(inc.type.includes('Exceso')) { rowBgColor = 'bg-red-50'; typeColor = 'text-red-700 font-bold'; }
-                if(inc.type.includes('Detención')) { rowBgColor = 'bg-orange-50'; typeColor = 'text-orange-700 font-bold'; }
-                if(inc.type.includes('Punto')) { rowBgColor = 'bg-blue-50'; typeColor = 'text-blue-700 font-bold'; }
-                const mapLink = inc.lat ? `<a href="#" onclick="verIncidenteEnMapa(${inc.lat}, ${inc.lng}, '${inc.type}'); return false;" class="text-blue-600 hover:underline text-xs ml-1">📍 Ver</a>` : '';
-                tr.innerHTML = `<td class="p-2 border ${rowBgColor}">${inc.time.toLocaleTimeString('es-UY')}</td><td class="p-2 border ${typeColor} ${rowBgColor}">${inc.type}</td><td class="p-2 border ${rowBgColor}">${inc.detail} ${mapLink}</td><td class="p-2 border text-center text-gray-400 italic ${rowBgColor}">Pendiente</td>`;
+                let rowBgColor = ''; 
+                let typeColor = 'text-gray-700';
+                let icon = '🛣️';
+                
+                if(inc.isRoutine) { rowBgColor = 'bg-gray-50'; typeColor = 'text-gray-500'; icon = '🛣️'; }
+                if(inc.type.includes('Exceso')) { rowBgColor = 'bg-red-50'; typeColor = 'text-red-700 font-bold'; icon = '⚠️'; }
+                if(inc.type.includes('Detencion')) { rowBgColor = 'bg-orange-50'; typeColor = 'text-orange-700 font-bold'; icon = '🛑'; }
+                if(inc.type.includes('Punto')) { rowBgColor = 'bg-blue-50'; typeColor = 'text-blue-700 font-bold'; icon = '📍'; }
+                
+                let mapLink = '';
+                if (inc.lat) {
+                    // Link seguro, sin comillas dentro de comillas
+                    mapLink = '<a href="#" onclick="verIncidenteEnMapa(' + inc.lat + ', ' + inc.lng + '); return false;" class="text-blue-600 hover:underline text-xs ml-1">📍 Ver en mapa</a>';
+                }
+                
+                const timeStr = inc.time.toLocaleTimeString('es-UY');
+                
+                tr.innerHTML = '<td class="p-2 border ' + rowBgColor + '">' + timeStr + '</td>' +
+                               '<td class="p-2 border ' + typeColor + ' ' + rowBgColor + '">' + icon + ' ' + inc.type + '</td>' +
+                               '<td class="p-2 border ' + rowBgColor + '">' + inc.detail + ' ' + mapLink + '</td>' +
+                               '<td class="p-2 border text-center text-gray-400 italic ' + rowBgColor + '">Pendiente</td>';
+                               
                 if(tbody) tbody.appendChild(tr);
             });
 
@@ -858,94 +904,21 @@
                 gpsMapHist.fitBounds(L.latLngBounds(boundsCoords).pad(0.2));
                 setTimeout(() => { gpsMapHist.invalidateSize(); }, 200);
             }
-            
-            alert("¡Informe generado con éxito!"); 
 
         } catch(e) {
             console.error("Error generando informe:", e);
             alert("Error al generar informe: " + e.message);
         }
     }
-    /////    
-   
 
- 
-    function verIncidenteEnMapa(lat, lng, titulo) {
+    function verIncidenteEnMapa(lat, lng) {
         if(gpsMapHist) {
             gpsMapHist.flyTo([lat, lng], 17, { duration: 1.5 });
-            L.popup().setLatLng([lat, lng]).setContent(`<b>${titulo}</b>`).openOn(gpsMapHist);
+            L.popup().setLatLng([lat, lng]).setContent("<b>Incidente</b>").openOn(gpsMapHist);
         }
-    }
-         // ==========================================
-    // PANTALLA COMPLETA GPS
-    // ==========================================
-    function abrirRastreoPantallaCompleta() {
-        // Ocultar el menú lateral y el encabezado
-        document.getElementById('mainSidebar').style.display = 'none';
-        document.getElementById('mainHeader').style.display = 'none';
-        
-        // Mostrar el botón de volver
-        document.getElementById('btnVolverERP').classList.remove('hidden');
-        
-        // Cambiar a la sección GPS
-        mostrarSeccion('gps');
-        
-        // Arreglar el tamaño del mapa después de ocultar el menú
-        setTimeout(() => {
-            if(gpsMap) gpsMap.invalidateSize();
-            if(gpsMapHist) gpsMapHist.invalidateSize();
-        }, 300);
-    }
-
-    function volverAERP() {
-        // Mostrar nuevamente el menú y el encabezado
-        document.getElementById('mainSidebar').style.display = 'flex';
-        document.getElementById('mainHeader').style.display = 'flex';
-        
-        // Ocultar el botón de volver
-        document.getElementById('btnVolverERP').classList.add('hidden');
-        
-        // Volver al panel principal
-        mostrarSeccion('resumen');
     } 
-        // ==========================================
-    // PANTALLA COMPLETA GPS
-    // ==========================================
-    function abrirRastreoPantallaCompleta() {
-        // Ocultar el menú lateral y el encabezado
-        const sidebar = document.getElementById('mainSidebar');
-        const header = document.getElementById('mainHeader');
-        if(sidebar) sidebar.style.display = 'none';
-        if(header) header.style.display = 'none';
-        
-        // Mostrar el botón de volver (si existe)
-        const btnVolver = document.getElementById('btnVolverERP');
-        if(btnVolver) btnVolver.classList.remove('hidden');
-        
-        // Cambiar a la sección GPS
-        mostrarSeccion('gps');
-        
-        // Arreglar el tamaño del mapa después de ocultar el menú
-        setTimeout(() => {
-            if(gpsMap) gpsMap.invalidateSize();
-            if(gpsMapHist) gpsMapHist.invalidateSize();
-        }, 300);
-    }
+   
 
-    function volverAERP() {
-        // Mostrar nuevamente el menú y el encabezado
-        const sidebar = document.getElementById('mainSidebar');
-        const header = document.getElementById('mainHeader');
-        if(sidebar) sidebar.style.display = 'flex';
-        if(header) header.style.display = 'flex';
-        
-        // Ocultar el botón de volver
-        const btnVolver = document.getElementById('btnVolverERP');
-        if(btnVolver) btnVolver.classList.add('hidden');
-        
-        // Volver al panel principal
-        mostrarSeccion('resumen');
-    }
 </script>
 </body>
 </html>
