@@ -296,10 +296,11 @@
 <div id="view-gps" class="view-section hidden">
     <h2 class="text-2xl font-semibold text-gray-800 mb-4">📍 Rastreo Vehicular</h2>
         <!-- Botón flotante para salir de pantalla completa -->
-    <button id="btnVolverERP" onclick="volverAERP()" class="hidden absolute top-4 left-4 z-[5000] bg-blue-900 text-white px-5 py-3 rounded-lg shadow-xl font-bold hover:bg-blue-800 transition cursor-pointer text-sm">
+       
+    <button id="btnVolverERP" onclick="volverAERP()" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-[5000] bg-blue-900/80 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg font-bold hover:bg-blue-700 transition cursor-pointer text-xs flex items-center gap-2">
         🔙 Volver al Sistema ERP
     </button>
-    
+        
     <div class="flex border-b border-gray-200 mb-4">
         <button onclick="mostrarTabGPS('vivo')" id="tabGPSVivo" class="py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600">📍 En Vivo</button>
         <button onclick="mostrarTabGPS('historial')" id="tabGPSHist" class="py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent">📊 Historial</button>
