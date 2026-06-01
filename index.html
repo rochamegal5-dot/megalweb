@@ -66,7 +66,26 @@
             </div>
 
             <!-- Secciones omitidas para acortar, pero incluidas en tu código original -->
-            <div id="view-productos" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">Cargar Productos</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+          
+              <div id="view-productos" class="view-section hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Cargar Productos</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="prodIdEditando">
+                        <div class="relative"><label class="block text-sm font-medium text-gray-700">Nombre</label><input type="text" id="prodNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Ej: Garrafa 13kg" oninput="autocompletarProducto()"><div id="dropProdNombre" class="autocomplete-list hidden"></div></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Tipo</label><select id="prodTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"><option value="garrafa_11">Garrafa 11kg</option><option value="garrafa_13">Garrafa 13kg</option><option value="garrafa_45">Garrafa 45kg</option><option value="tubo_43">Tubo 43.5kg</option><option value="recarga_3kg">Recarga 3kg</option><option value="accesorio">Accesorio</option></select></div>
+                        <div><label class="blck text-sm font-medium text-gray-700">Precio Costo ($)</label><input type="number" id="prodCosto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Precio Venta Base ($)</label><input type="number" id="prodVenta" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="guardarProducto()" id="btnGuardarProd" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Producto</button>
+                        <button onclick="cancelarEdicionProd()" id="btnCancelarProd" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Productos</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">Tipo</th><th class="p-2 border">Costo</th><th class="p-2 border">Venta Base</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProductos"></tbody></table></div>
+            </div>   
+
+            
             <div id="view-clientes" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">Gestión de Clientes</h2><p class="text-gray-500">Módulo en construcción...</p></div>
 
                <!-- PROVEEDORES Y REMITOS (MODIFICADO) -->
@@ -141,9 +160,7 @@
                 <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Proveedores Cargados</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">RUT</th><th class="p-2 border">Teléfono</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProveedores"></tbody></table></div>
             </div>
         
-            //fin de provedores///
-
-            
+                      
                           
             <div id="view-stock" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🗄️ Stock en Depósito Central</h2><p class="text-gray-500">Módulo en construcción...</p></div>
             <div id="view-ventas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">💰 Punto de Venta</h2><p class="text-gray-500">Módulo en construcción...</p></div>
@@ -360,6 +377,8 @@
                 if(gpsMap) gpsMap.invalidateSize();
                 if(gpsMapHist) gpsMapHist.invalidateSize();
                 cargarPuntosRuta();
+          if(id === 'productos') { if(typeof cargarModuloProductos === 'function') cargarModuloProductos(); }
+        if(id === 'proveedores') { if(typeof cargarModuloProveedores === 'function') cargarModuloProveedores(); }      
             }
         }, 100);
     }
@@ -1196,6 +1215,99 @@
         
         // Recargar módulos afectados
         if(typeof cargarStock === 'function') cargarStock(); // Si la función de stock existe
+    }
+        // ==========================================
+    // MÓDULO PRODUCTOS
+    // ==========================================
+    async function cargarModuloProductos() {
+        await cargarProductos();
+    }
+
+    async function cargarProductos() {
+        const { data, error } = await supabaseClient.from('productos').select('*').order('nombre');
+        if(error) { console.error(error); return; }
+        
+        const tbody = document.getElementById('tablaProductos');
+        tbody.innerHTML = '';
+
+        data.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border font-bold">${p.nombre}</td>
+                <td class="p-2 border text-sm text-gray-600">${p.tipo}</td>
+                <td class="p-2 border text-green-700 font-bold">$${p.costo || 0}</td>
+                <td class="p-2 border text-blue-700 font-bold">$${p.precio_venta || 0}</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="editarProducto('${p.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600 cursor-pointer">✏️ Editar</button>
+                    <button onclick="eliminarProducto('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 cursor-pointer">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function guardarProducto() {
+        const id = document.getElementById('prodIdEditando').value;
+        const nombre = document.getElementById('prodNombre').value.trim();
+        const tipo = document.getElementById('prodTipo').value;
+        const costo = parseInt(document.getElementById('prodCosto').value) || 0;
+        const precio_venta = parseInt(document.getElementById('prodVenta').value) || 0;
+
+        if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+        const prodData = { nombre, tipo, costo, precio_venta };
+
+        let error;
+        if(id) {
+            ({ error } = await supabaseClient.from('productos').update(prodData).eq('id', id));
+        } else {
+            ({ error } = await supabaseClient.from('productos').insert(prodData));
+        }
+
+        if(error) { 
+            alert('Error: ' + error.message); 
+            return; 
+        }
+        
+        cancelarEdicionProd();
+        cargarProductos();
+    }
+
+    async function editarProducto(id) {
+        const { data, error } = await supabaseClient.from('productos').select('*').eq('id', id).single();
+        if(error) { alert('Error al buscar producto'); return; }
+        
+        document.getElementById('prodIdEditando').value = data.id;
+        document.getElementById('prodNombre').value = data.nombre;
+        document.getElementById('prodTipo').value = data.tipo;
+        document.getElementById('prodCosto').value = data.costo || '';
+        document.getElementById('prodVenta').value = data.precio_venta || '';
+        
+        document.getElementById('btnCancelarProd').classList.remove('hidden');
+        document.getElementById('btnGuardarProd').textContent = '✏️ Actualizar Producto';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelarEdicionProd() {
+        document.getElementById('prodIdEditando').value = '';
+        document.getElementById('prodNombre').value = '';
+        document.getElementById('prodTipo').value = 'garrafa_13';
+        document.getElementById('prodCosto').value = '';
+        document.getElementById('prodVenta').value = '';
+        document.getElementById('btnCancelarProd').classList.add('hidden');
+        document.getElementById('btnGuardarProd').textContent = 'Guardar Producto';
+    }
+
+    async function eliminarProducto(id) {
+        if(confirm('¿Eliminar este producto? También se borrará su stock y precios asociados.')) {
+            const { error } = await supabaseClient.from('productos').delete().eq('id', id);
+            if(!error) cargarProductos();
+            else alert('Error al eliminar: ' + error.message);
+        }
+    }
+
+    function autocompletarProducto() {
+        // Función placeholder para el autocompletar (si se necesita futuro)
     }
 
 </script>
