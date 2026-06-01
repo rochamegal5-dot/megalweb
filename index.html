@@ -753,6 +753,7 @@
     }
 
     // --- INFORME HISTORIAL (SIN ERRORES DE SINTAXIS) ---
+
     async function generarInforme() {
         try {
             const repId = document.getElementById('histRepartidorId').value;
@@ -768,10 +769,10 @@
             const startDate = new Date(fecha + 'T00:00:00');
             const endDate = new Date(fecha + 'T23:59:59');
 
-            // SISTEMA DE PAGINACIÓN: Traer TODOS los registros del día sin límite
+            // SISTEMA DE PAGINACIÓN: Traer TODOS los registros del día sin límite de Supabase
             let allData = [];
             let page = 0;
-            const limit = 1000; // Supabase permite hasta 1000 por defecto
+            const limit = 1000; 
             let hasMore = true;
 
             while(hasMore) {
@@ -798,7 +799,10 @@
                 page++;
             }
 
-          
+            // Aquí renombramos para no romper el resto de la función
+            const data = allData; 
+            if(data.length === 0) { alert('No hay datos de recorrido para esa fecha.'); return; }
+
             const { data: puntosRuta } = await supabaseClient.from('puntos_ruta').select('*');
 
             if(histMarkers) gpsMapHist.removeLayer(histMarkers);
@@ -822,7 +826,6 @@
                 const pTime = new Date(p.timestamp);
                 const speedKmh = p.velocidad * 3.6; 
 
-                // Cada 15 minutos
                 if (!lastTimeMarker || (pTime - lastTimeMarker) >= (15 * 60 * 1000)) {
                     const timeStr = pTime.toLocaleTimeString('es-UY', {hour: '2-digit', minute:'2-digit'});
                     const iconHtml = '<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc;">🕐 ' + timeStr + '</div>';
@@ -831,12 +834,10 @@
                     boundsCoords.push([p.latitud, p.longitud]);
                 }
 
-                // Cada 5 min en tabla
                 if (i > 0 && i % 60 === 0) {
                     incidents.push({ time: pTime, type: 'En Ruta', detail: 'Vel: ' + speedKmh.toFixed(0) + ' km/h', lat: p.latitud, lng: p.longitud, isRoutine: true });
                 }
 
-                // Exceso
                 if (speedKmh > 45) {
                     excesosCount++;
                     incidents.push({ time: pTime, type: 'Exceso Velocidad', detail: speedKmh.toFixed(1) + ' km/h', lat: p.latitud, lng: p.longitud });
@@ -844,7 +845,6 @@
                     boundsCoords.push([p.latitud, p.longitud]);
                 }
 
-                // Puntos de ruta
                 if (puntosRuta && puntosRuta.length > 0) {
                     puntosRuta.forEach(wp => {
                         const distToWp = gpsMapHist.distance(L.latLng(p.latitud, p.longitud), L.latLng(wp.latitud, wp.longitud));
@@ -858,7 +858,6 @@
                     });
                 }
 
-                // Detención
                 const isStopped = !p.en_movimiento || p.velocidad < 0.5; 
                 if (isStopped) {
                     if (!stopStartTime) { stopStartTime = pTime; stopStartIndex = i; }
@@ -884,7 +883,6 @@
                     }
                 }
 
-                // Distancia
                 if (i > 0) {
                     const prev = data[i-1];
                     const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud));
@@ -892,7 +890,6 @@
                 }
             }
 
-            // Pintar tabla (USANDO CONCATENACIÓN PARA EVITAR ERRORES DE COMILLAS)
             incidents.sort((a, b) => a.time - b.time);
             incidents.forEach(inc => {
                 const tr = document.createElement('tr');
@@ -907,7 +904,6 @@
                 
                 let mapLink = '';
                 if (inc.lat) {
-                    // Link seguro, sin comillas dentro de comillas
                     mapLink = '<a href="#" onclick="verIncidenteEnMapa(' + inc.lat + ', ' + inc.lng + '); return false;" class="text-blue-600 hover:underline text-xs ml-1">📍 Ver en mapa</a>';
                 }
                 
@@ -935,7 +931,7 @@
             alert("Error al generar informe: " + e.message);
         }
     }
-
+   
     function verIncidenteEnMapa(lat, lng) {
         if(gpsMapHist) {
             gpsMapHist.flyTo([lat, lng], 17, { duration: 1.5 });
