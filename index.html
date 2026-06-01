@@ -21,8 +21,8 @@
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex overflow-hidden">
-    <aside class="w-64 bg-blue-900 text-white flex flex-col shadow-lg flex-shrink-0">
-        <div class="p-4 border-b border-blue-800"><h2 class="text-lg font-bold">⛽ Gas ERP</h2></div>
+      <aside id="mainSidebar" class="w-64 bg-blue-900 text-white flex flex-col shadow-lg flex-shrink-0">
+       <div class="p-4 border-b border-blue-800"><h2 class="text-lg font-bold">⛽ Gas ERP</h2></div>
         <nav class="flex-1 p-4 space-y-2">
             <button onclick="mostrarSeccion('resumen', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition bg-blue-800 font-bold">📊 Resumen</button>
             <button onclick="mostrarSeccion('productos', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">📦 Productos</button>
@@ -33,15 +33,15 @@
             <button onclick="mostrarSeccion('finanzas', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🏦 Finanzas</button>
          <div style="display: flex; flex-direction: column; width: 100%; margin-top: 10px;">
             <button onclick="mostrarSeccion('marketing', this)" class="nav-btn" style="width: 100%; text-align: left; margin-bottom: 8px; padding: 8px;">📣 Marketing IA</button>
-            <button onclick="mostrarSeccion('gps', this)" class="nav-btn" style="width: 100%; text-align: left; padding: 8px;">📍 Rastreo GPS</button>
-            <button onclick="mostrarSeccion('repartidores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🛵 Repartidores</button>       
+             <button onclick="abrirRastreoGPS()" class="nav-btn" style="width: 100%; text-align: left; padding: 8px; cursor:pointer;">📍 Rastreo GPS</button>
+             <button onclick="mostrarSeccion('repartidores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🛵 Repartidores</button>       
             </div>
             </nav>
         <div class="p-4 border-t border-blue-800 text-sm"><p>Versión 2.0 - GasTrack</p></div>
     </aside>
     <div class="flex-1 flex flex-col overflow-y-auto">
-        <header class="bg-white p-4 shadow-sm border-b flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800">Sistema de Gestión de Gas</h1>
+        <header id="mainHeader" class="bg-white p-4 shadow-sm border-b flex justify-between items-center">
+             <h1 class="text-xl font-bold text-gray-800">Sistema de Gestión de Gas</h1>
             <div id="headerStatus" class="text-sm text-gray-500 flex items-center gap-2">
                 <div id="headerDot" class="w-2 h-2 rounded-full bg-gray-400"></div>
                 Conectando a Supabase...
@@ -933,7 +933,41 @@
         }
     }
    
-  
+      // ==========================================
+    // ABRIR RASTREO EN NUEVA VENTANA
+    // ==========================================
+    function abrirRastreoGPS() {
+        // Obtener la URL actual y agregarle el parámetro ?mode=gps
+        const currentUrl = window.location.href.split('?')[0];
+        const gpsUrl = currentUrl + '?mode=gps';
+        
+        // Abrir en una nueva pestaña
+        window.open(gpsUrl, '_blank');
+    }
+
+    // Detectar si estamos en modo GPS pantalla completa al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isGpsMode = urlParams.get('mode') === 'gps';
+
+        if (isGpsMode) {
+            // Ocultar el menú lateral y el encabezado
+            const sidebar = document.getElementById('mainSidebar');
+            const header = document.getElementById('mainHeader');
+            if(sidebar) sidebar.style.display = 'none';
+            if(header) header.style.display = 'none';
+            
+            // Ajustar el contenedor principal para que ocupe todo el ancho
+            const mainContainer = document.querySelector('.flex-1.flex.flex-col');
+            if(mainContainer) {
+                mainContainer.style.width = '100%';
+                mainContainer.style.margin = '0';
+            }
+
+            // Forzar la visualización de la sección GPS
+            mostrarSeccion('gps');
+        }
+    });
      
 </script>
 </body>
