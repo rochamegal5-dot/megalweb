@@ -245,6 +245,78 @@
         </div>
      
 </div>
+
+       <!-- PROVEEDORES Y REMITOS (MODIFICADO) -->
+            <div id="view-proveedores" class="view-section hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">🚚 Proveedores y Remitos</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Formulario Proveedor -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Datos del Proveedor</h3>
+                        <input type="hidden" id="provIdEditando">
+                        <div class="grid grid-cols-1 gap-3">
+                            <div><label class="block text-sm font-medium text-gray-700">Nombre / Razón Social *</label><input type="text" id="provNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">RUT / CUIT</label><input type="text" id="provCuit" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Contacto</label><input type="text" id="provContacto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Teléfono</label><input type="text" id="provTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Dirección</label><input type="text" id="provDireccion" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase"></div>
+                            <button onclick="guardarProveedor()" class="mt-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer w-full">Guardar Proveedor</button>
+                        </div>
+                    </div>
+
+                    <!-- Formulario Remito (4 Espacios Fijos) -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">📥 Cargar Remito (Actualiza Stock)</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div><label class="block text-sm font-medium text-gray-700">Proveedor *</label><select id="remProvId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Nº Remito *</label><input type="text" id="remNumero" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                        </div>
+
+                        <p class="text-xs text-gray-500 mb-2">Ingresa cantidades en los productos que se movieron.</p>
+                        
+                        <!-- Producto 1: 13kg -->
+                        <input type="hidden" id="remProdId1">
+                        <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                            <div class="col-span-1 font-bold text-gray-800 text-sm">Garrafa 13kg</div>
+                            <div><label class="block text-xs text-center text-green-700 font-bold">Entran Llenas</label><input type="number" id="remLlenas1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><label class="block text-xs text-center text-gray-700 font-bold">Salen Vacías</label><input type="number" id="remVacias1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><label class="block text-xs text-center text-red-700 font-bold">Salen Defect.</label><input type="number" id="remDefect1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        </div>
+
+                        <!-- Producto 2: 11kg -->
+                        <input type="hidden" id="remProdId2">
+                        <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                            <div class="col-span-1 font-bold text-gray-800 text-sm">Garrafa 11kg</div>
+                            <div><input type="number" id="remLlenas2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remVacias2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remDefect2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        </div>
+
+                        <!-- Producto 3: 45kg -->
+                        <input type="hidden" id="remProdId3">
+                        <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                            <div class="col-span-1 font-bold text-gray-800 text-sm">Tubos 45kg</div>
+                            <div><input type="number" id="remLlenas3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remVacias3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remDefect3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        </div>
+
+                        <!-- Producto 4: Tubo 43.5 -->
+                        <input type="hidden" id="remProdId4">
+                        <div class="grid grid-cols-4 gap-2 mb-3 items-center bg-gray-50 p-2 rounded border">
+                            <div class="col-span-1 font-bold text-gray-800 text-sm">Tubos 43.5kg</div>
+                            <div><input type="number" id="remLlenas4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remVacias4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                            <div><input type="number" id="remDefect4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        </div>
+
+                        <button onclick="guardarRemito()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-bold cursor-pointer w-full">📥 Procesar Remito y Actualizar Stock</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Proveedores Cargados</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">RUT</th><th class="p-2 border">Teléfono</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProveedores"></tbody></table></div>
+            </div>
         
 
         </main>
@@ -938,7 +1010,189 @@
             L.popup().setLatLng([lat, lng]).setContent("<b>Incidente</b>").openOn(gpsMapHist);
         }
     } 
-   
+       // ==========================================
+    // MÓDULO PROVEEDORES Y REMITOS
+    // ==========================================
+    let productosCache = []; // Cache local de productos
+
+    async function cargarModuloProveedores() {
+        await cargarProveedores();
+        await cargarProductosParaRemito();
+    }
+
+    // --- PROVEEDORES CRUD ---
+    async function cargarProveedores() {
+        const { data, error } = await supabaseClient.from('proveedores').select('*').order('nombre');
+        if(error) { console.error(error); return; }
+        
+        const tbody = document.getElementById('tablaProveedores');
+        tbody.innerHTML = '';
+        const selectProv = document.getElementById('remProvId');
+        selectProv.innerHTML = '<option value="">-- Seleccionar --</option>';
+
+        data.forEach(p => {
+            // Fila de tabla
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border font-bold">${p.nombre}</td>
+                <td class="p-2 border">${p.cuit || '-'}</td>
+                <td class="p-2 border">${p.telefono || '-'}</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="editarProveedor('${p.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600 cursor-pointer">✏️ Editar</button>
+                    <button onclick="eliminarProveedor('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 cursor-pointer">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            // Opción de select
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nombre;
+            selectProv.appendChild(opt);
+        });
+    }
+
+    async function guardarProveedor() {
+        const id = document.getElementById('provIdEditando').value;
+        const nombre = document.getElementById('provNombre').value.trim();
+        const cuit = document.getElementById('provCuit').value.trim();
+        const contacto = document.getElementById('provContacto').value.trim();
+        const telefono = document.getElementById('provTelefono').value.trim();
+        const direccion = document.getElementById('provDireccion').value.trim();
+
+        if(!nombre) { alert('El nombre es obligatorio'); return; }
+
+        const provData = { nombre, cuit, contacto, telefono, direccion };
+
+        let error;
+        if(id) {
+            ({ error } = await supabaseClient.from('proveedores').update(provData).eq('id', id));
+        } else {
+            ({ error } = await supabaseClient.from('proveedores').insert(provData));
+        }
+
+        if(error) { alert('Error: ' + error.message); return; }
+        
+        limpiarFormProveedor();
+        cargarProveedores();
+    }
+
+    async function editarProveedor(id) {
+        const { data, error } = await supabaseClient.from('proveedores').select('*').eq('id', id).single();
+        if(error) { alert('Error'); return; }
+        
+        document.getElementById('provIdEditando').value = data.id;
+        document.getElementById('provNombre').value = data.nombre;
+        document.getElementById('provCuit').value = data.cuit || '';
+        document.getElementById('provContacto').value = data.contacto || '';
+        document.getElementById('provTelefono').value = data.telefono || '';
+        document.getElementById('provDireccion').value = data.direccion || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function limpiarFormProveedor() {
+        document.getElementById('provIdEditando').value = '';
+        document.getElementById('provNombre').value = '';
+        document.getElementById('provCuit').value = '';
+        document.getElementById('provContacto').value = '';
+        document.getElementById('provTelefono').value = '';
+        document.getElementById('provDireccion').value = '';
+    }
+
+    async function eliminarProveedor(id) {
+        if(confirm('¿Eliminar este proveedor?')) {
+            const { error } = await supabaseClient.from('proveedores').delete().eq('id', id);
+            if(!error) cargarProveedores();
+            else alert('Error al eliminar');
+        }
+    }
+
+    // --- PRODUCTOS Y REMITOS ---
+    async function cargarProductosParaRemito() {
+        const { data, error } = await supabaseClient.from('productos').select('*').order('nombre');
+        if(error) { console.error(error); return; }
+        productosCache = data;
+
+        // Mapear los productos a los inputs ocultos del formulario según el tipo
+        data.forEach(p => {
+            if(p.tipo === 'garrafa_13') document.getElementById('remProdId1').value = p.id;
+            if(p.tipo === 'garrafa_11') document.getElementById('remProdId2').value = p.id;
+            if(p.tipo === 'garrafa_45') document.getElementById('remProdId3').value = p.id;
+            if(p.tipo === 'tubo_43') document.getElementById('remProdId4').value = p.id;
+        });
+    }
+
+    async function guardarRemito() {
+        const provId = document.getElementById('remProvId').value;
+        const remNumero = document.getElementById('remNumero').value.trim();
+        if(!provId || !remNumero) { alert('Completá Proveedor y Nº de Remito'); return; }
+
+        // 1. Crear el Remito principal
+        const { data: remitoData, error: remError } = await supabaseClient.from('remitos').insert({
+            proveedor_id: provId, numero: remNumero
+        }).select().single();
+        
+        if(remError) { alert('Error al crear remito: ' + remError.message); return; }
+        const remitoId = remitoData.id;
+
+        // 2. Procesar los 4 items y actualizar stock
+        let stockUpdates = []; // Para actualizar al final
+
+        for (let i = 1; i <= 4; i++) {
+            const prodId = document.getElementById(`remProdId${i}`).value;
+            const entran = parseInt(document.getElementById(`remLlenas${i}`).value) || 0;
+            const salenVac = parseInt(document.getElementById(`remVacias${i}`).value) || 0;
+            const salenDef = parseInt(document.getElementById(`remDefect${i}`).value) || 0;
+
+            if(entran > 0 || salenVac > 0 || salenDef > 0) {
+                // Insertar detalle del remito
+                await supabaseClient.from('remito_items').insert({
+                    remito_id: remitoId,
+                    producto_id: prodId,
+                    entran_llenas: entran,
+                    salen_vacias: salenVac,
+                    salen_defectuosas: salenDef
+                });
+
+                // Preparar actualización de stock
+                stockUpdates.push({
+                    producto_id: prodId,
+                    sumar_llenas: entran,
+                    restar_vacias: salenVac + salenDef, // Las defectuosas también salen del stock de vacías
+                    sumar_defectuosas: salenDef
+                });
+
+                // Resetear inputs
+                document.getElementById(`remLlenas${i}`).value = 0;
+                document.getElementById(`remVacias${i}`).value = 0;
+                document.getElementById(`remDefect${i}`).value = 0;
+            }
+        }
+
+        // 3. Actualizar Stock en Depósito
+        for (const upd of stockUpdates) {
+            // Obtener stock actual
+            const { data: stockActual } = await supabaseClient.from('stock_deposito').select('*').eq('producto_id', upd.producto_id).single();
+            
+            if(stockActual) {
+                const newLlenas = stockActual.llenas + upd.sumar_llenas;
+                const newVacias = Math.max(0, stockActual.vacias - upd.restar_vacias);
+                const newDefect = stockActual.defectuosas + upd.sumar_defectuosas;
+
+                await supabaseClient.from('stock_deposito').update({
+                    llenas: newLlenas,
+                    vacias: newVacias,
+                    defectuosas: newDefect
+                }).eq('producto_id', upd.producto_id);
+            }
+        }
+
+        document.getElementById('remNumero').value = '';
+        alert('¡Remito procesado y stock actualizado!');
+        
+        // Recargar módulos afectados
+        if(typeof cargarStock === 'function') cargarStock(); // Si la función de stock existe
+    }
 
 </script>
 </body>
