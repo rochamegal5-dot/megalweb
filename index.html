@@ -735,11 +735,10 @@
     let histMarkers = L.layerGroup();
     const RADIO_PUNTO_RUTA = 50; // Metros para considerar que pasó por el punto
 
-        async function generarInformeDiario() {
+    async function generarInformeDiario() {
         try {
             const repId = document.getElementById('histRepartidorId').value;
             const fecha = document.getElementById('histFecha').value;
-
             
             if(!repId || !fecha) { 
                 alert('Por favor, seleccioná un repartidor y una fecha.'); 
@@ -747,28 +746,32 @@
             }
 
             const rep = repartidores.get(repId);
-            if(!rep) { alert('Repartidor no encontrado en la memoria'); return; }
-                        const histNameEl = document.getElementById('histNombreRep');
+            if(!rep) { alert('Repartidor no encontrado'); return; }
+            
+            const histNameEl = document.getElementById('histNombreRep');
             if(histNameEl) histNameEl.textContent = rep.nombre;
-                
-             const startOfDay = `${fecha}T00:00:00.000Z`;
-            const endOfDay = `${fecha}T23:59:59.999Z`;
 
-            // Consultar Supabase
+            // Calcular inicio y fin del día seleccionado (Ajustado a zona horaria de Uruguay UTC-3)
+            const startDate = new Date(`${fecha}T00:00:00`);
+            const endDate = new Date(`${fecha}T23:59:59`);
+            const startOfDay = startDate.toISOString();
+            const endOfDay = endDate.toISOString();
+
+            // Consultar Supabase SIN LÍMITE para traer todo el día
             const { data, error } = await supabaseClient
                 .from('ubicaciones')
                 .select('*')
                 .eq('repartidor_id', repId)
                 .gte('timestamp', startOfDay)
                 .lte('timestamp', endOfDay)
-                .order('timestamp', { ascending: true });
+                .order('timestamp', { ascending: true })
+                .limit(10000); // Subimos el límite para que traiga todo el día
 
             if(error) throw new Error('Supabase: ' + error.message);
             if(data.length === 0) { alert('No hay datos de recorrido para esa fecha.'); return; }
 
             // Obtener Puntos de Ruta
-            const { data: puntosRuta, error: errorPuntos } = await supabaseClient.from('puntos_ruta').select('*');
-            if(errorPuntos) console.error("Error cargando puntos", errorPuntos);
+            const { data: puntosRuta } = await supabaseClient.from('puntos_ruta').select('*');
 
             // Limpiar mapa
             if(histMarkers) gpsMapHist.removeLayer(histMarkers);
@@ -777,7 +780,8 @@
             // Dibujar puntos de ruta
             if(puntosRuta && puntosRuta.length > 0) {
                 puntosRuta.forEach(pt => {
-                    L.circle([pt.latitud, pt.longitud], {radius: 50, color: '#1e40af', fillColor: '#93c5fd', fillOpacity: 0.3, weight: 1}).addTo(histMarkers);
+                    L.circle([pt.latitud, pt.longitud], {radius: 50, color: '#1e40af', fillColor: '#93c5fd', fillOpacity: 0.3, weight: 1})
+                     .bindPopup(`<b>Punto Ruta:</b> ${pt.nombre}`).addTo(histMarkers);
                 });
             }
 
@@ -788,8 +792,9 @@
             let detencionesCount = 0;
             let distanciaTotal = 0;
             let incidents = [];
+            let lastTimeMarker = null;
 
-            // Dibujar la línea de recorrido
+            // Dibujar la línea de recorrido completa
             const coords = data.map(u => [u.latitud, u.longitud]);
             L.polyline(coords, { color: rep.color, weight: 4, opacity: 0.8 }).addTo(histMarkers);
 
@@ -802,14 +807,27 @@
                 const pTime = new Date(p.timestamp);
                 const speedKmh = p.velocidad * 3.6; 
 
-                // EXCESO DE VELOCIDAD
+                // --- MARCADORES DE TIEMPO CADA 15 MINUTOS PARA NAVEGAR ---
+                if (!lastTimeMarker || (pTime - lastTimeMarker) >= (15 * 60 * 1000)) {
+                    const timeStr = pTime.toLocaleTimeString('es-UY', {hour: '2-digit', minute:'2-digit'});
+                    L.marker([p.latitud, p.longitud], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc; box-shadow:1px 1px 3px rgba(0,0,0,0.2);">🕐 ${timeStr}</div>`,
+                            iconAnchor: [0, 20]
+                        })
+                    }).addTo(histMarkers);
+                    lastTimeMarker = pTime;
+                }
+
+                // --- DETECCIÓN DE EXCESO DE VELOCIDAD ---
                 if (speedKmh > 45) {
                     excesosCount++;
                     incidents.push({ time: pTime, type: 'Exceso de Velocidad', detail: `${speedKmh.toFixed(1)} km/h`, lat: p.latitud, lng: p.longitud });
                     L.circleMarker([p.latitud, p.longitud], {radius: 6, color: '#dc2626', fillColor: '#fca5a5', fillOpacity: 1}).addTo(histMarkers);
                 }
 
-                // VISITA A PUNTO DE RUTA
+                // --- DETECCIÓN DE VISITA A PUNTO DE RUTA ---
                 if (puntosRuta && puntosRuta.length > 0) {
                     puntosRuta.forEach(wp => {
                         const distToWp = gpsMapHist.distance(L.latLng(p.latitud, p.longitud), L.latLng(wp.latitud, wp.longitud));
@@ -824,7 +842,7 @@
                     });
                 }
 
-                // DETENCIÓN PROLONGADA
+                // --- DETECCIÓN DE DETENCIÓN PROLONGADA ---
                 const isStopped = !p.en_movimiento || p.velocidad < 0.5; 
                 if (isStopped) {
                     if (!stopStartTime) { stopStartTime = pTime; stopStartIndex = i; }
@@ -852,7 +870,7 @@
                     }
                 }
 
-                // CÁLCULO DE DISTANCIA
+                // --- CÁLCULO DE DISTANCIA ---
                 if (i > 0) {
                     const prev = data[i-1];
                     const dist = gpsMapHist.distance(L.latLng(prev.latitud, prev.longitud), L.latLng(p.latitud, p.longitud));
@@ -877,7 +895,7 @@
                     <td class="p-2 border">${inc.detail} ${mapLink}</td>
                     <td class="p-2 border text-center text-gray-400 italic">Pendiente</td>
                 `;
-                tbody.appendChild(tr); // AQUÍ ESTABA EL ERROR ANTES
+                tbody.appendChild(tr);
             });
 
             if(incidents.length === 0) {
@@ -905,7 +923,7 @@
             L.popup().setLatLng([lat, lng]).setContent(`<b>${titulo}</b>`).openOn(gpsMapHist);
         }
     }
-    
+   
   
      
 </script>
