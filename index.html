@@ -908,7 +908,44 @@
         // Volver al panel principal
         mostrarSeccion('resumen');
     } 
-    
+        // ==========================================
+    // PANTALLA COMPLETA GPS
+    // ==========================================
+    function abrirRastreoPantallaCompleta() {
+        // Ocultar el menú lateral y el encabezado
+        const sidebar = document.getElementById('mainSidebar');
+        const header = document.getElementById('mainHeader');
+        if(sidebar) sidebar.style.display = 'none';
+        if(header) header.style.display = 'none';
+        
+        // Mostrar el botón de volver (si existe)
+        const btnVolver = document.getElementById('btnVolverERP');
+        if(btnVolver) btnVolver.classList.remove('hidden');
+        
+        // Cambiar a la sección GPS
+        mostrarSeccion('gps');
+        
+        // Arreglar el tamaño del mapa después de ocultar el menú
+        setTimeout(() => {
+            if(gpsMap) gpsMap.invalidateSize();
+            if(gpsMapHist) gpsMapHist.invalidateSize();
+        }, 300);
+    }
+
+    function volverAERP() {
+        // Mostrar nuevamente el menú y el encabezado
+        const sidebar = document.getElementById('mainSidebar');
+        const header = document.getElementById('mainHeader');
+        if(sidebar) sidebar.style.display = 'flex';
+        if(header) header.style.display = 'flex';
+        
+        // Ocultar el botón de volver
+        const btnVolver = document.getElementById('btnVolverERP');
+        if(btnVolver) btnVolver.classList.add('hidden');
+        
+        // Volver al panel principal
+        mostrarSeccion('resumen');
+    }
 </script>
 </body>
 </html>
