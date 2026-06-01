@@ -721,27 +721,35 @@
     }
 
     // --- INFORME HISTORIAL ---
-    async function generarInformeDiario() {
+        async function generarInformeDiario() {
+        alert("Iniciando generación de informe..."); // Si no ves esto, el JS está roto por otro lado
+
         try {
             const repId = document.getElementById('histRepartidorId').value;
             const fecha = document.getElementById('histFecha').value;
-            if(!repId || !fecha) { alert('Seleccioná un repartidor y una fecha.'); return; }
+            
+            if(!repId || !fecha) { 
+                alert('Por favor, seleccioná un repartidor y una fecha.'); 
+                return; 
+            }
 
             const rep = repartidores.get(repId);
-            if(!rep) { alert('Repartidor no encontrado'); return; }
+            if(!rep) { alert('Repartidor no encontrado en la memoria'); return; }
             
             const histNameEl = document.getElementById('histNombreRep');
             if(histNameEl) histNameEl.textContent = rep.nombre;
 
             const startDate = new Date(`${fecha}T00:00:00`);
             const endDate = new Date(`${fecha}T23:59:59`);
+            const startOfDay = startDate.toISOString();
+            const endOfDay = endDate.toISOString();
 
             const { data, error } = await supabaseClient
                 .from('ubicaciones')
                 .select('*')
                 .eq('repartidor_id', repId)
-                .gte('timestamp', startDate.toISOString())
-                .lte('timestamp', endDate.toISOString())
+                .gte('timestamp', startOfDay)
+                .lte('timestamp', endOfDay)
                 .order('timestamp', { ascending: true })
                 .limit(50000);
 
@@ -774,7 +782,7 @@
                 if (!lastTimeMarker || (pTime - lastTimeMarker) >= (15 * 60 * 1000)) {
                     const timeStr = pTime.toLocaleTimeString('es-UY', {hour: '2-digit', minute:'2-digit'});
                     L.marker([p.latitud, p.longitud], {
-                        icon: L.divIcon({ className: '', html: `<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc; box-shadow:1px 1px 3px rgba(0,0,0,0.2);">🕐 ${timeStr}</div>`, iconAnchor: [0, 20] })
+                        icon: L.divIcon({ className: '', html: `<div style="background:white; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:bold; border:1px solid #ccc;">🕐 ${timeStr}</div>`, iconAnchor: [0, 20] })
                     }).addTo(histMarkers);
                     lastTimeMarker = pTime;
                     boundsCoords.push([p.latitud, p.longitud]);
@@ -852,12 +860,16 @@
                 gpsMapHist.fitBounds(L.latLngBounds(boundsCoords).pad(0.2));
                 setTimeout(() => { gpsMapHist.invalidateSize(); }, 200);
             }
+            
+            alert("¡Informe generado con éxito!"); 
+
         } catch(e) {
             console.error("Error generando informe:", e);
             alert("Error al generar informe: " + e.message);
         }
     }
 
+ 
     function verIncidenteEnMapa(lat, lng, titulo) {
         if(gpsMapHist) {
             gpsMapHist.flyTo([lat, lng], 17, { duration: 1.5 });
