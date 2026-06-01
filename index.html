@@ -85,8 +85,81 @@
                 <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Productos</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">Tipo</th><th class="p-2 border">Costo</th><th class="p-2 border">Venta Base</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProductos"></tbody></table></div>
             </div>   
 
-            
-            <div id="view-clientes" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">Gestión de Clientes</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+            <!-- SECCIÓN: CLIENTES V12 -->
+            <div id="view-clientes" class="view-section hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Gestión de Clientes</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input type="hidden" id="cliIdEditando">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tipo de Cliente *</label>
+                            <select id="cliTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white">
+                                <option value="particular">Particular Común</option><option value="particular_mides">Particular Mides</option><option value="comercio">Comercio Común</option><option value="comercio_mides">Comercio Mides</option>
+                            </select>
+                        </div>
+                        <div class="relative">
+                            <label class="block text-sm font-medium text-gray-700">Teléfono * (Buscar existente)</label>
+                            <input type="text" id="cliTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Obligatorio" oninput="autocompletarClientePorTelefono()">
+                            <div id="dropCliTelefono" class="autocomplete-list hidden"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="cliEmail" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="cliente@correo.com">
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">C.I. / RUT</label><input type="text" id="cliCI" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Opcional"></div>
+                        
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">👤 Datos Personales</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">1er Nombre</label><input type="text" id="cliNombre1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Juan"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">2do Nombre</label><input type="text" id="cliNombre2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Carlos"></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">1er Apellido</label><input type="text" id="cliApellido1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Pérez" oninput="autocompletarApellido()"><div id="dropCliApellido1" class="autocomplete-list hidden"></div></div>
+                                <div><label class="block text-sm font-medium text-gray-700">2do Apellido</label><input type="text" id="cliApellido2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Gómez"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">📍 Dirección de Entrega</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">País</label><input type="text" id="cliPais" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 uppercase" value="URUGUAY" readonly></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">Departamento</label><input type="text" id="cliDepto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="MONTEVIDEO" oninput="autocompletarDepto()"><div id="dropCliDepto" class="autocomplete-list hidden"></div></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">Ciudad / Localidad</label><input type="text" id="cliCiudad" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="PUNTA CARRETAS" oninput="autocompletarCiudad()"><div id="dropCliCiudad" class="autocomplete-list hidden"></div></div>
+                                <div class="relative md:col-span-2"><label class="block text-sm font-medium text-gray-700">Calle</label><input type="text" id="cliCalle" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="RIVERA" oninput="autocompletarCalle()"><div id="dropCliCalle" class="autocomplete-list hidden"></div></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Nº</label><input type="text" id="cliNumero" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="1234"></div>
+                                <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Complejo / Edificio</label><input type="text" id="cliComplejo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="COMPLEJO LOS PINOS"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Apto / Unidad</label><input type="text" id="cliApto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="2B"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Entre calle 1</label><input type="text" id="cliEntre1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="MISIONES"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Entre calle 2</label><input type="text" id="cliEntre2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="ARTIGAS"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">🗺️ Ubicación Exacta (GPS)</h4>
+                            <div class="flex gap-4 items-end">
+                                <div class="flex-1"><label class="block text-xs font-medium text-gray-700">Latitud</label><input type="number" step="any" id="cliLatitud" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50" readonly></div>
+                                <div class="flex-1"><label class="block text-xs font-medium text-gray-700">Longitud</label><input type="number" step="any" id="cliLongitud" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50" readonly></div>
+                                <button onclick="buscarUbicacionPorDireccion()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-bold text-sm cursor-pointer">🗺️ Buscar Dir. en Mapa</button>
+                                <button onclick="obtenerUbicacionGPS()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-bold text-sm cursor-pointer">📍 Usar mi GPS</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <input type="checkbox" id="cliFiado" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="cliFiado" class="ml-2 text-sm font-medium text-gray-700">Permite Cuenta Corriente (Fiado)</label>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 mt-6">
+                        <button onclick="guardarCliente()" id="btnGuardarCli" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Cliente</button>
+                        <button onclick="cancelarEdicionCli()" id="btnCancelarCli" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Clientes</h3>
+                    <table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre Completo</th><th class="p-2 border">Teléfono</th><th class="p-2 border">Email</th><th class="p-2 border">Tipo</th><th class="p-2 border">Dirección</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaClientes"></tbody></table>
+                </div>
+            </div>
+
+        
 
                <!-- PROVEEDORES Y REMITOS (MODIFICADO) -->
          <div id="view-proveedores" class="view-section hidden">
@@ -1310,6 +1383,202 @@
         // Función placeholder para el autocompletar (si se necesita futuro)
     }
 
+        // ==========================================
+    // MÓDULO CLIENTES
+    // ==========================================
+    async function cargarModuloClientes() {
+        await cargarClientes();
+    }
+
+    async function cargarClientes() {
+        const { data, error } = await supabaseClient.from('clientes').select('*').order('apellido1');
+        if(error) { console.error(error); return; }
+        
+        const tbody = document.getElementById('tablaClientes');
+        tbody.innerHTML = '';
+
+        data.forEach(c => {
+            const nombreCompleto = `${c.apellido1 || ''} ${c.apellido2 || ''}, ${c.nombre1 || ''} ${c.nombre2 || ''}`.replace(/\s+/g, ' ').trim();
+            const direccion = `${c.calle || ''} ${c.numero || ''} ${c.apto ? 'Apto: '+c.apto : ''} ${c.complejo ? c.complejo : ''}`.replace(/\s+/g, ' ').trim();
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border font-bold">${nombreCompleto || '-'}</td>
+                <td class="p-2 border">${c.telefono || '-'}</td>
+                <td class="p-2 border text-xs">${c.email || '-'}</td>
+                <td class="p-2 border text-xs">${c.tipo || '-'}</td>
+                <td class="p-2 border text-xs">${direccion || '-'}</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="editarCliente('${c.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600 cursor-pointer">✏️</button>
+                    <button onclick="eliminarCliente('${c.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 cursor-pointer">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function guardarCliente() {
+        const id = document.getElementById('cliIdEditando').value;
+        
+        const cData = {
+            tipo: document.getElementById('cliTipo').value,
+            telefono: document.getElementById('cliTelefono').value.trim(),
+            email: document.getElementById('cliEmail').value.trim(),
+            ci: document.getElementById('cliCI').value.trim(),
+            nombre1: document.getElementById('cliNombre1').value.trim(),
+            nombre2: document.getElementById('cliNombre2').value.trim(),
+            apellido1: document.getElementById('cliApellido1').value.trim(),
+            apellido2: document.getElementById('cliApellido2').value.trim(),
+            pais: document.getElementById('cliPais').value.trim(),
+            depto: document.getElementById('cliDepto').value.trim(),
+            ciudad: document.getElementById('cliCiudad').value.trim(),
+            calle: document.getElementById('cliCalle').value.trim(),
+            numero: document.getElementById('cliNumero').value.trim(),
+            complejo: document.getElementById('cliComplejo').value.trim(),
+            apto: document.getElementById('cliApto').value.trim(),
+            entre1: document.getElementById('cliEntre1').value.trim(),
+            entre2: document.getElementById('cliEntre2').value.trim(),
+            latitud: parseFloat(document.getElementById('cliLatitud').value) || null,
+            longitud: parseFloat(document.getElementById('cliLongitud').value) || null,
+            fiado: document.getElementById('cliFiado').checked
+        };
+
+        if(!cData.telefono) { alert('El teléfono es obligatorio'); return; }
+
+        let error;
+        if(id) {
+            ({ error } = await supabaseClient.from('clientes').update(cData).eq('id', id));
+        } else {
+            ({ error } = await supabaseClient.from('clientes').insert(cData));
+        }
+
+        if(error) { alert('Error: ' + error.message); return; }
+        
+        cancelarEdicionCli();
+        cargarClientes();
+    }
+
+    async function editarCliente(id) {
+        const { data, error } = await supabaseClient.from('clientes').select('*').eq('id', id).single();
+        if(error) { alert('Error'); return; }
+        
+        document.getElementById('cliIdEditando').value = data.id;
+        document.getElementById('cliTipo').value = data.tipo;
+        document.getElementById('cliTelefono').value = data.telefono || '';
+        document.getElementById('cliEmail').value = data.email || '';
+        document.getElementById('cliCI').value = data.ci || '';
+        document.getElementById('cliNombre1').value = data.nombre1 || '';
+        document.getElementById('cliNombre2').value = data.nombre2 || '';
+        document.getElementById('cliApellido1').value = data.apellido1 || '';
+        document.getElementById('cliApellido2').value = data.apellido2 || '';
+        document.getElementById('cliPais').value = data.pais || 'URUGUAY';
+        document.getElementById('cliDepto').value = data.depto || '';
+        document.getElementById('cliCiudad').value = data.ciudad || '';
+        document.getElementById('cliCalle').value = data.calle || '';
+        document.getElementById('cliNumero').value = data.numero || '';
+        document.getElementById('cliComplejo').value = data.complejo || '';
+        document.getElementById('cliApto').value = data.apto || '';
+        document.getElementById('cliEntre1').value = data.entre1 || '';
+        document.getElementById('cliEntre2').value = data.entre2 || '';
+        document.getElementById('cliLatitud').value = data.latitud || '';
+        document.getElementById('cliLongitud').value = data.longitud || '';
+        document.getElementById('cliFiado').checked = data.fiado || false;
+        
+        document.getElementById('btnCancelarCli').classList.remove('hidden');
+        document.getElementById('btnGuardarCli').textContent = '✏️ Actualizar Cliente';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelarEdicionCli() {
+        document.getElementById('cliIdEditando').value = '';
+        document.querySelectorAll('#view-clientes input[type="text"], #view-clientes input[type="email"], #view-clientes input[type="number"]').forEach(i => i.value = '');
+        document.getElementById('cliPais').value = 'URUGUAY';
+        document.getElementById('cliFiado').checked = false;
+        document.getElementById('btnCancelarCli').classList.add('hidden');
+        document.getElementById('btnGuardarCli').textContent = 'Guardar Cliente';
+    }
+
+    async function eliminarCliente(id) {
+        if(confirm('¿Eliminar este cliente?')) {
+            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
+            if(!error) cargarClientes();
+            else alert('Error al eliminar');
+        }
+    }
+
+    // --- AUTOCOMPLETAR CLIENTE POR TELÉFONO ---
+    async function autocompletarClientePorTelefono() {
+        const tel = document.getElementById('cliTelefono').value.trim();
+        if(tel.length < 3) return;
+
+        const { data } = await supabaseClient.from('clientes').select('*').ilike('telefono', `%${tel}%`).limit(1);
+        if(data && data.length > 0) {
+            const c = data[0];
+            document.getElementById('cliIdEditando').value = c.id;
+            document.getElementById('cliTipo').value = c.tipo;
+            document.getElementById('cliEmail').value = c.email || '';
+            document.getElementById('cliCI').value = c.ci || '';
+            document.getElementById('cliNombre1').value = c.nombre1 || '';
+            document.getElementById('cliNombre2').value = c.nombre2 || '';
+            document.getElementById('cliApellido1').value = c.apellido1 || '';
+            document.getElementById('cliApellido2').value = c.apellido2 || '';
+            document.getElementById('cliDepto').value = c.depto || '';
+            document.getElementById('cliCiudad').value = c.ciudad || '';
+            document.getElementById('cliCalle').value = c.calle || '';
+            document.getElementById('cliNumero').value = c.numero || '';
+            document.getElementById('cliComplejo').value = c.complejo || '';
+            document.getElementById('cliApto').value = c.apto || '';
+            document.getElementById('cliEntre1').value = c.entre1 || '';
+            document.getElementById('cliEntre2').value = c.entre2 || '';
+            document.getElementById('cliLatitud').value = c.latitud || '';
+            document.getElementById('cliLongitud').value = c.longitud || '';
+            document.getElementById('cliFiado').checked = c.fiado || false;
+            document.getElementById('btnCancelarCli').classList.remove('hidden');
+            document.getElementById('btnGuardarCli').textContent = '✏️ Actualizar Cliente';
+        }
+    }
+
+    // --- OBTENER COORDENADAS GPS DEL NAVEGADOR ---
+    function obtenerUbicacionGPS() {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('cliLatitud').value = pos.coords.latitude.toFixed(6);
+                document.getElementById('cliLongitud').value = pos.coords.longitude.toFixed(6);
+            }, () => alert('No se pudo obtener la ubicación'));
+        } else {
+            alert('Tu navegador no soporta geolocalización');
+        }
+    }
+
+    // --- BUSCAR DIRECCIÓN EN MAPA (Usando OpenStreetMap Nominatim) ---
+    async function buscarUbicacionPorDireccion() {
+        const calle = document.getElementById('cliCalle').value;
+        const numero = document.getElementById('cliNumero').value;
+        const ciudad = document.getElementById('cliCiudad').value || 'Rocha';
+        const depto = document.getElementById('cliDepto').value || 'Rocha';
+        const direccion = `${calle} ${numero}, ${ciudad}, ${depto}, Uruguay`;
+        
+        try {
+            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}`);
+            const data = await resp.json();
+            if(data.length > 0) {
+                document.getElementById('cliLatitud').value = parseFloat(data[0].lat).toFixed(6);
+                document.getElementById('cliLongitud').value = parseFloat(data[0].lon).toFixed(6);
+            } else {
+                alert('Dirección no encontrada. Ingrese manualmente o use el botón de GPS.');
+            }
+        } catch(e) {
+            alert('Error al buscar dirección');
+        }
+    }
+
+    // Stubs para los otros autocompletar (Departamento, Ciudad, Calle)
+    // En el futuro se pueden conectar a APIs deushed Nodes or Supabase lookups
+    function autocompletarApellido() {}
+    function autocompletarDepto() {}
+    function autocompletarCiudad() {}
+    function autocompletarCalle() {}
+    
 </script>
 </body>
 </html>
