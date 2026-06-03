@@ -1713,10 +1713,10 @@
     function autocompletarDepto() {}
     function autocompletarCiudad() {}
     function autocompletarCalle() {}
+// ==========================================
+// MÓDULO STOCK Y VENTAS - WEB (Código Limpio)
+// ==========================================
 
-// ==========================================
-// MÓDULO STOCK - WEB
-// ==========================================
 async function cargarModuloStock() {
     await cargarStockDeposito();
     await cargarTubos();
@@ -1724,48 +1724,41 @@ async function cargarModuloStock() {
 }
 
 async function cargarStockDeposito() {
-    const { data, error } = await supabaseClient.from('stock_deposito').select('*, productos(nombre, tipo)').order('producto_id');
-    if(error) { console.error(error); return; }
+    var resultado = await supabaseClient.from('stock_deposito').select('*, productos(nombre, tipo)').order('producto_id');
+    if(resultado.error) { console.error(resultado.error); return; }
+    var data = resultado.data;
     
-    const tbody = document.getElementById('tablaStockDeposito');
+    var tbody = document.getElementById('tablaStockDeposito');
+    if(!tbody) return;
     tbody.innerHTML = '';
     
-    // Reset resúmenes
-    ['13','11','45','43'].forEach(t => {
-        document.getElementById(`sum${t}Llenas`).textContent = '0';
-        document.getElementById(`sum${t}Vacias`).textContent = '0';
-        document.getElementById(`sum${t}Defect`).textContent = '0';
+    ['13','11','45','43'].forEach(function(t) {
+        document.getElementById('sum'+t+'Llenas').textContent = '0';
+        document.getElementById('sum'+t+'Vacias').textContent = '0';
+        document.getElementById('sum'+t+'Defect').textContent = '0';
     });
 
-    data.forEach(s => {
-        const total = (s.llenas || 0) + (s.vacias || 0) + (s.defectuosas || 0);
-        const tipo = s.productos?.tipo;
+    data.forEach(function(s) {
+        var total = (s.llenas || 0) + (s.vacias || 0) + (s.defectuosas || 0);
+        var tipo = s.productos ? s.productos.tipo : '';
         
-        // Mapear a tarjetas superiores
         if(tipo === 'garrafa_13') { document.getElementById('sum13Llenas').textContent = s.llenas; document.getElementById('sum13Vacias').textContent = s.vacias; document.getElementById('sum13Defect').textContent = s.defectuosas; }
         if(tipo === 'garrafa_11') { document.getElementById('sum11Llenas').textContent = s.llenas; document.getElementById('sum11Vacias').textContent = s.vacias; document.getElementById('sum11Defect').textContent = s.defectuosas; }
         if(tipo === 'garrafa_45') { document.getElementById('sum45Llenas').textContent = s.llenas; document.getElementById('sum45Vacias').textContent = s.vacias; document.getElementById('sum45Defect').textContent = s.defectuosas; }
         if(tipo === 'tubo_43') { document.getElementById('sum43Llenas').textContent = s.llenas; document.getElementById('sum43Vacias').textContent = s.vacias; document.getElementById('sum43Defect').textContent = s.defectuosas; }
 
-        tbody.innerHTML += `
-            <tr class="hover:bg-gray-50">
-                <td class="p-2 border font-bold">${s.productos?.nombre || 'Desconocido'}</td>
-                <td class="p-2 border text-center font-bold text-green-700">${s.llenas}</td>
-                <td class="p-2 border text-center font-bold text-gray-600">${s.vacias}</td>
-                <td class="p-2 border text-center font-bold text-red-700">${s.defectuosas}</td>
-                <td class="p-2 border text-center font-extrabold text-blue-700">${total}</td>
-            </tr>
-        `;
+        tbody.innerHTML += '<tr class="hover:bg-gray-50"><td class="p-2 border font-bold">'+(s.productos ? s.productos.nombre : '?')+'</td><td class="p-2 border text-center font-bold text-green-700">'+s.llenas+'</td><td class="p-2 border text-center font-bold text-gray-600">'+s.vacias+'</td><td class="p-2 border text-center font-bold text-red-700">'+s.defectuosas+'</td><td class="p-2 border text-center font-extrabold text-blue-700">'+total+'</td></tr>';
     });
 }
 
 async function cargarTubos() {
-    const { data: tubos } = await supabaseClient.from('tubos_gas').select('*').eq('activo', true).limit(1).maybeSingle();
-    const gasTexto = document.getElementById('gasRestanteTexto');
-    const gasBarra = document.getElementById('gasBarra');
+    var resultado = await supabaseClient.from('tubos_gas').select('*').eq('activo', true).limit(1).maybeSingle();
+    var tubos = resultado.data;
+    var gasTexto = document.getElementById('gasRestanteTexto');
+    var gasBarra = document.getElementById('gasBarra');
     
     if(tubos) {
-        const pct = (tubos.gas_restante / tubos.capacidad) * 100;
+        var pct = (tubos.gas_restante / tubos.capacidad) * 100;
         gasTexto.textContent = tubos.gas_restante + ' kg';
         gasBarra.style.width = pct + '%';
         if(pct < 20) gasBarra.className = 'bg-red-600 h-4 rounded-full transition-all duration-500';
@@ -1776,70 +1769,66 @@ async function cargarTubos() {
         gasBarra.style.width = '0%';
     }
 }
+
 function cargarSelectAjuste() {
-    const select = document.getElementById('ajusteProdId');
+    var select = document.getElementById('ajusteProdId');
+    if(!select) return;
     select.innerHTML = '<option value="">-- Cargando... --</option>';
-    
-    // Siempre buscamos los productos actualizados de Supabase
-    supabaseClient.from('productos').select('*').order('nombre').then(({ data, error }) => {
-        if (error) { console.error(error); return; }
-        productosCache = data || []; // Actualizamos la caché global
+    supabaseClient.from('productos').select('*').order('nombre').then(function(res) {
+        if (res.error) { console.error(res.error); return; }
+        productosCache = res.data || [];
         select.innerHTML = '<option value="">-- Seleccionar --</option>';
-        productosCache.forEach(p => {
-            select.innerHTML += `<option value="${p.id}" data-nombre="${p.nombre}">${p.nombre}</option>`;
+        productosCache.forEach(function(p) {
+            select.innerHTML += '<option value="'+p.id+'" data-nombre="'+p.nombre+'">'+p.nombre+'</option>';
         });
     });
 }
-  
 
 async function ejecutarAjusteStock() {
-    const prodId = document.getElementById('ajusteProdId').value;
-    const estado = document.getElementById('ajusteEstado').value;
-    const signo = parseInt(document.getElementById('ajusteTipo').value);
-    const cantidad = parseInt(document.getElementById('ajusteCantidad').value) * signo;
-    const prodNombre = document.getElementById('ajusteProdId').options[document.getElementById('ajusteProdId').selectedIndex].dataset.nombre;
+    var prodId = document.getElementById('ajusteProdId').value;
+    var estado = document.getElementById('ajusteEstado').value;
+    var signo = parseInt(document.getElementById('ajusteTipo').value);
+    var cantidad = parseInt(document.getElementById('ajusteCantidad').value) * signo;
+    var prodNombre = document.getElementById('ajusteProdId').options[document.getElementById('ajusteProdId').selectedIndex].dataset.nombre;
 
     if(!prodId || isNaN(cantidad) || cantidad === 0) { alert('Datos inválidos'); return; }
 
-    const payload = { p_producto_id: prodId, p_llenas: 0, p_vacias: 0, p_defectuosas: 0 };
+    var payload = { p_producto_id: prodId, p_llenas: 0, p_vacias: 0, p_defectuosas: 0 };
     if(estado === 'llenas') payload.p_llenas = cantidad;
     if(estado === 'vacias') payload.p_vacias = cantidad;
     if(estado === 'defectuosas') payload.p_defectuosas = cantidad;
     
-    const { error } = await supabaseClient.rpc('modificar_stock_deposito', payload);
-    if(error) { alert('Error: ' + error.message); return; }
+    var resultado = await supabaseClient.rpc('modificar_stock_deposito', payload);
+    if(resultado.error) { alert('Error: ' + resultado.error.message); return; }
 
     await supabaseClient.from('movimientos_stock').insert({
         tipo_mov: 'ajuste_manual', producto_id: prodId, llenas: payload.p_llenas, vacias: payload.p_vacias, defectuosas: payload.p_defectuosas, observaciones: 'Ajuste manual desde Web'
     });
 
     alert('Ajuste aplicado');
-    if(typeof cargarModuloStock === 'function') cargarModuloStock();
+    cargarModuloStock();
 }
 
 async function cambiarTubo43() {
-    if(!confirm('¿Confirmar cambio de tubo? El actual pasa a vacío en depósito y se instala uno nuevo con 43.5kg.')) return;
-    
-    const { data: tubo } = await supabaseClient.from('tubos_gas').select('id, producto_id').eq('activo', true).limit(1).maybeSingle();
+    if(!confirm('¿Confirmar cambio de tubo? El actual pasa a vacío y se instala uno nuevo.')) return;
+    var resTubo = await supabaseClient.from('tubos_gas').select('id, producto_id').eq('activo', true).limit(1).maybeSingle();
+    var tubo = resTubo.data;
     if(!tubo) { alert('No hay tubo activo para cambiar.'); return; }
 
-    // 1. Desactivar viejo y sumar 1 vacía al depósito
     await supabaseClient.from('tubos_gas').update({ activo: false, gas_restante: 0 }).eq('id', tubo.id);
     if(tubo.producto_id) await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: tubo.producto_id, p_llenas: 0, p_vacias: 1, p_defectuosas: 0 });
 
-    // 2. Insertar nuevo tubo y restar 1 llena del depósito
     await supabaseClient.from('tubos_gas').insert({ gas_restante: 43.5, activo: true });
     if(tubo.producto_id) await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: tubo.producto_id, p_llenas: -1, p_vacias: 0, p_defectuosas: 0 });
 
     await supabaseClient.from('movimientos_stock').insert({ tipo_mov: 'cambio_tubo', producto_id: tubo.producto_id, observaciones: 'Cambio de tubo 43.5kg' });
 
     alert('Tubo cambiado y stock actualizado');
-    if(typeof cargarModuloStock === 'function') cargarModuloStock();
+    cargarModuloStock();
 }
 
-
 // ==========================================
-// MÓDULO VENTAS - WEB
+// VENTAS
 // ==========================================
 async function cargarModuloVentas() {
     await cargarSelectsVentas();
@@ -1848,75 +1837,49 @@ async function cargarModuloVentas() {
 }
 
 async function cargarSelectsVentas() {
-    // Repartidores
-    const { data: reps } = await supabaseClient.from('repartidores').select('*').eq('activo', true).order('nombre');
-    const selRep = document.getElementById('ventaRepartidorId');
+    var resRep = await supabaseClient.from('repartidores').select('*').eq('activo', true).order('nombre');
+    var selRep = document.getElementById('ventaRepartidorId');
     selRep.innerHTML = '<option value="">-- Seleccionar --</option>';
-    if(reps) reps.forEach(r => selRep.innerHTML += `<option value="${r.id}">${r.nombre}</option>`);
+    if(resRep.data) resRep.data.forEach(function(r) { selRep.innerHTML += '<option value="'+r.id+'">'+r.nombre+'</option>'; });
 
-    // Productos: Los buscamos directo de Supabase para asegurar que estén
-    const selProd = document.getElementById('ventaProductoId');
+    var selProd = document.getElementById('ventaProductoId');
     selProd.innerHTML = '<option value="">-- Cargando... --</option>';
-    
-    const { data: prods, error } = await supabaseClient.from('productos').select('*').order('nombre');
-    if (error) { console.error(error); return; }
-    
-    productosCache = prods || []; // Sincronizamos la caché
+    var resProd = await supabaseClient.from('productos').select('*').order('nombre');
+    if (resProd.error) { console.error(resProd.error); return; }
+    productosCache = resProd.data || [];
     selProd.innerHTML = '<option value="">-- Seleccionar --</option>';
-    productosCache.forEach(p => {
-        selProd.innerHTML += `<option value="${p.id}" data-precio="${p.precio_venta}" data-tipo="${p.tipo}">${p.nombre}</option>`;
+    productosCache.forEach(function(p) {
+        selProd.innerHTML += '<option value="'+p.id+'" data-precio="'+p.precio_venta+'" data-tipo="'+p.tipo+'">'+p.nombre+'</option>';
     });
-}
-  
-
-    // Productos
-    const selProd = document.getElementById('ventaProductoId');
-    selProd.innerHTML = '<option value="">-- Seleccionar --</option>';
-    if(typeof productosCache !== 'undefined') {
-        productosCache.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-precio="${p.precio_venta}" data-tipo="${p.tipo}">${p.nombre}</option>`);
-    }
 }
 
 function ajustarFormularioVenta() {
-    const tipo = document.getElementById('ventaTipo').value;
+    var tipo = document.getElementById('ventaTipo').value;
     document.getElementById('ventaRepartidorId').disabled = (tipo === 'mostrador');
     if(tipo === 'mostrador') document.getElementById('ventaRepartidorId').value = '';
     calcularTotalVenta();
 }
 
 function calcularTotalVenta() {
-    const modo = document.getElementById('ventaModo').value;
-    const prodSel = document.getElementById('ventaProductoId');
-    const precioBase = parseFloat(prodSel.options[prodSel.selectedIndex]?.dataset.precio || 0);
-    const tipoProd = prodSel.options[prodSel.selectedIndex]?.dataset.tipo || '';
-    const cantidad = parseInt(document.getElementById('ventaCantLlenas').value) || 1;
-    const kilos = parseFloat(document.getElementById('ventaKilos').value) || 3;
+    var modo = document.getElementById('ventaModo').value;
+    var prodSel = document.getElementById('ventaProductoId');
+    var precioBase = parseFloat(prodSel.options[prodSel.selectedIndex] ? prodSel.options[prodSel.selectedIndex].dataset.precio : 0);
+    var tipoProd = prodSel.options[prodSel.selectedIndex] ? prodSel.options[prodSel.selectedIndex].dataset.tipo : '';
+    var cantidad = parseInt(document.getElementById('ventaCantLlenas').value) || 1;
+    var kilos = parseFloat(document.getElementById('ventaKilos').value) || 3;
     
-    let total = 0;
-    let cantVacias = 0;
-    let cantDefect = 0;
-    let bloqueKilos = document.getElementById('bloqueKilosRecarga');
+    var total = 0, cantVacias = 0, cantDefect = 0;
+    var bloqueKilos = document.getElementById('bloqueKilosRecarga');
 
     if(modo === 'intercambio') {
-        total = precioBase * cantidad;
-        cantVacias = cantidad; // Devuelve vacía
-        bloqueKilos.classList.add('hidden');
+        total = precioBase * cantidad; cantVacias = cantidad; bloqueKilos.classList.add('hidden');
     } else if(modo === 'envase_gas') {
-        total = precioBase * cantidad * 1.5; // Precio más alto por llevarse el envase
-        cantVacias = 0; // No devuelve vacía
-        bloqueKilos.classList.add('hidden');
+        total = precioBase * cantidad * 1.5; cantVacias = 0; bloqueKilos.classList.add('hidden');
     } else if(modo === 'recarga_variable') {
-        total = (precioBase / 3) * kilos; // Precio proporcional al kilo
-        bloqueKilos.classList.remove('hidden');
-        if(tipoProd !== 'tubo_43') {
-            alert('La recarga variable solo aplica al Tubo 43.5kg');
-            document.getElementById('ventaModo').value = 'intercambio';
-            calcularTotalVenta(); return;
-        }
+        total = (precioBase / 3) * kilos; bloqueKilos.classList.remove('hidden');
+        if(tipoProd !== 'tubo_43') { alert('La recarga solo aplica al Tubo 43.5kg'); document.getElementById('ventaModo').value = 'intercambio'; calcularTotalVenta(); return; }
     } else if(modo === 'cambio_falla') {
-        total = 0;
-        cantDefect = cantidad; // Entrega defectuosa
-        bloqueKilos.classList.add('hidden');
+        total = 0; cantDefect = cantidad; bloqueKilos.classList.add('hidden');
     }
 
     document.getElementById('ventaCantVacias').value = cantVacias;
@@ -1926,49 +1889,43 @@ function calcularTotalVenta() {
 }
 
 async function procesarVenta() {
-    const tipoVenta = document.getElementById('ventaTipo').value;
-    const modo = document.getElementById('ventaModo').value;
-    const prodId = document.getElementById('ventaProductoId').value;
-    const clienteId = document.getElementById('ventaClienteId').value || null;
-    const repId = document.getElementById('ventaRepartidorId').value || null;
-    const cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
-    const cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
-    const cantDefect = parseInt(document.getElementById('ventaCantDefect').value) || 0;
-    const kilos = modo === 'recarga_variable' ? parseFloat(document.getElementById('ventaKilos').value) : 0;
-    const total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
-    const metodo = document.getElementById('ventaMetodoPago').value;
+    var tipoVenta = document.getElementById('ventaTipo').value;
+    var modo = document.getElementById('ventaModo').value;
+    var prodId = document.getElementById('ventaProductoId').value;
+    var clienteId = document.getElementById('ventaClienteId').value || null;
+    var repId = document.getElementById('ventaRepartidorId').value || null;
+    var cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
+    var cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
+    var cantDefect = parseInt(document.getElementById('ventaCantDefect').value) || 0;
+    var kilos = modo === 'recarga_variable' ? parseFloat(document.getElementById('ventaKilos').value) : 0;
+    var total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
+    var metodo = document.getElementById('ventaMetodoPago').value;
 
     if(!prodId) { alert('Seleccione un producto'); return; }
     if(tipoVenta === 'reparto' && !repId) { alert('Seleccione un repartidor'); return; }
 
-    // 1. Registrar Venta
-    const { data: ventaData, error: errVenta } = await supabaseClient.from('ventas').insert([{
+    var resVenta = await supabaseClient.from('ventas').insert([{
         origen: 'web', tipo_venta: modo, repartidor_id: repId, cliente_id: clienteId, producto_id: prodId,
         cantidad_llenas: cantLlenas, cantidad_vacias: cantVacias, cantidad_defectuosas: cantDefect,
         kilos_recarga: kilos, total: total, metodo_pago: metodo, estado: 'Cobrado'
     }]).select().single();
 
-    if(errVenta) { alert('Error al vender: ' + errVenta.message); return; }
+    if(resVenta.error) { alert('Error al vender: ' + resVenta.error.message); return; }
+    var ventaData = resVenta.data;
 
-    // 2. Actualizar Stock (Depósito o Camioneta)
     if(tipoVenta === 'mostrador') {
-        // Descuenta del depósito central
         await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias, p_defectuosas: cantDefect });
-        
-        // Si es recarga, bajamos el gas del tubo
         if(modo === 'recarga_variable' && kilos > 0) {
-            const { data: tuboAct } = await supabaseClient.from('tubos_gas').select('gas_restante, id').eq('activo', true).limit(1).maybeSingle();
-            if(tuboAct) {
-                const nuevoGas = Math.max(0, tuboAct.gas_restante - kilos);
-                await supabaseClient.from('tubos_gas').update({ gas_restante: nuevoGas }).eq('id', tuboAct.id);
+            var resTubo = await supabaseClient.from('tubos_gas').select('gas_restante, id').eq('activo', true).limit(1).maybeSingle();
+            if(resTubo.data) {
+                var nuevoGas = Math.max(0, resTubo.data.gas_restante - kilos);
+                await supabaseClient.from('tubos_gas').update({ gas_restante: nuevoGas }).eq('id', resTubo.data.id);
             }
         }
     } else {
-        // Descuenta de la camioneta
         await supabaseClient.rpc('modificar_stock_camioneta', { p_repartidor_id: repId, p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias });
     }
 
-    // 3. Auditar Movimiento
     await supabaseClient.from('movimientos_stock').insert({
         tipo_mov: 'venta_web', producto_id: prodId, repartidor_id: repId, 
         llenas: -cantLlenas, vacias: cantVacias, defectuosas: cantDefect, kilos_gas: -kilos,
@@ -1979,56 +1936,50 @@ async function procesarVenta() {
     document.getElementById('ventaCantLlenas').value = 1;
     document.getElementById('ventaClienteBusq').value = '';
     document.getElementById('ventaClienteId').value = '';
-    calcularTotalVenta(); // Reset
-    cargarModuloVentas(); // Refrescar
-    if(typeof cargarModuloStock === 'function') cargarModuloStock(); // Actualizar stock si está visible
+    calcularTotalVenta();
+    cargarModuloVentas(); 
+    if(typeof cargarModuloStock === 'function') cargarModuloStock(); 
 }
 
 async function cargarHistorialVentas() {
-    const hoy = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabaseClient.from('ventas').select('*, productos(nombre), clientes(nombre), repartidores(nombre)').gte('created_at', hoy).order('created_at', { ascending: false });
-    if(error) { console.error(error); return; }
+    var hoy = new Date().toISOString().split('T')[0];
+    var resultado = await supabaseClient.from('ventas').select('*, productos(nombre), clientes(nombre), repartidores(nombre)').gte('created_at', hoy).order('created_at', { ascending: false });
+    if(resultado.error || !resultado.data) return;
+    var data = resultado.data;
     
-    const tbody = document.getElementById('tablaVentasHoy');
+    var tbody = document.getElementById('tablaVentasHoy');
+    if(!tbody) return;
     tbody.innerHTML = '';
-    if(!data) return;
 
-    data.forEach(v => {
-        const hora = new Date(v.created_at).toLocaleTimeString('es-UY', {hour:'2-digit', minute:'2-digit'});
-        tbody.innerHTML += `
-            <tr class="hover:bg-gray-50">
-                <td class="p-2 border">${hora}</td>
-                <td class="p-2 border font-bold ${v.origen === 'app' ? 'text-blue-600' : 'text-green-600'}">${v.origen === 'app' ? '📱 App' : '🖥️ Web'}</td>
-                <td class="p-2 border">${v.clientes?.nombre || '-'} ${v.repartidores ? '('+v.repartidores.nombre+')' : ''}</td>
-                <td class="p-2 border">${v.productos?.nombre || '?'}</td>
-                <td class="p-2 border text-center font-bold text-green-700">${v.cantidad_llenas}</td>
-                <td class="p-2 border text-center font-bold text-gray-500">${v.cantidad_vacias}</td>
-                <td class="p-2 border text-center font-bold text-red-700">${v.cantidad_defectuosas}</td>
-                <td class="p-2 border text-xs">${v.metodo_pago}</td>
-                <td class="p-2 border text-right font-bold">$${v.total.toLocaleString('es-UY')}</td>
-            </tr>
-        `;
+    data.forEach(function(v) {
+        var hora = new Date(v.created_at).toLocaleTimeString('es-UY', {hour:'2-digit', minute:'2-digit'});
+        var origenTxt = v.origen === 'app' ? '📱 App' : '🖥️ Web';
+        var origenColor = v.origen === 'app' ? 'text-blue-600' : 'text-green-600';
+        var clienteTxt = (v.clientes ? v.clientes.nombre : '-') + (v.repartidores ? ' ('+v.repartidores.nombre+')' : '');
+        var prodTxt = v.productos ? v.productos.nombre : '?';
+        
+        tbody.innerHTML += '<tr class="hover:bg-gray-50"><td class="p-2 border">'+hora+'</td><td class="p-2 border font-bold '+origenColor+'">'+origenTxt+'</td><td class="p-2 border">'+clienteTxt+'</td><td class="p-2 border">'+prodTxt+'</td><td class="p-2 border text-center font-bold text-green-700">'+v.cantidad_llenas+'</td><td class="p-2 border text-center font-bold text-gray-500">'+v.cantidad_vacias+'</td><td class="p-2 border text-center font-bold text-red-700">'+v.cantidad_defectuosas+'</td><td class="p-2 border text-xs">'+v.metodo_pago+'</td><td class="p-2 border text-right font-bold">$'+v.total.toLocaleString('es-UY')+'</td></tr>';
     });
 }
 
 async function calcularCaja() {
-    const hoy = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabaseClient.from('ventas').select('*').gte('created_at', hoy);
-    if(error || !data) return;
+    var hoy = new Date().toISOString().split('T')[0];
+    var resultado = await supabaseClient.from('ventas').select('*').gte('created_at', hoy);
+    if(resultado.error || !resultado.data) return;
+    var data = resultado.data;
 
-    let localEfectivo=0, localTarjeta=0, localTrans=0, localFiado=0, localUnid=0;
-    let repEfectivo=0, repTarjeta=0, repTrans=0, repFiado=0, repUnid=0;
-    let uni13=0, uni11=0, uni45=0, kilos43=0;
+    var localEfectivo=0, localTarjeta=0, localTrans=0, localFiado=0, localUnid=0;
+    var repEfectivo=0, repTarjeta=0, repTrans=0, repFiado=0, repUnid=0;
+    var uni13=0, uni11=0, uni45=0, kilos43=0;
 
-    data.forEach(v => {
-        const prod = (typeof productosCache !== 'undefined') ? productosCache.find(p => p.id === v.producto_id) : null;
+    data.forEach(function(v) {
+        var prod = (typeof productosCache !== 'undefined') ? productosCache.find(function(p){ return p.id === v.producto_id; }) : null;
         if(prod) {
             if(prod.tipo === 'garrafa_13') uni13 += v.cantidad_llenas;
             if(prod.tipo === 'garrafa_11') uni11 += v.cantidad_llenas;
             if(prod.tipo === 'garrafa_45') uni45 += v.cantidad_llenas;
             if(prod.tipo === 'tubo_43') kilos43 += v.kilos_recarga;
         }
-
         if(v.origen === 'web') {
             localUnid += v.cantidad_llenas;
             if(v.metodo_pago === 'efectivo') localEfectivo += v.total;
@@ -2056,45 +2007,37 @@ async function calcularCaja() {
     document.getElementById('repFiado').textContent = "$"+repFiado.toLocaleString('es-UY');
     document.getElementById('repUnidades').textContent = repUnid;
 
-    const genEfectivo = localEfectivo + repEfectivo;
-    const genDigital = localTarjeta + repTarjeta + localTrans + repTrans;
-    const genFiado = localFiado + repFiado;
-    const genTotal = genEfectivo + genDigital + genFiado;
+    var genEfectivo = localEfectivo + repEfectivo;
+    var genDigital = localTarjeta + repTarjeta + localTrans + repTrans;
+    var genFiado = localFiado + repFiado;
+    var genTotal = genEfectivo + genDigital + genFiado;
 
     document.getElementById('genEfectivo').textContent = "$"+genEfectivo.toLocaleString('es-UY');
     document.getElementById('genDigital').textContent = "$"+genDigital.toLocaleString('es-UY');
     document.getElementById('genFiado').textContent = "$"+genFiado.toLocaleString('es-UY');
     document.getElementById('genTotal').textContent = "$"+genTotal.toLocaleString('es-UY');
-
     document.getElementById('genUni13').textContent = uni13;
     document.getElementById('genUni11').textContent = uni11;
     document.getElementById('genUni45').textContent = uni45;
     document.getElementById('genKilos43').textContent = kilos43;
 }
 
-function cerrarCajaDia() {
-    alert('Cierre de caja ejecutado. (Acá iría la lógica de bloquear ventas del día o generar el parte).');
-}
+function cerrarCajaDia() { alert('Cierre de caja ejecutado.'); }
 
-// Función para autocompletar cliente (la faltante que rompía el input)
 async function autocompletarClienteVenta() {
-    const input = document.getElementById('ventaClienteBusq');
-    const dropdown = document.getElementById('dropVentaCliente');
-    const termino = input.value.trim().toLowerCase();
-    
+    var input = document.getElementById('ventaClienteBusq');
+    var dropdown = document.getElementById('dropVentaCliente');
+    var termino = input.value.trim().toLowerCase();
     if (termino.length < 2) { dropdown.classList.add('hidden'); return; }
-
-    const { data, error } = await supabaseClient.from('clientes').select('id, nombre, apellido1').or(`nombre.ilike.%${termino}%,apellido1.ilike.%${termino}%,telefono.ilike.%${termino}%`).limit(5);
-    
-    if(error || !data || data.length === 0) { dropdown.classList.add('hidden'); return; }
-
+    var resultado = await supabaseClient.from('clientes').select('id, nombre, apellido1').or('nombre.ilike.%'+termino+'%,apellido1.ilike.%'+termino+'%,telefono.ilike.%'+termino+'%').limit(5);
+    if(resultado.error || !resultado.data || resultado.data.length === 0) { dropdown.classList.add('hidden'); return; }
     dropdown.innerHTML = '';
-    data.forEach(c => {
-        const nombreCompleto = `${c.apellido1 || ''} ${c.nombre || ''}`.trim();
-        const div = document.createElement('div');
+    resultado.data.forEach(function(c) {
+        var nombreCompleto = (c.apellido1 || '') + ' ' + (c.nombre || '');
+        var div = document.createElement('div');
         div.className = 'autocomplete-item';
         div.textContent = nombreCompleto;
-        div.onclick = () => {
+        div.onclick = function() {
             input.value = nombreCompleto;
             document.getElementById('ventaClienteId').value = c.id;
             dropdown.classList.add('hidden');
@@ -2104,14 +2047,12 @@ async function autocompletarClienteVenta() {
     dropdown.classList.remove('hidden');
 }
 
-// Cerrar dropdown si se hace clic fuera
 document.addEventListener('click', function(e) {
     if (!e.target.closest('#ventaClienteBusq') && !e.target.closest('#dropVentaCliente')) {
-        const dropdown = document.getElementById('dropVentaCliente');
+        var dropdown = document.getElementById('dropVentaCliente');
         if(dropdown) dropdown.classList.add('hidden');
     }
 });
-
 </script>
 </body>
 </html>
