@@ -1891,12 +1891,12 @@ function calcularTotalVenta() {
 async function procesarVenta() {
     var tipoVenta = document.getElementById('ventaTipo').value;
     var modo = document.getElementById('ventaModo').value;
-    var prodId = document.getElementById('ventaProductoId').value;
-    var clienteId = document.getElementById('ventaClienteId').value || null;
     
-    // --- FIX CRÍTICO: Si es mostrador o está vacío, forzar a NULL ---
+    // --- FIX: No usar parseInt() en los IDs, son UUID (texto) ---
+    var prodId = document.getElementById('ventaProductoId').value || null;
+    var clienteId = document.getElementById('ventaClienteId').value || null;
     var repIdInput = document.getElementById('ventaRepartidorId').value;
-    var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : parseInt(repIdInput);
+    var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : repIdInput; 
     // -------------------------------------------------------------
 
     var cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
@@ -1906,21 +1906,16 @@ async function procesarVenta() {
     var total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
     var metodo = document.getElementById('ventaMetodoPago').value;
 
-    // Asegurar que prodId y clienteId también sean null si están vacíos
     if(!prodId) { alert('Seleccione un producto'); return; }
     if(tipoVenta === 'reparto' && !repId) { alert('Seleccione un repartidor'); return; }
-    
-    // Convertir prodId a número (BIGINT) y clienteId a null si es vacío
-    prodId = parseInt(prodId);
-    clienteId = clienteId ? parseInt(clienteId) : null;
 
     // 1. Registrar Venta
     var ventaRegistro = {
         origen: 'web', 
         tipo_venta: modo, 
-        repartidor_id: repId, // Ahora es null si es mostrador
-        cliente_id: clienteId, 
-        producto_id: prodId,
+        repartidor_id: repId,      // UUID string o null
+        cliente_id: clienteId,     // UUID string o null
+        producto_id: prodId,       // UUID string
         cantidad_llenas: cantLlenas, 
         cantidad_vacias: cantVacias, 
         cantidad_defectuosas: cantDefect,
@@ -1930,12 +1925,9 @@ async function procesarVenta() {
         estado: 'Cobrado'
     };
 
-    console.log("Enviando a Supabase:", ventaRegistro); // Para ver en consola qué se manda
-
     var resVenta = await supabaseClient.from('ventas').insert([ventaRegistro]).select().single();
 
     if(resVenta.error) { 
-        console.error("Error detallado de Supabase:", resVenta.error);
         alert('Error al vender: ' + resVenta.error.message); 
         return; 
     }
@@ -1970,6 +1962,7 @@ async function procesarVenta() {
     cargarModuloVentas(); 
     if(typeof cargarModuloStock === 'function') cargarModuloStock(); 
 }
+  
     
 async function cargarHistorialVentas() {
     var hoy = new Date().toISOString().split('T')[0];
