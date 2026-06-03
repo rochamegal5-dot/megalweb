@@ -1895,12 +1895,10 @@ async function procesarVenta() {
     var tipoVenta = document.getElementById('ventaTipo').value;
     var modo = document.getElementById('ventaModo').value;
     
-    // --- FIX: No usar parseInt() en los IDs, son UUID (texto) ---
     var prodId = document.getElementById('ventaProductoId').value || null;
     var clienteId = document.getElementById('ventaClienteId').value || null;
     var repIdInput = document.getElementById('ventaRepartidorId').value;
-    var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : repIdInput; 
-    // -------------------------------------------------------------
+    var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : repIdInput;
 
     var cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
     var cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
@@ -1912,13 +1910,34 @@ async function procesarVenta() {
     if(!prodId) { alert('Seleccione un producto'); return; }
     if(tipoVenta === 'reparto' && !repId) { alert('Seleccione un repartidor'); return; }
 
+    // ==========================================
+    // VALIDACIÓN DE STOCK EN TIEMPO REAL
+    // ==========================================
+    var stockDisponible = 0;
+
+    if (tipoVenta === 'mostrador') {
+        // Verificar stock en DEPÓSITO
+        var resStock = await supabaseClient.from('stock_deposito').select('llenas').eq('producto_id', prodId).maybeSingle();
+        if (resStock.data) stockDisponible = resStock.data.llenas;
+    } else {
+        // Verificar stock en CAMIONETA
+        var resStock = await supabaseClient.from('stock_camioneta').select('llenas').eq('repartidor_id', repId).eq('producto_id', prodId).maybeSingle();
+        if (resStock.data) stockDisponible = resStock.data.llenas;
+    }
+
+    if (cantLlenas > stockDisponible) {
+        alert('Stock insuficiente. Solo quedan ' + stockDisponible + ' unidades llenas en ' + (tipoVenta === 'mostrador' ? 'depósito' : 'la camioneta') + '.');
+        return;
+    }
+    // ==========================================
+
     // 1. Registrar Venta
     var ventaRegistro = {
         origen: 'web', 
         tipo_venta: modo, 
-        repartidor_id: repId,      // UUID string o null
-        cliente_id: clienteId,     // UUID string o null
-        producto_id: prodId,       // UUID string
+        repartidor_id: repId,
+        cliente_id: clienteId,
+        producto_id: prodId,
         cantidad_llenas: cantLlenas, 
         cantidad_vacias: cantVacias, 
         cantidad_defectuosas: cantDefect,
@@ -1965,6 +1984,7 @@ async function procesarVenta() {
     cargarModuloVentas(); 
     if(typeof cargarModuloStock === 'function') cargarModuloStock(); 
 }
+   
   
     
 async function cargarHistorialVentas() {
