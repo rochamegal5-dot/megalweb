@@ -1812,19 +1812,31 @@ async function ejecutarAjusteStock() {
 async function cambiarTubo43() {
     if(!confirm('¿Confirmar instalación/cambio de tubo? Se descontará 1 tubo lleno del depósito y se instalará uno nuevo con 43.5kg.')) return;
     
-    // 1. Buscar el producto "Tubo 43.5kg" en la tabla productos
     var resProd = await supabaseClient.from('productos').select('id').eq('tipo', 'tubo_43').limit(1).maybeSingle();
-    if (!resProd.data) { alert('Error: No existe el producto "Tubo 43.5kg" en la base. Crealo primero en el módulo de Productos.'); return; }
+    if (!resProd.data) { alert('Error: No existe el producto "Tubo 43.5kg". Crealo en Productos primero.'); return; }
     var tuboProdId = resProd.data.id;
 
-    // 2. Verificar si hay tubos llenos en depósito
     var resStock = await supabaseClient.from('stock_deposito').select('llenas').eq('producto_id', tuboProdId).maybeSingle();
     if (!resStock.data || resStock.data.llenas <= 0) {
-        alert('No hay tubos llenos en el depósito para instalar. Cargá stock primero.');
+        alert('No hay tubos llenos en el depósito para instalar. Cargá stock primero usando un Remito o Ajuste.');
         return;
     }
 
-    // 3. Si hay un tubo activo viejo, desactivarlo y sumar 1 vacía al depósito
+    await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: tuboProdId, p_llenas: -1, p_vacias: 1, p_defectuosas: 0 });
+
+    var resTuboActivo = await supabaseClient.from('tubos_gas').select('id').eq('activo', true).limit(1).maybeSingle();
+    if(resTuboActivo.data) {
+        await supabaseClient.from('tubos_gas').update({ activo: false, gas_restante: 0 }).eq('id', resTuboActivo.data.id);
+    }
+
+    await supabaseClient.from('tubos_gas').insert({ producto_id: tuboProdId, gas_restante: 43.5, activo: true });
+
+    await supabaseClient.from('movimientos_stock').insert({ tipo_mov: 'cambio_tubo', producto_id: tuboProdId, llenas: -1, vacias: 1, observaciones: 'Instalación/Cambio de tubo' });
+
+    alert('Tubo instalado. Stock actualizado.');
+    cargarModuloStock();
+}
+    
 
 
 // ==========================================
