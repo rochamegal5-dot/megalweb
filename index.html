@@ -569,24 +569,28 @@
     // FUNCIONES DE NAVEGACIÓN (Tu sistema)
     // ==========================================
     function mostrarSeccion(id, btn) {
-        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
-        document.getElementById(`view-${id}`).classList.remove('hidden');
-        document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-blue-800', 'font-bold'); b.classList.add('hover:bg-blue-800'); });
-        if(btn) { btn.classList.add('bg-blue-800', 'font-bold'); btn.classList.remove('hover:bg-blue-800'); }
+    document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`view-${id}`).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-blue-800', 'font-bold'); b.classList.add('hover:bg-blue-800'); });
+    if(btn) { btn.classList.add('bg-blue-800', 'font-bold'); btn.classList.remove('hover:bg-blue-800'); }
+    
+    // Arreglar maps y cargar módulos cuando se hacen visibles
+    setTimeout(() => {
+        if(id === 'resumen' && dashMap) dashMap.invalidateSize();
+        if(id === 'gps') { 
+            if(gpsMap) gpsMap.invalidateSize();
+            if(gpsMapHist) gpsMapHist.invalidateSize();
+            cargarPuntosRuta();
+        }
+        if(id === 'productos') { if(typeof cargarModuloProductos === 'function') cargarModuloProductos(); }
+        if(id === 'proveedores') { if(typeof cargarModuloProveedores === 'function') cargarModuloProveedores(); }
         
-        // Arreglar maps cuando se hacen visibles
-        setTimeout(() => {
-            if(id === 'resumen' && dashMap) dashMap.invalidateSize();
-            if(id === 'gps') { 
-                if(gpsMap) gpsMap.invalidateSize();
-                if(gpsMapHist) gpsMapHist.invalidateSize();
-                cargarPuntosRuta();
-          if(id === 'productos') { if(typeof cargarModuloProductos === 'function') cargarModuloProductos(); }
-        if(id === 'proveedores') { if(typeof cargarModuloProveedores === 'function') cargarModuloProveedores(); }      
-            }
-        }, 100);
-    }
-
+        // --- MÓDULOS NUEVOS ---
+        if(id === 'stock') { if(typeof cargarModuloStock === 'function') cargarModuloStock(); }
+        if(id === 'ventas') { if(typeof cargarModuloVentas === 'function') cargarModuloVentas(); }
+        if(id === 'clientes') { if(typeof cargarModuloClientes === 'function') cargarModuloClientes(); }
+    }, 100);
+}
   
     
 
