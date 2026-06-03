@@ -1772,16 +1772,21 @@ async function cargarTubos() {
         gasBarra.style.width = '0%';
     }
 }
-
 function cargarSelectAjuste() {
     const select = document.getElementById('ajusteProdId');
-    select.innerHTML = '<option value="">-- Seleccionar --</option>';
-    if(typeof productosCache !== 'undefined') {
+    select.innerHTML = '<option value="">-- Cargando... --</option>';
+    
+    // Siempre buscamos los productos actualizados de Supabase
+    supabaseClient.from('productos').select('*').order('nombre').then(({ data, error }) => {
+        if (error) { console.error(error); return; }
+        productosCache = data || []; // Actualizamos la caché global
+        select.innerHTML = '<option value="">-- Seleccionar --</option>';
         productosCache.forEach(p => {
             select.innerHTML += `<option value="${p.id}" data-nombre="${p.nombre}">${p.nombre}</option>`;
         });
-    }
+    });
 }
+  
 
 async function ejecutarAjusteStock() {
     const prodId = document.getElementById('ajusteProdId').value;
@@ -1844,6 +1849,21 @@ async function cargarSelectsVentas() {
     const selRep = document.getElementById('ventaRepartidorId');
     selRep.innerHTML = '<option value="">-- Seleccionar --</option>';
     if(reps) reps.forEach(r => selRep.innerHTML += `<option value="${r.id}">${r.nombre}</option>`);
+
+    // Productos: Los buscamos directo de Supabase para asegurar que estén
+    const selProd = document.getElementById('ventaProductoId');
+    selProd.innerHTML = '<option value="">-- Cargando... --</option>';
+    
+    const { data: prods, error } = await supabaseClient.from('productos').select('*').order('nombre');
+    if (error) { console.error(error); return; }
+    
+    productosCache = prods || []; // Sincronizamos la caché
+    selProd.innerHTML = '<option value="">-- Seleccionar --</option>';
+    productosCache.forEach(p => {
+        selProd.innerHTML += `<option value="${p.id}" data-precio="${p.precio_venta}" data-tipo="${p.tipo}">${p.nombre}</option>`;
+    });
+}
+  
 
     // Productos
     const selProd = document.getElementById('ventaProductoId');
