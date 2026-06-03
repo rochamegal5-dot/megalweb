@@ -1893,7 +1893,12 @@ async function procesarVenta() {
     var modo = document.getElementById('ventaModo').value;
     var prodId = document.getElementById('ventaProductoId').value;
     var clienteId = document.getElementById('ventaClienteId').value || null;
-    var repId = document.getElementById('ventaRepartidorId').value || null;
+    
+    // --- FIX CRÍTICO: Si es mostrador o está vacío, forzar a NULL ---
+    var repIdInput = document.getElementById('ventaRepartidorId').value;
+    var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : parseInt(repIdInput);
+    // -------------------------------------------------------------
+
     var cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
     var cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
     var cantDefect = parseInt(document.getElementById('ventaCantDefect').value) || 0;
@@ -1901,18 +1906,42 @@ async function procesarVenta() {
     var total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
     var metodo = document.getElementById('ventaMetodoPago').value;
 
+    // Asegurar que prodId y clienteId también sean null si están vacíos
     if(!prodId) { alert('Seleccione un producto'); return; }
     if(tipoVenta === 'reparto' && !repId) { alert('Seleccione un repartidor'); return; }
+    
+    // Convertir prodId a número (BIGINT) y clienteId a null si es vacío
+    prodId = parseInt(prodId);
+    clienteId = clienteId ? parseInt(clienteId) : null;
 
-    var resVenta = await supabaseClient.from('ventas').insert([{
-        origen: 'web', tipo_venta: modo, repartidor_id: repId, cliente_id: clienteId, producto_id: prodId,
-        cantidad_llenas: cantLlenas, cantidad_vacias: cantVacias, cantidad_defectuosas: cantDefect,
-        kilos_recarga: kilos, total: total, metodo_pago: metodo, estado: 'Cobrado'
-    }]).select().single();
+    // 1. Registrar Venta
+    var ventaRegistro = {
+        origen: 'web', 
+        tipo_venta: modo, 
+        repartidor_id: repId, // Ahora es null si es mostrador
+        cliente_id: clienteId, 
+        producto_id: prodId,
+        cantidad_llenas: cantLlenas, 
+        cantidad_vacias: cantVacias, 
+        cantidad_defectuosas: cantDefect,
+        kilos_recarga: kilos, 
+        total: total, 
+        metodo_pago: metodo, 
+        estado: 'Cobrado'
+    };
 
-    if(resVenta.error) { alert('Error al vender: ' + resVenta.error.message); return; }
+    console.log("Enviando a Supabase:", ventaRegistro); // Para ver en consola qué se manda
+
+    var resVenta = await supabaseClient.from('ventas').insert([ventaRegistro]).select().single();
+
+    if(resVenta.error) { 
+        console.error("Error detallado de Supabase:", resVenta.error);
+        alert('Error al vender: ' + resVenta.error.message); 
+        return; 
+    }
     var ventaData = resVenta.data;
 
+    // 2. Actualizar Stock
     if(tipoVenta === 'mostrador') {
         await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias, p_defectuosas: cantDefect });
         if(modo === 'recarga_variable' && kilos > 0) {
@@ -1926,6 +1955,7 @@ async function procesarVenta() {
         await supabaseClient.rpc('modificar_stock_camioneta', { p_repartidor_id: repId, p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias });
     }
 
+    // 3. Auditar
     await supabaseClient.from('movimientos_stock').insert({
         tipo_mov: 'venta_web', producto_id: prodId, repartidor_id: repId, 
         llenas: -cantLlenas, vacias: cantVacias, defectuosas: cantDefect, kilos_gas: -kilos,
@@ -1940,7 +1970,7 @@ async function procesarVenta() {
     cargarModuloVentas(); 
     if(typeof cargarModuloStock === 'function') cargarModuloStock(); 
 }
-
+    
 async function cargarHistorialVentas() {
     var hoy = new Date().toISOString().split('T')[0];
     var resultado = await supabaseClient.from('ventas').select('*, productos(nombre), clientes(nombre), repartidores(nombre)').gte('created_at', hoy).order('created_at', { ascending: false });
