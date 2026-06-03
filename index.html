@@ -233,10 +233,140 @@
                 <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Proveedores Cargados</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">RUT</th><th class="p-2 border">Teléfono</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProveedores"></tbody></table></div>
             </div>
         
-                      
-                          
-            <div id="view-stock" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🗄️ Stock en Depósito Central</h2><p class="text-gray-500">Módulo en construcción...</p></div>
-            <div id="view-ventas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">💰 Punto de Venta</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+                <div id="view-stock" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">🗄️ Stock en Depósito Central</h2>
+    
+    <!-- TARJETAS DE RESUMEN RÁPIDO -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-blue-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢️ Garrafa 13kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum13Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum13Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum13Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢️ Garrafa 11kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum11Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum11Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum11Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-indigo-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢️ Tubos 45kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum45Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum45Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum45Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-purple-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">⛽ Tubos 43.5kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum43Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum43Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum43Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+    </div>
+  
+    <!-- DETALLE POR PRODUCTO -->
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <h3 class="text-lg font-bold text-gray-700 mb-4">📊 Detalle Depósito</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">Producto</th>
+                        <th class="p-2 border text-center text-green-700">Llenas</th>
+                        <th class="p-2 border text-center text-gray-700">Vacías</th>
+                        <th class="p-2 border text-center text-red-700">Defect.</th>
+                        <th class="p-2 border text-center text-blue-700">Total Envases</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaStockDeposito"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- AJUSTE MANUAL DE STOCK -->
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <h3 class="text-lg font-bold text-gray-700 mb-2">⚠️ Ajuste Manual de Stock</h3>
+        <p class="text-xs text-gray-500 mb-4">Usa esto solo para corregir diferencias físicas vs sistema (roturas, pérdidas, etc.).</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+            <div><label class="block text-sm font-medium text-gray-700">Producto</label><select id="ajusteProdId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Estado</label><select id="ajusteEstado" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"><option value="llenas">Llena</option><option value="vacias">Vacía</option><option value="defectuosas">Defectuosa</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Movimiento</label><select id="ajusteTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"><option value="1">➕ Sumar</option><option value="-1">➖ Restar</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Cantidad</label><input type="number" id="ajusteCantidad" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center text-sm" value="1" min="1"></div>
+            <button onclick="ejecutarAjusteStock()" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 font-bold cursor-pointer w-full text-sm">Aplicar</button>
+        </div>
+    </div>
+
+    <!-- CONTROL DE TUBO ACTIVO 43.5KG -->
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold text-gray-700 mb-2">⛽ Control de Recargas (Tubo 43.5kg)</h3>
+        <p class="text-xs text-gray-500 mb-4">El gas baja automáticamente con cada venta de "Recarga 3kg". Use este botón solo para cambiar el tubo físico.</p>
+        <div class="bg-gray-50 p-3 rounded-md border mb-4 flex items-center justify-between">
+            <div>
+                <span class="block text-xs font-medium text-gray-700">Gas Restante en Tubo</span>
+                <span id="gasRestanteTexto" class="text-2xl font-bold text-purple-700">0 kg</span>
+            </div>
+            <div class="w-1/2 bg-gray-200 rounded-full h-4">
+                <div id="gasBarra" class="bg-purple-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+        <button onclick="cambiarTubo43()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-bold cursor-pointer w-full">🔄 Cambiar Tubo (Pasa a Vacío y Repone 43.5kg)</button>
+    </div>
+</div>
+
+<div id="view-ventas" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">💰 Punto de Venta</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div><label class="block text-sm font-medium text-gray-700">Tipo de Venta</label><select id="ventaTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="ajustarFormularioVenta()"><option value="mostrador">🏪 Mostrador</option><option value="reparto">🛵 Reparto</option></select></div>
+                <div><label class="block text-sm font-medium text-gray-700">Repartidor</label><select id="ventaRepartidorId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white disabled:bg-gray-200" disabled><option value="">-- Seleccionar --</option></select></div>
+                <div class="relative"><label class="block text-sm font-medium text-gray-700">Cliente</label><input type="text" id="ventaClienteBusq" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Buscar..." oninput="autocompletarClienteVenta()"><input type="hidden" id="ventaClienteId"><div id="dropVentaCliente" class="autocomplete-list hidden"></div></div>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700">Producto *</label><select id="ventaProductoId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()"></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Modo de Venta *</label><select id="ventaModo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()"><option value="intercambio">🔄 Intercambio</option><option value="envase_gas">🛒 Envase + Gas</option><option value="recarga_variable">⛽ Recarga 3kg (Local)</option><option value="cambio_falla">🔄 Cambio por Falla ($0)</option></select></div>
+                    
+                    <div id="bloqueKilosRecarga" class="hidden">
+                        <label class="block text-sm font-medium text-purple-700 font-bold">Kilos a Cargar</label>
+                        <select id="ventaKilos" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()">
+                            <option value="1">1 kg</option><option value="1.5">1.5 kg</option><option value="2">2 kg</option><option value="2.5">2.5 kg</option><option value="3" selected>3 kg</option>
+                        </select>
+                    </div>
+
+                    <div><label class="block text-sm font-medium text-green-700 font-bold">Cant. Llenas *</label><input type="number" id="ventaCantLlenas" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center font-bold" value="1" min="1" onchange="calcularTotalVenta()"></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Precio ($)</label><input type="number" id="ventaPrecio" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-100 font-bold text-green-700" readonly></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Cant. Vacías (Recibe)</label><input type="number" id="ventaCantVacias" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center bg-gray-100" value="0" min="0" readonly></div>
+                    <div><label class="block text-sm font-medium text-red-700 font-bold">Cant. Defect.</label><input type="number" id="ventaCantDefect" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center bg-gray-100" value="0" min="0" readonly></div>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg border mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div><label class="block text-sm font-medium text-gray-700">Método de Pago *</label><select id="ventaMetodoPago" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"><option value="efectivo">💵 Efectivo</option><option value="tarjeta">💳 Tarjeta</option><option value="transferencia">📱 Transferencia</option><option value="cuenta_corriente">📓 Fiado</option></select></div>
+                    <div class="bg-white p-2 rounded-md border-2 border-dashed border-green-500 text-center h-full flex flex-col justify-center"><p class="text-xs text-gray-600 uppercase font-bold">Total a Cobrar</p><p id="ventaTotalMostrar" class="text-3xl font-black text-green-600">$0</p></div>
+                </div>
+            </div>
+            <div class="flex justify-end"><button onclick="procesarVenta()" class="bg-green-600 text-white px-8 py-3 rounded-md hover:bg-green-700 font-bold cursor-pointer text-lg shadow-md">✅ Cobrar y Vender</button></div>
+        </div>
+        
+        <!-- COLUMNAS DE CAJA -->
+        <div class="space-y-6">
+            <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-blue-500"><h3 class="text-md font-bold text-blue-800 mb-3">🏪 Caja Local (Mostrador)</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>💵 Efectivo</span><span id="localEfectivo" class="font-bold text-green-700">$0</span></div><div class="flex justify-between"><span>💳 Tarjeta</span><span id="localTarjeta" class="font-bold text-blue-700">$0</span></div><div class="flex justify-between"><span>📱 Transferencia</span><span id="localTransferencia" class="font-bold text-purple-700">$0</span></div><div class="flex justify-between"><span>📓 Fiado</span><span id="localFiado" class="font-bold text-yellow-700">$0</span></div><hr><div class="flex justify-between font-extrabold text-base"><span>Unid. Vendidas</span><span id="localUnidades">0</span></div></div></div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-purple-500"><h3 class="text-md font-bold text-purple-800 mb-3">🛵 Caja Repartidores</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>💵 Efectivo</span><span id="repEfectivo" class="font-bold text-green-700">$0</span></div><div class="flex justify-between"><span>💳 Tarjeta</span><span id="repTarjeta" class="font-bold text-blue-700">$0</span></div><div class="flex justify-between"><span>📱 Transferencia</span><span id="repTransferencia" class="font-bold text-purple-700">$0</span></div><div class="flex justify-between"><span>📓 Fiado</span><span id="repFiado" class="font-bold text-yellow-700">$0</span></div><hr><div class="flex justify-between font-extrabold text-base"><span>Unid. Vendidas</span><span id="repUnidades">0</span></div></div></div>
+            <div class="bg-gray-800 text-white p-4 rounded-lg shadow-sm"><h3 class="text-md font-bold mb-3">📊 General del Día</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>Total Efectivo</span><span id="genEfectivo" class="font-bold text-green-400">$0</span></div><div class="flex justify-between"><span>Total Digital</span><span id="genDigital" class="font-bold text-blue-400">$0</span></div><div class="flex justify-between"><span>Total Fiado</span><span id="genFiado" class="font-bold text-yellow-400">$0</span></div><hr class="border-gray-600"><div class="flex justify-between text-lg"><span class="font-bold">TOTAL GENERAL</span><span id="genTotal" class="font-black text-white">$0</span></div><hr class="border-gray-600 my-2"><p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Unidades / Kilos Vendidos</p><div class="flex justify-between"><span>🛢️ Garrafas 13kg</span><span id="genUni13" class="font-bold">0</span></div><div class="flex justify-between"><span>🛢️ Garrafas 11kg</span><span id="genUni11" class="font-bold">0</span></div><div class="flex justify-between"><span>🛢️ Tubos 45kg</span><span id="genUni45" class="font-bold">0</span></div><div class="flex justify-between"><span>⛽ Kilos Tubo 43.5</span><span id="genKilos43" class="font-bold">0</span></div></div><button onclick="cerrarCajaDia()" class="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-bold cursor-pointer text-sm">🔒 Cerrar Caja del Día</button></div>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Historial de Hoy</h3><div class="overflow-x-auto"><table class="w-full text-left border-collapse text-xs"><thead><tr class="bg-gray-200"><th class="p-2 border">Hora</th><th class="p-2 border">Origen</th><th class="p-2 border">Cliente</th><th class="p-2 border">Producto</th><th class="p-2 border text-center">Llenas</th><th class="p-2 border text-center">Vacías</th><th class="p-2 border text-center">Def.</th><th class="p-2 border">Pago</th><th class="p-2 border text-right">Total</th></tr></thead><tbody id="tablaVentasHoy"></tbody></table></div></div>
+</div>      
+            
             <div id="view-repartidores" class="view-section hidden">
     <h2 class="text-2xl font-semibold text-gray-800 mb-6">🛵 Gestión de Repartidores</h2>
     
@@ -1579,6 +1709,339 @@
     function autocompletarDepto() {}
     function autocompletarCiudad() {}
     function autocompletarCalle() {}
+
+    // ==========================================
+// MÓDULO STOCK - WEB
+// ==========================================
+async function cargarModuloStock() {
+    await cargarStockDeposito();
+    await cargarTubos();
+    cargarSelectAjuste();
+}
+
+async function cargarStockDeposito() {
+    const { data, error } = await supabaseClient.from('stock_deposito').select('*, productos(nombre, tipo)').order('producto_id');
+    if(error) { console.error(error); return; }
+    
+    const tbody = document.getElementById('tablaStockDeposito');
+    tbody.innerHTML = '';
+    
+    // Reset resúmenes
+    document.getElementById('sum13Llenas').textContent = '0'; document.getElementById('sum13Vacias').textContent = '0'; document.getElementById('sum13Defect').textContent = '0';
+    document.getElementById('sum11Llenas').textContent = '0'; document.getElementById('sum11Vacias').textContent = '0'; document.getElementById('sum11Defect').textContent = '0';
+    document.getElementById('sum45Llenas').textContent = '0'; document.getElementById('sum45Vacias').textContent = '0'; document.getElementById('sum45Defect').textContent = '0';
+    document.getElementById('sum43Llenas').textContent = '0'; document.getElementById('sum43Vacias').textContent = '0'; document.getElementById('sum43Defect').textContent = '0';
+
+    data.forEach(s => {
+        const total = (s.llenas || 0) + (s.vacias || 0) + (s.defectuosas || 0);
+        const tipo = s.productos?.tipo;
+        
+        // Mapear a tarjetas superiores
+        if(tipo === 'garrafa_13') { document.getElementById('sum13Llenas').textContent = s.llenas; document.getElementById('sum13Vacias').textContent = s.vacias; document.getElementById('sum13Defect').textContent = s.defectuosas; }
+        if(tipo === 'garrafa_11') { document.getElementById('sum11Llenas').textContent = s.llenas; document.getElementById('sum11Vacias').textContent = s.vacias; document.getElementById('sum11Defect').textContent = s.defectuosas; }
+        if(tipo === 'garrafa_45') { document.getElementById('sum45Llenas').textContent = s.llenas; document.getElementById('sum45Vacias').textContent = s.vacias; document.getElementById('sum45Defect').textContent = s.defectuosas; }
+        if(tipo === 'tubo_43') { document.getElementById('sum43Llenas').textContent = s.llenas; document.getElementById('sum43Vacias').textContent = s.vacias; document.getElementById('sum43Defect').textContent = s.defectuosas; }
+
+        tbody.innerHTML += `
+            <tr class="hover:bg-gray-50">
+                <td class="p-2 border font-bold">${s.productos?.nombre || 'Desconocido'}</td>
+                <td class="p-2 border text-center font-bold text-green-700">${s.llenas}</td>
+                <td class="p-2 border text-center font-bold text-gray-600">${s.vacias}</td>
+                <td class="p-2 border text-center font-bold text-red-700">${s.defectuosas}</td>
+                <td class="p-2 border text-center font-extrabold text-blue-700">${total}</td>
+            </tr>
+        `;
+    });
+}
+
+async function cargarTubos() {
+    const { data: tubos } = await supabaseClient.from('tubos_gas').select('*').eq('activo', true).limit(1).maybeSingle();
+    const gasTexto = document.getElementById('gasRestanteTexto');
+    const gasBarra = document.getElementById('gasBarra');
+    
+    if(tubos) {
+        const pct = (tubos.gas_restante / tubos.capacidad) * 100;
+        gasTexto.textContent = tubos.gas_restante + ' kg';
+        gasBarra.style.width = pct + '%';
+        if(pct < 20) gasBarra.className = 'bg-red-600 h-4 rounded-full transition-all duration-500';
+        else if(pct < 50) gasBarra.className = 'bg-amber-500 h-4 rounded-full transition-all duration-500';
+        else gasBarra.className = 'bg-purple-600 h-4 rounded-full transition-all duration-500';
+    } else {
+        gasTexto.textContent = 'Sin tubo';
+        gasBarra.style.width = '0%';
+    }
+}
+
+function cargarSelectAjuste() {
+    const select = document.getElementById('ajusteProdId');
+    select.innerHTML = '<option value="">-- Seleccionar --</option>';
+    productosCache.forEach(p => {
+        select.innerHTML += `<option value="${p.id}" data-nombre="${p.nombre}">${p.nombre}</option>`;
+    });
+}
+
+async function ejecutarAjusteStock() {
+    const prodId = document.getElementById('ajusteProdId').value;
+    const estado = document.getElementById('ajusteEstado').value;
+    const signo = parseInt(document.getElementById('ajusteTipo').value);
+    const cantidad = parseInt(document.getElementById('ajusteCantidad').value) * signo;
+    const prodNombre = document.getElementById('ajusteProdId').options[document.getElementById('ajusteProdId').selectedIndex].dataset.nombre;
+
+    if(!prodId || isNaN(cantidad) || cantidad === 0) { alert('Datos inválidos'); return; }
+
+    const payload = { p_producto_id: prodId, p_llenas: 0, p_vacias: 0, p_defectuosas: 0 };
+    if(estado === 'llenas') payload.p_llenas = cantidad;
+    if(estado === 'vacias') payload.p_vacias = cantidad;
+    if(estado === 'defectuosas') payload.p_defectuosas = cantidad;
+    
+    const { error } = await supabaseClient.rpc('modificar_stock_deposito', payload);
+    if(error) { alert('Error: ' + error.message); return; }
+
+    await supabaseClient.from('movimientos_stock').insert({
+        tipo_mov: 'ajuste_manual', producto_id: prodId, llenas: payload.p_llenas, vacias: payload.p_vacias, defectuosas: payload.p_defectuosas, observaciones: 'Ajuste manual desde Web'
+    });
+
+    alert('Ajuste aplicado');
+    cargarModuloStock();
+}
+
+async function cambiarTubo43() {
+    if(!confirm('¿Confirmar cambio de tubo? El actual pasa a vacío en depósito y se instala uno nuevo con 43.5kg.')) return;
+    
+    // 1. Buscar tubo activo
+    const { data: tubo } = await supabaseClient.from('tubos_gas').select('id, producto_id').eq('activo', true).limit(1).maybeSingle();
+    if(!tubo) { alert('No hay tubo activo para cambiar.'); return; }
+
+    // 2. Desactivar viejo y sumar 1 vacía al depósito
+    await supabaseClient.from('tubos_gas').update({ activo: false, gas_restante: 0 }).eq('id', tubo.id);
+    if(tubo.producto_id) await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: tubo.producto_id, p_llenas: 0, p_vacias: 1, p_defectuosas: 0 });
+
+    // 3. Insertar nuevo tubo y restar 1 llena del depósito (se va del depósito a la app)
+    // NOTA: Asumimos que el tubo YA ESTÁ en la app, pero si lo cargamos desde acá:
+    await supabaseClient.from('tubos_gas').insert({ gas_restante: 43.5, activo: true }).select().single();
+    if(tubo.producto_id) await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: tubo.producto_id, p_llenas: -1, p_vacias: 0, p_defectuosas: 0 });
+
+    await supabaseClient.from('movimientos_stock').insert({ tipo_mov: 'cambio_tubo', producto_id: tubo.producto_id, observaciones: 'Cambio de tubo 43.5kg' });
+
+    alert('Tubo cambiado y stock actualizado');
+    cargarModuloStock();
+}
+
+
+// ==========================================
+// MÓDULO VENTAS - WEB
+// ==========================================
+async function cargarModuloVentas() {
+    await cargarSelectsVentas();
+    await cargarHistorialVentas();
+    await calcularCaja();
+}
+
+async function cargarSelectsVentas() {
+    // Repartidores
+    const { data: reps } = await supabaseClient.from('repartidores').select('*').eq('activo', true).order('nombre');
+    const selRep = document.getElementById('ventaRepartidorId');
+    selRep.innerHTML = '<option value="">-- Seleccionar --</option>';
+    if(reps) reps.forEach(r => selRep.innerHTML += `<option value="${r.id}">${r.nombre}</option>`);
+
+    // Productos
+    const selProd = document.getElementById('ventaProductoId');
+    selProd.innerHTML = '<option value="">-- Seleccionar --</option>';
+    productosCache.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-precio="${p.precio_venta}" data-tipo="${p.tipo}">${p.nombre}</option>`);
+}
+
+function ajustarFormularioVenta() {
+    const tipo = document.getElementById('ventaTipo').value;
+    document.getElementById('ventaRepartidorId').disabled = (tipo === 'mostrador');
+    if(tipo === 'mostrador') document.getElementById('ventaRepartidorId').value = '';
+    calcularTotalVenta();
+}
+
+function calcularTotalVenta() {
+    const modo = document.getElementById('ventaModo').value;
+    const prodSel = document.getElementById('ventaProductoId');
+    const precioBase = parseFloat(prodSel.options[prodSel.selectedIndex]?.dataset.precio || 0);
+    const tipoProd = prodSel.options[prodSel.selectedIndex]?.dataset.tipo || '';
+    const cantidad = parseInt(document.getElementById('ventaCantLlenas').value) || 1;
+    const kilos = parseFloat(document.getElementById('ventaKilos').value) || 3;
+    
+    let total = 0;
+    let cantVacias = 0;
+    let cantDefect = 0;
+    let bloqueKilos = document.getElementById('bloqueKilosRecarga');
+
+    if(modo === 'intercambio') {
+        total = precioBase * cantidad;
+        cantVacias = cantidad; // Devuelve vacía
+        bloqueKilos.classList.add('hidden');
+    } else if(modo === 'envase_gas') {
+        total = precioBase * cantidad * 1.5; // Precio más alto por llevarse el envase (ajustar lógica)
+        cantVacias = 0; // No devuelve vacía
+        bloqueKilos.classList.add('hidden');
+    } else if(modo === 'recarga_variable') {
+        total = (precioBase / 3) * kilos; // Precio proporcional al kilo
+        bloqueKilos.classList.remove('hidden');
+        if(tipoProd !== 'tubo_43') { // Seguridad
+            alert('La recarga variable solo aplica al Tubo 43.5kg');
+            document.getElementById('ventaModo').value = 'intercambio';
+            calcularTotalVenta(); return;
+        }
+    } else if(modo === 'cambio_falla') {
+        total = 0;
+        cantDefect = cantidad; // Entrega defectuosa
+        bloqueKilos.classList.add('hidden');
+    }
+
+    document.getElementById('ventaCantVacias').value = cantVacias;
+    document.getElementById('ventaCantDefect').value = cantDefect;
+    document.getElementById('ventaPrecio').value = total.toFixed(0);
+    document.getElementById('ventaTotalMostrar').textContent = "$" + total.toLocaleString('es-UY');
+}
+
+async function procesarVenta() {
+    const tipoVenta = document.getElementById('ventaTipo').value;
+    const modo = document.getElementById('ventaModo').value;
+    const prodId = document.getElementById('ventaProductoId').value;
+    const clienteId = document.getElementById('ventaClienteId').value || null;
+    const repId = document.getElementById('ventaRepartidorId').value || null;
+    const cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
+    const cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
+    const cantDefect = parseInt(document.getElementById('ventaCantDefect').value) || 0;
+    const kilos = modo === 'recarga_variable' ? parseFloat(document.getElementById('ventaKilos').value) : 0;
+    const total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
+    const metodo = document.getElementById('ventaMetodoPago').value;
+
+    if(!prodId) { alert('Seleccione un producto'); return; }
+    if(tipoVenta === 'reparto' && !repId) { alert('Seleccione un repartidor'); return; }
+
+    // 1. Registrar Venta
+    const { data: ventaData, error: errVenta } = await supabaseClient.from('ventas').insert([{
+        origen: 'web', tipo_venta: modo, repartidor_id: repId, cliente_id: clienteId, producto_id: prodId,
+        cantidad_llenas: cantLlenas, cantidad_vacias: cantVacias, cantidad_defectuosas: cantDefect,
+        kilos_recarga: kilos, total: total, metodo_pago: metodo, estado: 'Cobrado'
+    }]).select().single();
+
+    if(errVenta) { alert('Error al vender: ' + errVenta.message); return; }
+
+    // 2. Actualizar Stock (Depósito o Camioneta)
+    if(tipoVenta === 'mostrador') {
+        // Descuenta del depósito central
+        await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias, p_defectuosas: cantDefect });
+        
+        if(modo === 'recarga_variable') {
+            const { data: tubo } = await supabaseClient.from('tubos_gas').select('id').eq('activo', true).limit(1).maybeSingle();
+            if(tubo) await supabaseClient.from('tubos_gas').update({ gas_restante: supabaseClient.rpc('modificar_tubo', no... usaremos rpc mejor) }).eq('id', tubo.id);
+            // Pequeño hack para el tubo ya que no creamos RPC para él, lo hago directo
+            const { data: tuboAct } = await supabaseClient.from('tubos_gas').select('gas_restante, id').eq('activo', true).limit(1).maybeSingle();
+            if(tuboAct) await supabaseClient.from('tubos_gas').update({ gas_restante: Math.max(0, tuboAct.gas_restante - kilos) }).eq('id', tuboAct.id);
+        }
+    } else {
+        // Descuenta de la camioneta
+        await supabaseClient.rpc('modificar_stock_camioneta', { p_repartidor_id: repId, p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias });
+    }
+
+    // 3. Auditar Movimiento
+    await supabaseClient.from('movimientos_stock').insert({
+        tipo_mov: 'venta_web', producto_id: prodId, repartidor_id: repId, 
+        llenas: -cantLlenas, vacias: cantVacias, defectuosas: cantDefect, kilos_gas: -kilos,
+        referencia_id: ventaData.id
+    });
+
+    alert('¡Venta registrada con éxito!');
+    calcularTotalVenta(); // Reset
+    cargarModuloVentas(); // Refrescar
+    if(typeof cargarModuloStock === 'function') cargarModuloStock(); // Actualizar stock si está visible
+}
+
+async function cargarHistorialVentas() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient.from('ventas').select('*, productos(nombre), clientes(nombre), repartidores(nombre)').gte('created_at', hoy).order('created_at', { ascending: false });
+    if(error) { console.error(error); return; }
+    
+    const tbody = document.getElementById('tablaVentasHoy');
+    tbody.innerHTML = '';
+    data.forEach(v => {
+        const hora = new Date(v.created_at).toLocaleTimeString('es-UY', {hour:'2-digit', minute:'2-digit'});
+        tbody.innerHTML += `
+            <tr class="hover:bg-gray-50">
+                <td class="p-2 border">${hora}</td>
+                <td class="p-2 border font-bold ${v.origen === 'app' ? 'text-blue-600' : 'text-green-600'}">${v.origen === 'app' ? '📱 App' : '🖥️ Web'}</td>
+                <td class="p-2 border">${v.clientes?.nombre || '-'} ${v.repartidores ? '('+v.repartidores.nombre+')' : ''}</td>
+                <td class="p-2 border">${v.productos?.nombre || '?'}</td>
+                <td class="p-2 border text-center font-bold text-green-700">${v.cantidad_llenas}</td>
+                <td class="p-2 border text-center font-bold text-gray-500">${v.cantidad_vacias}</td>
+                <td class="p-2 border text-center font-bold text-red-700">${v.cantidad_defectuosas}</td>
+                <td class="p-2 border text-xs">${v.metodo_pago}</td>
+                <td class="p-2 border text-right font-bold">$${v.total.toLocaleString('es-UY')}</td>
+            </tr>
+        `;
+    });
+}
+
+async function calcularCaja() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient.from('ventas').select('*').gte('created_at', hoy);
+    if(error || !data) return;
+
+    let localEfectivo=0, localTarjeta=0, localTrans=0, localFiado=0, localUnid=0;
+    let repEfectivo=0, repTarjeta=0, repTrans=0, repFiado=0, repUnid=0;
+    let uni13=0, uni11=0, uni45=0, kilos43=0;
+
+    data.forEach(v => {
+        const prod = productosCache.find(p => p.id === v.producto_id);
+        if(prod) {
+            if(prod.tipo === 'garrafa_13') uni13 += v.cantidad_llenas;
+            if(prod.tipo === 'garrafa_11') uni11 += v.cantidad_llenas;
+            if(prod.tipo === 'garrafa_45') uni45 += v.cantidad_llenas;
+            if(prod.tipo === 'tubo_43') kilos43 += v.kilos_recarga;
+        }
+
+        if(v.origen === 'web') {
+            localUnid += v.cantidad_llenas;
+            if(v.metodo_pago === 'efectivo') localEfectivo += v.total;
+            else if(v.metodo_pago === 'tarjeta') localTarjeta += v.total;
+            else if(v.metodo_pago === 'transferencia') localTrans += v.total;
+            else if(v.metodo_pago === 'cuenta_corriente') localFiado += v.total;
+        } else {
+            repUnid += v.cantidad_llenas;
+            if(v.metodo_pago === 'efectivo') repEfectivo += v.total;
+            else if(v.metodo_pago === 'tarjeta') repTarjeta += v.total;
+            else if(v.metodo_pago === 'transferencia') repTrans += v.total;
+            else if(v.metodo_pago === 'cuenta_corriente') repFiado += v.total;
+        }
+    });
+
+    document.getElementById('localEfectivo').textContent = "$"+localEfectivo.toLocaleString('es-UY');
+    document.getElementById('localTarjeta').textContent = "$"+localTarjeta.toLocaleString('es-UY');
+    document.getElementById('localTransferencia').textContent = "$"+localTrans.toLocaleString('es-UY');
+    document.getElementById('localFiado').textContent = "$"+localFiado.toLocaleString('es-UY');
+    document.getElementById('localUnidades').textContent = localUnid;
+
+    document.getElementById('repEfectivo').textContent = "$"+repEfectivo.toLocaleString('es-UY');
+    document.getElementById('repTarjeta').textContent = "$"+repTarjeta.toLocaleString('es-UY');
+    document.getElementById('repTransferencia').textContent = "$"+repTrans.toLocaleString('es-UY');
+    document.getElementById('repFiado').textContent = "$"+repFiado.toLocaleString('es-UY');
+    document.getElementById('repUnidades').textContent = repUnid;
+
+    const genEfectivo = localEfectivo + repEfectivo;
+    const genDigital = localTarjeta + repTarjeta + localTrans + repTrans;
+    const genFiado = localFiado + repFiado;
+    const genTotal = genEfectivo + genDigital + genFiado;
+
+    document.getElementById('genEfectivo').textContent = "$"+genEfectivo.toLocaleString('es-UY');
+    document.getElementById('genDigital').textContent = "$"+genDigital.toLocaleString('es-UY');
+    document.getElementById('genFiado').textContent = "$"+genFiado.toLocaleString('es-UY');
+    document.getElementById('genTotal').textContent = "$"+genTotal.toLocaleString('es-UY');
+
+    document.getElementById('genUni13').textContent = uni13;
+    document.getElementById('genUni11').textContent = uni11;
+    document.getElementById('genUni45').textContent = uni45;
+    document.getElementById('genKilos43').textContent = kilos43;
+}
+
+function cerrarCajaDia() {
+    alert('Cierre de caja ejecutado. (Acá iría la lógica de bloquear ventas del día o generar el parte).');
+}
     
 </script>
 </body>
