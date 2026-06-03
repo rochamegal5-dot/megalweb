@@ -1847,9 +1847,12 @@ async function cargarSelectsVentas() {
     var resProd = await supabaseClient.from('productos').select('*').order('nombre');
     if (resProd.error) { console.error(resProd.error); return; }
     productosCache = resProd.data || [];
-    selProd.innerHTML = '<option value="">-- Seleccionar --</option>';
+    selProd.innerHTML = '<option value="">-- Seleccionar producto --</option>';
     productosCache.forEach(function(p) {
-        selProd.innerHTML += '<option value="'+p.id+'" data-precio="'+p.precio_venta+'" data-tipo="'+p.tipo+'">'+p.nombre+'</option>';
+        // Agregamos el tipo y precio al nombre para no confundirse
+        var tipoTexto = (p.tipo || '').replace('garrafa_', '').replace('_', ' ');
+        var nombreVisible = p.nombre + ' - ' + tipoTexto + 'kg ($' + (p.precio_venta || 0).toLocaleString('es-UY') + ')';
+        selProd.innerHTML += '<option value="'+p.id+'" data-precio="'+p.precio_venta+'" data-tipo="'+p.tipo+'">'+nombreVisible+'</option>';
     });
 }
 
