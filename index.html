@@ -2020,7 +2020,7 @@ async function cargarHistorialVentas() {
     });
 }
 
-async function calcularCaja() {
+    async function calcularCaja() {
     var hoy = new Date().toISOString().split('T')[0];
     var resultado = await supabaseClient.from('ventas').select('*').gte('created_at', hoy);
     if(resultado.error || !resultado.data) return;
@@ -2036,8 +2036,13 @@ async function calcularCaja() {
             if(prod.tipo === 'garrafa_13') uni13 += v.cantidad_llenas;
             if(prod.tipo === 'garrafa_11') uni11 += v.cantidad_llenas;
             if(prod.tipo === 'garrafa_45') uni45 += v.cantidad_llenas;
-            if(prod.tipo === 'tubo_43') kilos43 += v.kilos_recarga;
         }
+        
+        // FIX: Sumar kilos si la venta es de recarga
+        if(v.tipo_venta === 'recarga_variable') {
+            kilos43 += v.kilos_recarga;
+        }
+
         if(v.origen === 'web') {
             localUnid += v.cantidad_llenas;
             if(v.metodo_pago === 'efectivo') localEfectivo += v.total;
@@ -2055,29 +2060,8 @@ async function calcularCaja() {
 
     document.getElementById('localEfectivo').textContent = "$"+localEfectivo.toLocaleString('es-UY');
     document.getElementById('localTarjeta').textContent = "$"+localTarjeta.toLocaleString('es-UY');
-    document.getElementById('localTransferencia').textContent = "$"+localTrans.toLocaleString('es-UY');
-    document.getElementById('localFiado').textContent = "$"+localFiado.toLocaleString('es-UY');
-    document.getElementById('localUnidades').textContent = localUnid;
-
-    document.getElementById('repEfectivo').textContent = "$"+repEfectivo.toLocaleString('es-UY');
-    document.getElementById('repTarjeta').textContent = "$"+repTarjeta.toLocaleString('es-UY');
-    document.getElementById('repTransferencia').textContent = "$"+repTrans.toLocaleString('es-UY');
-    document.getElementById('repFiado').textContent = "$"+repFiado.toLocaleString('es-UY');
-    document.getElementById('repUnidades').textContent = repUnid;
-
-    var genEfectivo = localEfectivo + repEfectivo;
-    var genDigital = localTarjeta + repTarjeta + localTrans + repTrans;
-    var genFiado = localFiado + repFiado;
-    var genTotal = genEfectivo + genDigital + genFiado;
-
-    document.getElementById('genEfectivo').textContent = "$"+genEfectivo.toLocaleString('es-UY');
-    document.getElementById('genDigital').textContent = "$"+genDigital.toLocaleString('es-UY');
-    document.getElementById('genFiado').textContent = "$"+genFiado.toLocaleString('es-UY');
-    document.getElementById('genTotal').textContent = "$"+genTotal.toLocaleString('es-UY');
-    document.getElementById('genUni13').textContent = uni13;
-    document.getElementById('genUni11').textContent = uni11;
-    document.getElementById('genUni45').textContent = uni45;
-    document.getElementById('genKilos43').textContent = kilos43;
+    document.getElementById
+   
 }
 
 function cerrarCajaDia() { alert('Cierre de caja ejecutado.'); }
