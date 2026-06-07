@@ -1847,7 +1847,6 @@ async function cargarModuloVentas() {
     await cargarHistorialVentas();
     await calcularCaja();
 }
-
 async function cargarSelectsVentas() {
     var resRep = await supabaseClient.from('repartidores').select('*').eq('activo', true).order('nombre');
     var selRep = document.getElementById('ventaRepartidorId');
@@ -1859,14 +1858,18 @@ async function cargarSelectsVentas() {
     var resProd = await supabaseClient.from('productos').select('*').order('nombre');
     if (resProd.error) { console.error(resProd.error); return; }
     productosCache = resProd.data || [];
+    
     selProd.innerHTML = '<option value="">-- Seleccionar producto --</option>';
     productosCache.forEach(function(p) {
-        // Agregamos el tipo y precio al nombre para no confundirse
-        var tipoTexto = (p.tipo || '').replace('garrafa_', '').replace('_', ' ');
-        var nombreVisible = p.nombre + ' - ' + tipoTexto + 'kg ($' + (p.precio_venta || 0).toLocaleString('es-UY') + ')';
+        // FIX: Mostramos EXACTAMENTE el nombre que viene de la tabla producto, solo le agregamos el precio al final
+        var precio = (p.precio_venta || 0).toLocaleString('es-UY');
+        var nombreVisible = p.nombre + ' — $' + precio;
+        
+        // Los atributos data-precio y data-tipo son para que el sistema calcule solo, no se ven en pantalla
         selProd.innerHTML += '<option value="'+p.id+'" data-precio="'+p.precio_venta+'" data-tipo="'+p.tipo+'">'+nombreVisible+'</option>';
     });
 }
+  
 
 function ajustarFormularioVenta() {
     var tipo = document.getElementById('ventaTipo').value;
