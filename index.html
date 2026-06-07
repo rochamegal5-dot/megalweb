@@ -1875,7 +1875,7 @@ function ajustarFormularioVenta() {
     calcularTotalVenta();
 }
 
-    function calcularTotalVenta() {
+function calcularTotalVenta() {
     var modo = document.getElementById('ventaModo').value;
     var prodSel = document.getElementById('ventaProductoId');
     var precioBase = parseFloat(prodSel.options[prodSel.selectedIndex] ? prodSel.options[prodSel.selectedIndex].dataset.precio : 0);
@@ -1883,6 +1883,12 @@ function ajustarFormularioVenta() {
     var cantidad = parseInt(document.getElementById('ventaCantLlenas').value) || 1;
     var kilos = parseFloat(document.getElementById('ventaKilos').value) || 3;
     
+    // FIX: Si el producto es de tipo recarga o tubo, forzar el modo a recarga_variable automáticamente
+    if(tipoProd === 'recarga_3kg' || tipoProd === 'tubo_43') {
+        document.getElementById('ventaModo').value = 'recarga_variable';
+        modo = 'recarga_variable';
+    }
+
     var total = 0, cantVacias = 0, cantDefect = 0;
     var bloqueKilos = document.getElementById('bloqueKilosRecarga');
 
@@ -1893,13 +1899,6 @@ function ajustarFormularioVenta() {
     } else if(modo === 'recarga_variable') {
         total = (precioBase / 3) * kilos; 
         bloqueKilos.classList.remove('hidden');
-        // FIX: Permitimos que el producto "Recarga 3kg" también sea válido para esta opción
-        if(tipoProd !== 'tubo_43' && tipoProd !== 'recarga_3kg') { 
-            alert('La recarga solo aplica al Tubo 43.5kg o producto de Recarga'); 
-            document.getElementById('ventaModo').value = 'intercambio'; 
-            calcularTotalVenta(); 
-            return; 
-        }
     } else if(modo === 'cambio_falla') {
         total = 0; cantDefect = cantidad; bloqueKilos.classList.add('hidden');
     }
@@ -1909,19 +1908,24 @@ function ajustarFormularioVenta() {
     document.getElementById('ventaPrecio').value = total.toFixed(0);
     document.getElementById('ventaTotalMostrar').textContent = "$" + total.toLocaleString('es-UY');
 }
- async function procesarVenta() {
+async function procesarVenta() {
     var tipoVenta = document.getElementById('ventaTipo').value;
     var modo = document.getElementById('ventaModo').value;
     
-    var prodId = document.getElementById('ventaProductoId').value || null;
+    var prodSel = document.getElementById('ventaProductoId');
+    var prodId = prodSel.value || null;
+    var tipoProd = prodSel.options[prodSel.selectedIndex] ? prodSel.options[prodSel.selectedIndex].dataset.tipo : '';
+    
     var clienteId = document.getElementById('ventaClienteId').value || null;
     var repIdInput = document.getElementById('ventaRepartidorId').value;
     var repId = (tipoVenta === 'mostrador' || !repIdInput) ? null : repIdInput;
 
-    var cantLlenas = parseInt(document.getElementById('ventaCantLlenas').value) || 0;
+    // Si es recarga, las unidades llenas son 0 (no entregamos envases, solo gas)
+    var esRecarga = (modo === 'recarga_variable' || tipoProd === 'recarga_3kg' || tipoProd === 'tubo_43');
+    var cantLlenas = esRecarga ? 0 : (parseInt(document.getElementById('ventaCantLlenas').value) || 0);
     var cantVacias = parseInt(document.getElementById('ventaCantVacias').value) || 0;
     var cantDefect = parseInt(document.getElementById('ventaCantDefect').value) || 0;
-    var kilos = modo === 'recarga_variable' ? parseFloat(document.getElementById('ventaKilos').value) : 0;
+    var kilos = esRecarga ? parseFloat(document.getElementById('ventaKilos').value) : 0;
     var total = parseFloat(document.getElementById('ventaPrecio').value) || 0;
     var metodo = document.getElementById('ventaMetodoPago').value;
 
@@ -1931,7 +1935,15 @@ function ajustarFormularioVenta() {
     // ==========================================
     // VALIDACIÓN DE STOCK EN TIEMPO REAL
     // ==========================================
-    if (modo !== 'recarga_variable') { // La recarga no valida stock de envases, valida gas
+    if (esRecarga) {
+        // VALIDAR GAS: Si es recarga, no miramos el depósito de envases, miramos el tubo activo
+        var resTuboStock = await supabaseClient.from('tubos_gas').select('gas_restante').eq('activo', true).limit(1).maybeSingle();
+        if (!resTuboStock.data || resTuboStock.data.gas_restante < kilos) {
+            alert('No hay suficiente gas en el tubo activo. Gas disponible: ' + (resTuboStock.data ? resTuboStock.data.gas_restante : 0) + ' kg.');
+            return;
+        }
+    } else {
+        // VALIDAR ENVASES: Si es garrafa, miramos el stock de llenas
         var stockDisponible = 0;
         if (tipoVenta === 'mostrador') {
             var resStock = await supabaseClient.from('stock_deposito').select('llenas').eq('producto_id', prodId).maybeSingle();
@@ -1940,15 +1952,9 @@ function ajustarFormularioVenta() {
             var resStock = await supabaseClient.from('stock_camioneta').select('llenas').eq('repartidor_id', repId).eq('producto_id', prodId).maybeSingle();
             if (resStock.data) stockDisponible = resStock.data.llenas;
         }
+
         if (cantLlenas > stockDisponible) {
             alert('Stock insuficiente. Solo quedan ' + stockDisponible + ' unidades llenas en ' + (tipoVenta === 'mostrador' ? 'depósito' : 'la camioneta') + '.');
-            return;
-        }
-    } else {
-        // Validar que haya gas en el tubo
-        var resTuboStock = await supabaseClient.from('tubos_gas').select('gas_restante').eq('activo', true).limit(1).maybeSingle();
-        if (!resTuboStock.data || resTuboStock.data.gas_restante < kilos) {
-            alert('No hay suficiente gas en el tubo activo. Gas disponible: ' + (resTuboStock.data ? resTuboStock.data.gas_restante : 0) + ' kg.');
             return;
         }
     }
@@ -1980,8 +1986,8 @@ function ajustarFormularioVenta() {
 
     // 2. Actualizar Stock
     if(tipoVenta === 'mostrador') {
-        if(modo === 'recarga_variable' && kilos > 0) {
-            // FIX: Si es recarga, SOLO se descuentan kilos del tubo. No se tocan las garrafas del depósito.
+        if(esRecarga && kilos > 0) {
+            // FIX: Descontar los kilos (1, 1.5, 2, 2.5 o 3) del tubo activo
             var resTubo = await supabaseClient.from('tubos_gas').select('gas_restante, id').eq('activo', true).limit(1).maybeSingle();
             if(resTubo.data) {
                 var nuevoGas = Math.max(0, resTubo.data.gas_restante - kilos);
@@ -1992,17 +1998,14 @@ function ajustarFormularioVenta() {
             await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias, p_defectuosas: cantDefect });
         }
     } else {
-        // Reparto
+        // Reparto (A futuro se puede agregar la lógica de gas en camioneta)
         await supabaseClient.rpc('modificar_stock_camioneta', { p_repartidor_id: repId, p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias });
     }
 
     // 3. Auditar
     await supabaseClient.from('movimientos_stock').insert({
         tipo_mov: 'venta_web', producto_id: prodId, repartidor_id: repId, 
-        llenas: (modo === 'recarga_variable' ? 0 : -cantLlenas), 
-        vacias: cantVacias, 
-        defectuosas: cantDefect, 
-        kilos_gas: -kilos,
+        llenas: -cantLlenas, vacias: cantVacias, defectuosas: cantDefect, kilos_gas: -kilos,
         referencia_id: ventaData.id
     });
 
@@ -2014,6 +2017,7 @@ function ajustarFormularioVenta() {
     cargarModuloVentas(); 
     if(typeof cargarModuloStock === 'function') cargarModuloStock(); 
 }
+   
 
    
   
