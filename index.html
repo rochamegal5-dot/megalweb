@@ -87,6 +87,16 @@ async function probarGPS(){
                 document.getElementById('testResult').innerHTML = '<span class="text-red-600">❌ Error: '+e.message+'</span>'
             }
         }
+        async function probarGPS(){
+  const div = document.getElementById('resultado-gps');
+  div.innerHTML = "⏳ Probando gps_locations...";
+  try{
+    const data = await actualizarUbicacion(7, -34.4864849, -54.34305447);
+    div.innerHTML = "✅ <b>GPS OK!</b> ID:"+data.id+"<br>device_id: "+data.device_id+"<br>lat: "+data.lat+" lng: "+data.lng;
+  }catch(e){
+    div.innerHTML = "❌ "+e.message;
+  }
+}
     </script>
 </body>
 </html>
