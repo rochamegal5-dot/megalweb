@@ -13,3 +13,19 @@ export const supabase = createClient(url, key)
 
 export const ROCHA_CENTER = [-34.4833, -54.3333]
 export const UMBRAL_ONLINE = 120
+// TEST VISIBLE PARA CELULAR - sin consola
+window.testGPSCelular = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('ubicaciones')
+      .insert({ repartidor_id: 1, latitud: -34.4833, longitud: -54.3333 })
+      .select()
+      .single()
+    if(error) throw error
+    alert("✅ GPS OK: ID=" + data.id + " Lat=" + data.latitud)
+    return data
+  } catch(e) {
+    alert("❌ ERROR: " + e.message)
+    console.error(e)
+  }
+}
