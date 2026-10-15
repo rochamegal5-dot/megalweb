@@ -20,8 +20,7 @@ export async function actualizarUbicacion(repartidorId, lat, lng) {
   const { data, error } = await supabase.from('ubicaciones').insert({
     repartidor_id: repartidorId,
     latitud: lat,
-    longitud: lng,
-    created_at: new Date().toISOString()
+    longitud: lng
   }).select().single()
   
   if (error) {
