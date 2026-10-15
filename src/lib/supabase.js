@@ -11,24 +11,24 @@ if (typeof window !== 'undefined') {
 }
 
 export const UMBRAL_ONLINE = 120
-
-// AHORA USA gps_locations que SÍ existe
+//
 export const actualizarUbicacion = async (repartidor_id, latitud, longitud) => {
-  try {
-    const { data, error } = await supabase
-      .from('gps_locations')
-      .insert({ 
-        repartidor_id, 
-        latitud, 
-        longitud,
-        // por si tu tabla usa otros nombres, intenta con lat/lng también
-        // Si falla por columna, mira el error y dime qué columnas tiene
-      })
-      .select()
-      .single()
-    if (error) throw error
-    console.log('✅ GPS guardado en gps_locations:', data)
-    return data
+  const { data, error } = await supabase
+    .from('gps_locations')
+    .insert({
+      device_id: repartidor_id,
+      lat: latitud,
+      lng: longitud,
+      speed: 0,
+      accuracy: 10,
+      recorded_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+  if (error) throw error
+  console.log('✅ GPS en gps_locations:', data)
+  return data
+
   } catch (e) {
     console.error('❌ Error GPS:', e.message, e)
     // Intento 2: por si tu tabla usa latitude/longitude o lat/lng
