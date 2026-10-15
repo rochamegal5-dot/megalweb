@@ -11,6 +11,11 @@ if (typeof window !== 'undefined') {
 
 export const UMBRAL_ONLINE = 120
 
+// Centro de Rocha - lo usa gps.js
+export const ROCHA_CENTER = [-34.4833, -54.3333]
+export const ROCHA_CENTER_OBJ = { lat: -34.4833, lng: -54.3333 }
+export const CENTER_ROCHA = ROCHA_CENTER
+
 export const actualizarUbicacion = async (repartidor_id, latitud, longitud) => {
   const { data, error } = await supabase
     .from('gps_locations')
