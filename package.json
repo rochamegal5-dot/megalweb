@@ -1,18 +1,9 @@
+
 {
-  "name": "megalweb",
-  "private": true,
+  "name": "megalweb-vite",
   "version": "2.1.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
-    "leaflet": "^1.9.4"
-  },
-  "devDependencies": {
-    "vite": "^5.4.0"
-  }
+  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "dependencies": { "@supabase/supabase-js": "^2.39.0", "leaflet": "^1.9.4" },
+  "devDependencies": { "vite": "^5.0.0" }
 }
