@@ -52,8 +52,24 @@
                         import { supabase } from './lib/supabase.js'<br>
                         // Viene de import.meta.env.VITE_SUPABASE_ANON_KEY
                     </div>
-                    <button onclick="testConexion()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Probar Conexión Segura</button>
-                    <p id="testResult" class="mt-2"></p>
+                     <button onclick="probarGPS()">Probar Conexión Segura</button>
+<div id="resultado-gps" style="margin-top:15px;padding:10px;background:#f0f0f0;border-radius:8px;font-family:monospace;"></div>
+<script>
+async function probarGPS(){
+  const div = document.getElementById('resultado-gps');
+  div.innerHTML = "⏳ Probando GPS...";
+  try {
+    // Usa tu función real
+    const { data, error } = await window.supabaseClient.from('ubicaciones').insert({repartidor_id: 1, latitud: -34.4833, longitud: -54.3333}).select().single();
+    if(error) throw error;
+    div.innerHTML = "✅ <b>GPS OK!</b><br>ID: " + data.id + "<br>Lat: " + data.latitud + "<br><a href='https://supabase.com/dashboard/project/wpsmcingzudnscuijkpqg/editor/29966?schema=public' target='_blank'>Ver en Supabase</a>";
+  } catch(e){
+    div.innerHTML = "❌ ERROR: " + e.message + "<br><small>" + JSON.stringify(e) + "</small>";
+  }
+}
+</script>       
+                    
+                  
                 </div>
             </div>
         </main>
