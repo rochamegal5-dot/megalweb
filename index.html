@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Megal ERP - Completo Turso</title>
+<title>Megal ERP - GPS Completo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -13,18 +13,22 @@ body{background:#0f172a;color:#e2e8f0;display:flex;height:100vh}
 .sidebar h1{font-size:22px;color:#38bdf8;margin-bottom:16px}
 .tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#334155;transition:.2s;font-size:14px}
 .tab.active{background:#0ea5e9;color:white}
-.tab:hover{background:#475569}
 .main{flex:1;overflow:auto;padding:20px}
-.card{background:#1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
-input,select,button,textarea{padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;margin:4px}
+.card{background:#1e293b;border-radius:12px;padding:20px;margin-bottom:16px}
+input,select,button{padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;margin:4px}
 button{background:#0ea5e9;border:none;cursor:pointer;font-weight:bold}
 button:hover{background:#0284c7}
-#map{height:380px;border-radius:12px}
+button.sec{background:#334155}
+#map{height:520px;border-radius:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .badge{padding:4px 10px;border-radius:99px;font-size:12px;background:#334155;display:inline-block;margin:2px}
+.device-card{padding:10px;border-radius:8px;background:#0f172a;border-left:4px solid #3b82f6;margin-bottom:8px;cursor:pointer}
+.device-card.active{border-color:#0ea5e9;background:#1e293b}
 .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .kpi div{background:#0f172a;padding:16px;border-radius:10px;text-align:center}
 .kpi b{font-size:22px;display:block;color:#38bdf8}
+.gps-layout{display:grid;grid-template-columns:300px 1fr;gap:16px}
+@media(max-width:900px){.gps-layout{grid-template-columns:1fr} #map{height:380px}}
 </style>
 </head>
 <body>
@@ -39,59 +43,44 @@ button:hover{background:#0284c7}
 <div class="tab" data-tab="ventas">💰 Ventas</div>
 <div class="tab" data-tab="finanzas">📈 Finanzas</div>
 <div class="tab" data-tab="marketing">📣 Marketing</div>
-<div style="margin-top:auto;font-size:11px;color:#64748b">Turso: megal-erp<br/>aws-sa-east-1<br/><span id="status">Conectando...</span></div>
+<div style="margin-top:auto;font-size:11px;color:#64748b" id="status">Turso: megal-erp<br/>Conectando...</div>
 </div>
-<div class="main" id="main">
-<!-- GPS -->
+<div class="main">
+<!-- GPS COMPLETO -->
 <div id="view-gps" class="view">
-<div class="card"><h2>GPS Repartidores - Tiempo Real</h2><div id="map"></div><div style="margin-top:10px"><button onclick="cargarGPS()">🔄 Actualizar</button> <span id="gpsCount"></span></div></div>
-<div class="card"><h3>Últimas posiciones</h3><div id="gpsList"></div></div>
+<div class="card" style="padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<b style="margin-right:10px">GPS</b>
+<select id="gpsDeviceFilter"><option value="">Todos los repartidores</option></select>
+<button onclick="cargarGPS(true)">🔄 Actualizar</button>
+<button class="sec" onclick="toggleSeguimiento()" id="btnSeg">📡 Seguimiento: OFF</button>
+<button class="sec" onclick="limpiarRuta()">🧹 Limpiar ruta</button>
+<span id="gpsCount" style="color:#94a3b8;font-size:13px"></span>
+<label style="font-size:12px"><input type="checkbox" id="chkRuta" checked> Ver ruta</label>
 </div>
-<!-- REPARTIDORES -->
-<div id="view-repartidores" class="view" style="display:none"><div class="card"><h2>Repartidores</h2><input id="rep_nombre" placeholder="Nombre"><input id="rep_tel" placeholder="Tel"><input id="rep_veh" placeholder="Vehículo"><input id="rep_pat" placeholder="Patente"><button onclick="guardar('repartidores')">Guardar</button></div><div class="card"><div id="list_repartidores" class="grid"></div></div></div>
-<!-- PRODUCTOS -->
-<div id="view-productos" class="view" style="display:none"><div class="card"><h2>Productos</h2><input id="prod_nombre" placeholder="Ej: Garrafa 13kg"><input id="prod_tipo" placeholder="Tipo"><input id="prod_costo" type="number" placeholder="Costo"><input id="prod_precio" type="number" placeholder="Precio venta"><button onclick="guardar('productos')">Guardar</button></div><div class="card"><div id="list_productos" class="grid"></div></div></div>
-<!-- CLIENTES -->
-<div id="view-clientes" class="view" style="display:none"><div class="card"><h2>Clientes</h2><input id="cli_tel" placeholder="Tel"><input id="cli_nom" placeholder="Nombre"><input id="cli_ciu" placeholder="Ciudad"><input id="cli_calle" placeholder="Calle"><button onclick="guardar('clientes')">Guardar</button></div><div class="card"><div id="list_clientes" class="grid"></div></div></div>
-<!-- PROVEEDORES - NUEVO -->
-<div id="view-proveedores" class="view" style="display:none">
-<div class="card"><h2>🏭 Proveedores</h2>
-<input id="prov_nombre" placeholder="Nombre empresa"><input id="prov_cuit" placeholder="CUIT"><input id="prov_tel" placeholder="Teléfono"><input id="prov_rubro" placeholder="Rubro (Gas, Logística, etc)"><button onclick="guardar('proveedores')">Guardar Proveedor</button>
+<div class="gps-layout">
+<div>
+<div class="card" style="padding:12px"><h3 style="font-size:14px;margin-bottom:8px">Repartidores activos</h3><div id="gpsDevices"></div></div>
+<div class="card" style="padding:12px"><h3 style="font-size:14px;margin-bottom:8px">Últimas posiciones</h3><div id="gpsList" style="max-height:400px;overflow:auto;font-size:12px"></div></div>
 </div>
-<div class="card"><div id="list_proveedores" class="grid"></div></div>
+<div><div id="map"></div>
+<div class="card" style="margin-top:12px;padding:12px"><div class="kpi" style="grid-template-columns:repeat(3,1fr)"><div><b id="kpi_vel">0</b>km/h velocidad</div><div><b id="kpi_dist">0</b>km recorrido hoy</div><div><b id="kpi_time">--</b>última actualización</div></div></div>
 </div>
-<!-- STOCK -->
-<div id="view-stock" class="view" style="display:none"><div class="card"><h2>Stock Depósito</h2><div id="list_stock" class="grid"></div></div></div>
-<!-- VENTAS -->
-<div id="view-ventas" class="view" style="display:none"><div class="card"><h2>Ventas</h2><select id="venta_rep"></select><select id="venta_prod"></select><input id="venta_cant" type="number" placeholder="Cant"><input id="venta_total" type="number" placeholder="Total $"><button onclick="guardarVenta()">Registrar Venta</button></div><div class="card"><div id="list_ventas"></div></div></div>
-<!-- FINANZAS - NUEVO -->
-<div id="view-finanzas" class="view" style="display:none">
-<div class="card"><h2>📈 Finanzas</h2>
-<div class="kpi"><div><b id="kpi_ingresos">$0</b>Ingresos</div><div><b id="kpi_egresos">$0</b>Egresos</div><div><b id="kpi_balance">$0</b>Balance</div><div><b id="kpi_fiado">$0</b>Fiado</div></div>
 </div>
-<div class="card"><h3>Nuevo movimiento</h3>
-<select id="fin_tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select>
-<input id="fin_concepto" placeholder="Concepto (Flete, Combustible, Venta, etc)">
-<input id="fin_monto" type="number" placeholder="Monto">
-<button onclick="guardar('finanzas')">Guardar Movimiento</button>
 </div>
-<div class="card"><div id="list_finanzas"></div></div>
-</div>
-<!-- MARKETING - NUEVO -->
-<div id="view-marketing" class="view" style="display:none">
-<div class="card"><h2>📣 Marketing</h2>
-<input id="mkt_camp" placeholder="Nombre campaña (Promo Invierno, etc)">
-<select id="mkt_canal"><option value="WhatsApp">WhatsApp</option><option value="Facebook">Facebook</option><option value="Instagram">Instagram</option><option value="Radio">Radio</option><option value="Volantes">Volantes</option></select>
-<input id="mkt_pres" type="number" placeholder="Presupuesto $">
-<input id="mkt_leads" type="number" placeholder="Leads conseguidos">
-<button onclick="guardar('marketing')">Guardar Campaña</button>
-</div>
-<div class="card"><div id="list_marketing" class="grid"></div></div>
-</div>
+<!-- OTRAS VISTAS -->
+<div id="view-repartidores" class="view" style="display:none"><div class="card"><h2>Repartidores</h2><input id="rep_nombre" placeholder="Nombre"><input id="rep_tel" placeholder="Tel"><input id="rep_veh" placeholder="Vehículo"><input id="rep_pat" placeholder="Patente"><input id="rep_device" type="number" placeholder="Device ID (ej 7)" value="7"><button onclick="guardar('repartidores')">Guardar</button></div><div class="card"><div id="list_repartidores" class="grid"></div></div></div>
+<div id="view-productos" class="view" style="display:none"><div class="card"><h2>Productos</h2><input id="prod_nombre" placeholder="Garrafa 13kg"><input id="prod_tipo" placeholder="Tipo"><input id="prod_costo" type="number" placeholder="Costo"><input id="prod_precio" type="number" placeholder="Venta"><button onclick="guardar('productos')">Guardar</button></div><div class="card"><div id="list_productos" class="grid"></div></div></div>
+<div id="view-clientes" class="view" style="display:none"><div class="card"><h2>Clientes</h2><input id="cli_tel" placeholder="Tel"><input id="cli_nom" placeholder="Nombre"><input id="cli_ciu" placeholder="Ciudad"><button onclick="guardar('clientes')">Guardar</button></div><div class="card"><div id="list_clientes" class="grid"></div></div></div>
+<div id="view-proveedores" class="view" style="display:none"><div class="card"><h2>Proveedores</h2><input id="prov_nombre" placeholder="Empresa"><input id="prov_cuit" placeholder="CUIT"><input id="prov_tel" placeholder="Tel"><input id="prov_rubro" placeholder="Rubro"><button onclick="guardar('proveedores')">Guardar</button></div><div class="card"><div id="list_proveedores" class="grid"></div></div></div>
+<div id="view-stock" class="view" style="display:none"><div class="card"><h2>Stock Depósito</h2><div id="list_stock"></div></div></div>
+<div id="view-ventas" class="view" style="display:none"><div class="card"><h2>Ventas</h2><select id="venta_rep"></select><select id="venta_prod"></select><input id="venta_cant" type="number" placeholder="Cant"><input id="venta_total" type="number" placeholder="Total $"><button onclick="guardarVenta()">Registrar</button></div><div class="card"><div id="list_ventas"></div></div></div>
+<div id="view-finanzas" class="view" style="display:none"><div class="card"><div class="kpi"><div><b id="kpi_ingresos">$0</b>Ingresos</div><div><b id="kpi_egresos">$0</b>Egresos</div><div><b id="kpi_balance">$0</b>Balance</div></div></div><div class="card"><select id="fin_tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select><input id="fin_concepto" placeholder="Concepto"><input id="fin_monto" type="number" placeholder="Monto"><button onclick="guardar('finanzas')">Guardar</button></div><div class="card"><div id="list_finanzas"></div></div></div>
+<div id="view-marketing" class="view" style="display:none"><div class="card"><h2>Marketing</h2><input id="mkt_camp" placeholder="Campaña"><select id="mkt_canal"><option>WhatsApp</option><option>Facebook</option><option>Instagram</option></select><input id="mkt_pres" type="number" placeholder="Presupuesto"><input id="mkt_leads" type="number" placeholder="Leads"><button onclick="guardar('marketing')">Guardar</button></div><div class="card"><div id="list_marketing" class="grid"></div></div></div>
 </div>
 <script>
-let map, markers=[];
+let map, markers={}, polylines={}, seguimiento=false, intervalSeg=null;
 const API_GPS='/api/gps', API_ERP='/api/erp';
+
 document.querySelectorAll('.tab').forEach(t=>{
  t.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
@@ -101,44 +90,119 @@ document.querySelectorAll('.tab').forEach(t=>{
   cargarTabla(t.dataset.tab);
  })
 });
-function initMap(){ map=L.map('map').setView([-33.5,-53.8],12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); cargarGPS(); }
-async function cargarGPS(){
- try{
-  const r=await fetch(API_GPS+'?all=1'); const data=await r.json();
-  const rows=Array.isArray(data)?data:data.data||[];
-  document.getElementById('gpsCount').textContent=rows.length+' posiciones';
-  document.getElementById('status').textContent='✅ Turso OK - '+rows.length+' gps';
-  document.getElementById('gpsList').innerHTML=rows.slice(0,20).map(g=>`<span class="badge">${g.device_id||g[0]} ${g.lat||g[1]},${g.lng||g[2]} ${g.velocidad||g[3]||0}km/h</span>`).join(' ');
-  if(map){ markers.forEach(m=>map.removeLayer(m)); markers=[]; rows.forEach(g=>{ const lat=g.lat||g[1], lng=g.lng||g[2]; if(lat&&lng){ markers.push(L.marker([lat,lng]).addTo(map)); } }); if(rows.length){ const l=rows[0]; map.setView([l.lat||l[1], l.lng||l[2]],14); } }
- }catch(e){ document.getElementById('status').textContent='❌ '+e.message }
+
+function initMap(){
+ map=L.map('map').setView([-33.52,-53.78],13);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+ cargarGPS();
+ cargarTabla('repartidores');
 }
+
+function normalizeGps(rows){
+ // Turso puede devolver array de arrays o objetos
+ return rows.map(r=>{
+  if(Array.isArray(r)) return {device_id:r[0], lat:r[1], lng:r[2], velocidad:r[3]||0, recorded_at:r[4]};
+  return {device_id:r.device_id, lat:r.lat, lng:r.lng, velocidad:r.velocidad||0, recorded_at:r.recorded_at};
+ }).filter(g=>g.lat && g.lng);
+}
+
+async function cargarGPS(forzar=false){
+ try{
+  const device=document.getElementById('gpsDeviceFilter').value;
+  const url=device?`${API_GPS}?all=1&device_id=${device}`:`${API_GPS}?all=1`;
+  const r=await fetch(url); const data=await r.json();
+  const raw=Array.isArray(data)?data:(data.data||[]);
+  const gps=normalizeGps(raw);
+  document.getElementById('gpsCount').textContent=`${gps.length} puntos`;
+  document.getElementById('status').innerHTML=`Turso: megal-erp<br/>✅ ${gps.length} gps<br/>${new Date().toLocaleTimeString()}`;
+
+  // Agrupar por device
+  const byDevice={};
+  gps.forEach(g=>{ if(!byDevice[g.device_id]) byDevice[g.device_id]=[]; byDevice[g.device_id].push(g); });
+
+  // Lista dispositivos
+  const devCont=document.getElementById('gpsDevices');
+  const filterSel=document.getElementById('gpsDeviceFilter');
+  const existingValues=[...filterSel.options].map(o=>o.value);
+  Object.keys(byDevice).forEach(dev=>{
+   if(!existingValues.includes(dev)){
+    const opt=document.createElement('option'); opt.value=dev; opt.textContent=`Device ${dev}`; filterSel.appendChild(opt);
+   }
+  });
+  devCont.innerHTML=Object.keys(byDevice).map(dev=>{
+   const last=byDevice[dev][0];
+   return `<div class="device-card" onclick="filtrarDevice(${dev})" data-dev="${dev}"><b>🛵 Device ${dev}</b><br/><span style="font-size:12px">${last.lat.toFixed(5)}, ${last.lng.toFixed(5)}<br/>${last.velocidad} km/h - ${new Date(last.recorded_at).toLocaleTimeString()}</span></div>`;
+  }).join('') || '<p style="color:#64748b;font-size:12px">Sin GPS aún. Mandá uno de prueba:<br/>/api/gps?device_id=7&lat=-33.52&lng=-53.78</p>';
+
+  // Lista
+  document.getElementById('gpsList').innerHTML=gps.slice(0,50).map(g=>`<div style="padding:4px 0;border-bottom:1px solid #1e293b"><b>D${g.device_id}</b> ${g.lat.toFixed(4)},${g.lng.toFixed(4)} <span style="color:#94a3b8">${g.velocidad}km/h ${new Date(g.recorded_at).toLocaleTimeString()}</span></div>`).join('');
+
+  // Mapa
+  if(map){
+   // limpiar marcadores viejos del filtro actual
+   Object.values(markers).forEach(m=>map.removeLayer(m)); markers={};
+   Object.values(polylines).forEach(p=>map.removeLayer(p)); polylines={};
+   Object.keys(byDevice).forEach(dev=>{
+    const track=byDevice[dev].slice().reverse(); // mas viejo primero para polyline
+    const last=byDevice[dev][0];
+    const icon=L.divIcon({html:`<div style="background:#0ea5e9;color:white;padding:4px 8px;border-radius:99px;font-weight:bold;font-size:12px">D${dev} ${last.velocidad}km/h</div>`, className:''});
+    const m=L.marker([last.lat, last.lng],{icon}).addTo(map);
+    m.bindPopup(`Device ${dev}<br/>${last.lat},${last.lng}<br/>${last.velocidad}km/h<br/>${last.recorded_at}`);
+    markers[dev]=m;
+    if(document.getElementById('chkRuta').checked && track.length>1){
+     const latlngs=track.map(g=>[g.lat,g.lng]);
+     const poly=L.polyline(latlngs,{color:dev==7?'#38bdf8':'#22c55e', weight:3, opacity:0.7}).addTo(map);
+     polylines[dev]=poly;
+    }
+   });
+   if(gps.length>0){
+    const selDev=document.getElementById('gpsDeviceFilter').value;
+    if(selDev && byDevice[selDev]){ const l=byDevice[selDev][0]; map.setView([l.lat,l.lng],15); document.getElementById('kpi_vel').textContent=l.velocidad; document.getElementById('kpi_time').textContent=new Date(l.recorded_at).toLocaleTimeString(); }
+    else { const l=gps[0]; map.setView([l.lat,l.lng],14); }
+   }
+  }
+ }catch(e){ document.getElementById('status').textContent='❌ '+e.message; console.error(e); }
+}
+
+function filtrarDevice(dev){ document.getElementById('gpsDeviceFilter').value=dev; cargarGPS(); }
+function limpiarRuta(){ Object.values(polylines).forEach(p=>map.removeLayer(p)); polylines={}; document.getElementById('chkRuta').checked=false; }
+function toggleSeguimiento(){
+ seguimiento=!seguimiento;
+ document.getElementById('btnSeg').textContent=seguimiento?'📡 Seguimiento: ON':'📡 Seguimiento: OFF';
+ document.getElementById('btnSeg').style.background=seguimiento?'#22c55e':'';
+ if(seguimiento){ intervalSeg=setInterval(()=>cargarGPS(),5000); } else { clearInterval(intervalSeg); }
+}
+
 async function cargarTabla(tab){
- const mapT={repartidores:'repartidores', productos:'productos', clientes:'clientes', proveedores:'proveedores', stock:'stock_deposito', ventas:'ventas', finanzas:'finanzas', marketing:'marketing', gps:'gps'};
- const table=mapT[tab]; if(!table || tab==='gps') { if(tab==='gps') cargarGPS(); return; }
+ if(tab==='gps') return cargarGPS();
+ const mapT={repartidores:'repartidores', productos:'productos', clientes:'clientes', proveedores:'proveedores', stock:'stock_deposito', ventas:'ventas', finanzas:'finanzas', marketing:'marketing'};
+ const table=mapT[tab]; if(!table) return;
  try{
   const r=await fetch(`${API_ERP}?table=${table}`); const j=await r.json(); const data=j.data||[];
-  const el=document.getElementById('list_'+table)||document.getElementById('list_'+tab);
+  const el=document.getElementById('list_'+(tab==='stock'?'stock':table))||document.getElementById('list_'+table);
   if(!el) return;
   if(data.length===0){ el.innerHTML='<p style="color:#64748b">Vacío</p>'; return; }
-  // Finanzas KPI
   if(table==='finanzas'){
    let ing=0,egr=0; data.forEach(row=>{ const d=Array.isArray(row)?{tipo:row[1], monto:row[3]}:row; const m=parseInt(d.monto)||0; if(d.tipo==='ingreso') ing+=m; else egr+=m; });
-   document.getElementById('kpi_ingresos').textContent='$'+ing; document.getElementById('kpi_egresos').textContent='$'+egr; document.getElementById('kpi_balance').textContent='$'+(ing-egr);
+   const ei=document.getElementById('kpi_ingresos'); if(ei) ei.textContent='$'+ing;
+   const ee=document.getElementById('kpi_egresos'); if(ee) ee.textContent='$'+egr;
+   const eb=document.getElementById('kpi_balance'); if(eb) eb.textContent='$'+(ing-egr);
   }
   el.innerHTML=data.map(row=>{
-   if(Array.isArray(row)){ return `<div class="card"><div style="font-size:11px;word-break:break-all">${row.join(' | ')}</div></div>`; }
-   return `<div class="card"><div style="font-size:13px"><b>${row.nombre||row.campaña||row.concepto||row.id}</b><br/>${JSON.stringify(row).slice(0,180)}</div></div>`;
+   if(Array.isArray(row)) return `<div class="card"><div style="font-size:11px">${row.join(' | ')}</div></div>`;
+   return `<div class="card"><b>${row.nombre||row.campaña||row.concepto||row.id}</b><br/><span style="font-size:12px;color:#94a3b8">${JSON.stringify(row).slice(0,200)}</span></div>`;
   }).join('');
-  if(table==='repartidores'){ const s=document.getElementById('venta_rep'); if(s) s.innerHTML=data.map(r=>`<option value="${Array.isArray(r)?r[0]:r.id}">${Array.isArray(r)?r[1]:r.nombre}</option>`).join(''); }
+  if(table==='repartidores'){ const s=document.getElementById('venta_rep'); if(s) s.innerHTML=data.map(r=>`<option value="${Array.isArray(r)?r[0]:r.id}">${Array.isArray(r)?r[1]:r.nombre}</option>`).join(''); const f=document.getElementById('gpsDeviceFilter'); if(f && f.options.length<=1){ data.forEach(r=>{ const dev=Array.isArray(r)?r[6]:r.device_id; if(dev){ const o=document.createElement('option'); o.value=dev; o.textContent=`${Array.isArray(r)?r[1]:r.nombre} (D${dev})`; f.appendChild(o);} }); } }
   if(table==='productos'){ const s=document.getElementById('venta_prod'); if(s) s.innerHTML=data.map(r=>`<option value="${Array.isArray(r)?r[0]:r.id}">${Array.isArray(r)?r[1]:r.nombre}</option>`).join(''); }
  }catch(e){ console.error(e) }
 }
+
 async function guardar(tabla){
  const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  let p={id:genId()};
- if(tabla==='repartidores'){ p.nombre=document.getElementById('rep_nombre').value; p.telefono=document.getElementById('rep_tel').value; p.vehiculo=document.getElementById('rep_veh').value; p.patente=document.getElementById('rep_pat').value; p.color='#3b82f6'; p.device_id=7; }
+ if(tabla==='repartidores'){ p.nombre=document.getElementById('rep_nombre').value; p.telefono=document.getElementById('rep_tel').value; p.vehiculo=document.getElementById('rep_veh').value; p.patente=document.getElementById('rep_pat').value; p.device_id=parseInt(document.getElementById('rep_device').value)||7; p.color='#3b82f6'; }
  if(tabla==='productos'){ p.nombre=document.getElementById('prod_nombre').value; p.tipo=document.getElementById('prod_tipo').value; p.costo=parseInt(document.getElementById('prod_costo').value)||0; p.precio_venta=parseInt(document.getElementById('prod_precio').value)||0; }
- if(tabla==='clientes'){ p.telefono=document.getElementById('cli_tel').value; p.nombre1=document.getElementById('cli_nom').value; p.ciudad=document.getElementById('cli_ciu').value; p.calle=document.getElementById('cli_calle').value; }
+ if(tabla==='clientes'){ p.telefono=document.getElementById('cli_tel').value; p.nombre1=document.getElementById('cli_nom').value; p.ciudad=document.getElementById('cli_ciu').value; }
  if(tabla==='proveedores'){ p.nombre=document.getElementById('prov_nombre').value; p.cuit=document.getElementById('prov_cuit').value; p.telefono=document.getElementById('prov_tel').value; p.rubro=document.getElementById('prov_rubro').value; }
  if(tabla==='finanzas'){ p.tipo=document.getElementById('fin_tipo').value; p.concepto=document.getElementById('fin_concepto').value; p.monto=parseInt(document.getElementById('fin_monto').value)||0; }
  if(tabla==='marketing'){ p.campaña=document.getElementById('mkt_camp').value; p.canal=document.getElementById('mkt_canal').value; p.presupuesto=parseInt(document.getElementById('mkt_pres').value)||0; p.leads=parseInt(document.getElementById('mkt_leads').value)||0; p.estado='Activa'; }
@@ -150,7 +214,7 @@ async function guardarVenta(){
  await fetch(`${API_ERP}?table=ventas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)});
  cargarTabla('ventas');
 }
-initMap(); setInterval(cargarGPS,15000);
+initMap();
 </script>
 </body>
 </html>
