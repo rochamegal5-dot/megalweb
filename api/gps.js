@@ -1,4 +1,4 @@
-// /api/gps.js - FINAL con tablas completas incluyendo proveedores, finanzas, marketing
+// Actualizar api/gps.js para incluir puntos_referencia
 export default async function handler(req, res) {
   const TURSO_URL = process.env.TURSO_DATABASE_URL;
   const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
         `CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, vehiculo TEXT, patente TEXT, color TEXT DEFAULT '#3b82f6', device_id INTEGER DEFAULT 7, activo INTEGER DEFAULT 1)`,
         `CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT, costo INTEGER, precio_venta INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, telefono TEXT, nombre1 TEXT, apellido1 TEXT, depto TEXT, ciudad TEXT, calle TEXT, numero TEXT, latitud REAL, longitud REAL, fiado INTEGER DEFAULT 0)`,
+        `CREATE TABLE IF NOT EXISTS puntos_referencia (id TEXT PRIMARY KEY, nombre TEXT, latitud REAL, longitud REAL, lat REAL, lng REAL, cliente_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, cuit TEXT, telefono TEXT, rubro TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS stock_deposito (producto_id TEXT PRIMARY KEY, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`,
         `CREATE TABLE IF NOT EXISTS stock_camioneta (repartidor_id TEXT, producto_id TEXT, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, PRIMARY KEY (repartidor_id, producto_id))`,
@@ -27,20 +28,20 @@ export default async function handler(req, res) {
         `INSERT OR IGNORE INTO configuraciones (clave, valor) VALUES ('flete_reparto', 150)`
       ];
       for (const sql of creates) await tursoExec(sql);
-      return res.status(200).json({ ok: true, message: "Tablas completas creadas en megal-erp (incluye proveedores, finanzas, marketing)" });
+      return res.status(200).json({ ok: true, message: "Tablas completas creadas (con puntos_referencia)" });
     }
     if (all === "1") {
       const id = device_id ? parseInt(device_id) : null;
-      const sql = id ? "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 100" : "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations ORDER BY recorded_at DESC LIMIT 200";
+      const sql = id ? "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 200" : "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations ORDER BY recorded_at DESC LIMIT 500";
       const result = await tursoExec(sql, id ? [id] : []);
-      const rows = result.results?.[0]?.rows || result.results?.[0]?.response?.result?.rows || [];
+      const rows = result.results?.[0]?.rows || [];
       return res.status(200).json(rows);
     }
     if (lat && lng) {
       await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [parseInt(device_id)||7, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
       return res.status(200).json({ ok: true });
     }
-    return res.status(400).json({ ok: false, error: "falta lat/lng o all=1 o init=1" });
+    return res.status(400).json({ ok: false, error: "falta lat/lng" });
   } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
 }
 
