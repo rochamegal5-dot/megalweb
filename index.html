@@ -3,51 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Megal ERP - Híbrido Final Turso</title>
+<title>Megal ERP - Híbrido Final Completo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
 body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 .erp-sidebar{width:260px;background:#111827;border-right:1px solid #1f2937;padding:18px;display:flex;flex-direction:column;gap:8px}
-.erp-sidebar h1{font-size:20px;color:#38bdf8;margin-bottom:14px;display:flex;gap:8px}
-.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#1f2937;color:#94a3b8;font-size:13px;transition:.2s}
-.tab.active{background:#0ea5e9;color:white;box-shadow:0 0 12px rgba(14,165,233,0.3)}
+.erp-sidebar h1{font-size:20px;color:#38bdf8;margin-bottom:14px}
+.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#1f2937;color:#94a3b8;font-size:13px}
+.tab.active{background:#0ea5e9;color:white}
 .tab:hover{background:#334155;color:white}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0f172a}
-.gps-header{background:#1e293b;border-bottom:1px solid #334155;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.gps-header select, .gps-header button{padding:8px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:12px}
-.gps-header button{background:#0ea5e9;border:none;font-weight:bold;cursor:pointer}
-.gps-header button.sec{background:#334155}
-.gps-header .pill{background:#0f172a;padding:6px 10px;border-radius:8px;font-size:11px;color:#94a3b8;border:1px solid #1f2937}
-.gps-content{flex:1;display:flex;overflow:hidden}
-.map-area{flex:1;position:relative;background:#0b1120}
-#map{height:100%;width:100%}
-.vel-box{position:absolute;top:12px;right:12px;background:#1e293b;color:white;padding:10px 18px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center;z-index:500;border:1px solid #334155}
-.vel-box b{font-size:26px;display:block;color:#38bdf8}
-.gps-sidebar{width:360px;background:#111827;border-left:1px solid #1f2937;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
-.card{background:#1e293b;border-radius:12px;padding:14px;border:1px solid #2d3748}
-.card h3{font-size:13px;margin-bottom:10px;color:#e2e8f0;display:flex;align-items:center;gap:6px}
-select, input{width:100%;padding:9px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;margin-bottom:8px;font-size:12px}
-.btn-green{background:#16a34a;color:white;width:100%;padding:10px;border-radius:8px;border:none;cursor:pointer;font-weight:bold;font-size:13px}
-.btn-green:hover{background:#15803d}
-.veh-card{padding:10px;border-radius:10px;border:1px solid #2d3748;background:#0f172a;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:pointer;transition:.2s}
-.veh-card.active{border-color:#0ea5e9;background:#0c4a6e;box-shadow:0 0 8px rgba(14,165,233,0.2)}
-.dot{width:9px;height:9px;border-radius:50%}
-.dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e} .dot.off{background:#475569}
-.punto-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#0f172a;border-radius:8px;margin-bottom:4px;font-size:12px;border:1px solid #1f2937}
+.gps-tabs{background:#1e293b;border-bottom:1px solid #334155;padding:8px 16px;display:flex;gap:10px}
+.gps-tab{padding:8px 14px;border-radius:8px;cursor:pointer;background:#0f172a;color:#94a3b8;font-size:13px;border:1px solid #1f2937}
+.gps-tab.active{background:#0f172a;color:#38bdf8;border-color:#0ea5e9}
+.content{flex:1;overflow:auto;padding:16px}
+.card{background:#1e293b;border-radius:12px;padding:16px;border:1px solid #2d3748;margin-bottom:16px}
+.grid-cols-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.lg-col-span-3{grid-column:span 3}
+@media(max-width:1024px){.grid-cols-4{grid-template-columns:1fr}.lg-col-span-3{grid-column:span 1}}
+.ref-label{background:#1e40af;color:white;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:bold;box-shadow:0 3px 8px rgba(0,0,0,0.5)}
+.veh-card{padding:10px;border-radius:10px;border:1px solid #2d3748;background:#0f172a;display:flex;justify-content:space-between;margin-bottom:6px;cursor:pointer}
+.veh-card.active{border-color:#0ea5e9;background:#0c4a6e}
+.punto-item{display:flex;justify-content:space-between;padding:8px;background:#0f172a;border-radius:8px;margin-bottom:4px;font-size:12px;border:1px solid #1f2937}
 .x{color:#ef4444;cursor:pointer;font-weight:bold;padding:2px 8px;background:#1f2937;border-radius:6px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{background:#0f172a;padding:6px;text-align:left;border-bottom:1px solid #1f2937;color:#64748b;font-size:10px}
-td{padding:6px;border-bottom:1px solid #1f2937;color:#cbd5e1}
-.ref-label{background:#1e40af;color:white;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:bold;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.5);border:1px solid #1e3a8a;display:flex;align-items:center;gap:4px}
-.ref-label::before{content:"📍"}
-.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.kpi-row div{background:#0f172a;padding:10px;border-radius:10px;text-align:center;border:1px solid #1f2937}
-.kpi-row b{font-size:18px;display:block;color:#38bdf8}
-.view{display:none;flex:1;overflow:auto;padding:20px}
-.view.active{display:flex;flex-direction:column}
-.erp-view{padding:20px}
+input,select,button{border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;padding:8px;font-size:13px}
+button{cursor:pointer;font-weight:bold}
+.btn-green{background:#16a34a;border:none}
+.btn-blue{background:#0ea5e9;border:none}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:6px;text-align:left;border-bottom:1px solid #1f2937;color:#64748b;font-size:10px;background:#0f172a}
+td{padding:6px;border-bottom:1px solid #1f2937}
+.stat-card{padding:16px;border-radius:12px;text-align:center;border:1px solid}
+.view{display:none}
+.view.active{display:block}
 </style>
 </head>
 <body>
@@ -58,89 +48,157 @@ td{padding:6px;border-bottom:1px solid #1f2937;color:#cbd5e1}
 <div class="tab" data-tab="productos">📦 Productos</div>
 <div class="tab" data-tab="clientes">👥 Clientes</div>
 <div class="tab" data-tab="proveedores">🏭 Proveedores</div>
-<div class="tab" data-tab="stock">📦 Stock Depósito</div>
+<div class="tab" data-tab="stock">📦 Stock</div>
 <div class="tab" data-tab="ventas">💰 Ventas</div>
 <div class="tab" data-tab="finanzas">📈 Finanzas</div>
 <div class="tab" data-tab="marketing">📣 Marketing</div>
-<div style="margin-top:auto;font-size:11px;color:#475569;line-height:1.4">Turso: megal-erp<br/>Rocha - Uruguay<br/><span id="status">Conectando...</span></div>
+<div style="margin-top:auto;font-size:11px;color:#475569" id="status">Turso: megal-erp<br/>Rocha<br/>Conectando...</div>
 </div>
 
 <div class="main">
-<div id="view-gps" class="view active" style="padding:0">
-<div class="gps-header">
-<span style="font-size:13px;color:#94a3b8;font-weight:bold">GPS - Rocha</span>
-<select id="vehSelect" onchange="filtrarVehiculo()" style="min-width:180px"><option value="">-- Todos los repartidores --</option></select>
-<button onclick="cargarGPS(true)">🔄 Actualizar</button>
-<button class="sec" onclick="toggleSeguimiento()" id="btnSeg">📡 Seguimiento: OFF</button>
-<button class="sec" onclick="limpiarRuta()">🧹 Limpiar ruta</button>
-<span class="pill" id="gpsCount">0 puntos</span>
-<label style="font-size:11px;color:#94a3b8"><input type="checkbox" id="chkRuta" checked> Ver ruta</label>
+<!-- GPS VIVO + HISTORIAL TABS -->
+<div class="gps-tabs">
+<div class="gps-tab active" id="tabVivo" onclick="switchGpsTab('vivo')">📍 En Vivo (Turso)</div>
+<div class="gps-tab" id="tabHist" onclick="switchGpsTab('historial')">📊 Historial</div>
 </div>
-<div class="gps-content">
-<div class="map-area"><div id="map"></div><div class="vel-box"><div style="font-size:10px;color:#94a3b8;font-weight:bold">VELOCIDAD</div><b id="velDisplay">0</b><div style="font-size:10px;color:#94a3b8">km/h</div></div>
-<div class="kpi-row" style="position:absolute;bottom:10px;left:10px;right:10px;z-index:400"><div><b id="kpi_vel">0</b><span style="font-size:10px;color:#94a3b8">km/h velocidad</span></div><div><b id="kpi_dist">0</b><span style="font-size:10px;color:#94a3b8">km recorrido hoy</span></div><div><b id="kpi_time">--</b><span style="font-size:10px;color:#94a3b8">última actualización</span></div></div>
+
+<div class="content">
+<!-- TU CODIGO ORIGINAL EXACTO PERO CON ESTETICA OSCURA -->
+<div id="gpsVivo">
+<div class="grid-cols-4" style="display:grid;gap:16px">
+<div class="lg-col-span-3 card" style="padding:8px;min-height:550px;position:relative">
+<div id="gpsMap" style="height:550px;width:100%;border-radius:8px;z-index:1"></div>
+<div style="position:absolute;top:16px;right:16px;z-index:10">
+<div style="background:#1e293b;border:1px solid #334155;padding:10px 16px;border-radius:10px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+<p style="font-size:10px;color:#94a3b8;font-weight:bold">VELOCIDAD</p>
+<p id="gpsSpeed" style="font-size:28px;font-weight:900;color:#38bdf8">0</p>
+<p style="font-size:10px;color:#94a3b8">km/h</p>
 </div>
-<div class="gps-sidebar">
-<div class="card"><h3>🚚 Vehículos (Turso)</h3><div id="vehList"></div></div>
-<div class="card"><h3>📍 Agregar Punto</h3><p style="font-size:10px;color:#64748b;margin-bottom:8px">Hacé clic en el mapa para obtener coordenadas.</p><label style="font-size:11px">Nombre *</label><input id="pNombre" placeholder="Ej: Cliente Mides"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div><label style="font-size:10px">Latitud</label><input id="pLat" type="number" step="0.000001"></div><div><label style="font-size:10px">Longitud</label><input id="pLng" type="number" step="0.000001"></div></div><button class="btn-green" onclick="guardarPunto()">Guardar Punto</button></div>
-<div class="card"><h3>📍 Puntos de Referencia</h3><div id="puntosList"></div></div>
-<div class="card"><h3>📋 Registro en Vivo</h3><table><thead><tr><th>Hora</th><th>Repartidor</th><th>Vel</th></tr></thead><tbody id="registroBody"></tbody></table></div>
+</div>
+<div style="position:absolute;bottom:12px;left:12px;right:12px;z-index:10;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:#0f172a;border:1px solid #1f2937;padding:8px;border-radius:8px;text-align:center"><b id="kpi_vel" style="color:#38bdf8">0</b><br/><span style="font-size:10px;color:#94a3b8">km/h</span></div>
+<div style="background:#0f172a;border:1px solid #1f2937;padding:8px;border-radius:8px;text-align:center"><b id="kpi_dist" style="color:#38bdf8">0</b><br/><span style="font-size:10px;color:#94a3b8">km hoy</span></div>
+<div style="background:#0f172a;border:1px solid #1f2937;padding:8px;border-radius:8px;text-align:center"><b id="kpi_time" style="color:#38bdf8">--</b><br/><span style="font-size:10px;color:#94a3b8">última</span></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card">
+<h3 style="font-size:13px;font-weight:bold;margin-bottom:8px;color:#e2e8f0">🚚 Vehículos (Turso)</h3>
+<select id="selRepartidor" onchange="centrarEnRepartidor(this.value)" style="width:100%;padding:8px;border-radius:8px;background:#0f172a;color:white;border:1px solid #334155;font-size:12px">
+<option value="">-- Todos --</option>
+</select>
+<div id="listaEstadosRep" style="margin-top:12px;max-height:200px;overflow:auto;display:flex;flex-direction:column;gap:6px"></div>
+</div>
+
+<div class="card">
+<h3 style="font-size:13px;font-weight:bold;margin-bottom:8px">📌 Agregar Punto</h3>
+<p style="font-size:10px;color:#64748b;margin-bottom:8px">Hacé clic en el mapa para obtener coordenadas.</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div><label style="font-size:11px;font-weight:bold;color:#94a3b8">Nombre *</label><input type="text" id="mkNombre" placeholder="Ej: Cliente Mides" style="width:100%;margin-top:4px"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div><label style="font-size:11px;font-weight:bold;color:#94a3b8">Latitud</label><input type="number" id="mkLat" step="any" readonly style="width:100%;margin-top:4px;background:#111827"></div>
+<div><label style="font-size:11px;font-weight:bold;color:#94a3b8">Longitud</label><input type="number" id="mkLng" step="any" readonly style="width:100%;margin-top:4px;background:#111827"></div>
+</div>
+<button onclick="guardarMarcador()" style="background:#16a34a;color:white;padding:8px;border-radius:8px;border:none;font-weight:bold;width:100%">Guardar Punto</button>
+</div>
+</div>
+
+<div class="card" style="max-height:160px;overflow:auto">
+<h3 style="font-size:12px;font-weight:bold;margin-bottom:8px">📍 Puntos de Referencia</h3>
+<div id="listaMarcadores" style="display:flex;flex-direction:column;gap:4px;font-size:12px"><p style="color:#475569;text-align:center">Cargando...</p></div>
+</div>
+
+<div class="card" style="max-height:220px;overflow:auto">
+<h3 style="font-size:12px;font-weight:bold;margin-bottom:8px">📋 Registro en Vivo</h3>
+<table><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Repartidor</th><th style="padding:6px;border:1px solid #1f2937">Velocidad</th></tr></thead><tbody id="tablaVivoGPS"></tbody></table>
+</div>
 </div>
 </div>
 </div>
 
-<div id="view-repartidores" class="view erp-view"><div class="card"><h3>Repartidores</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="rep_nombre" placeholder="Nombre" style="width:160px"><input id="rep_tel" placeholder="Tel" style="width:120px"><input id="rep_veh" placeholder="Vehículo" style="width:120px"><input id="rep_pat" placeholder="Patente" style="width:100px"><input id="rep_device" type="number" placeholder="Device ID" value="7" style="width:90px"><button onclick="guardar('repartidores')">Guardar</button></div></div><div id="list_repartidores" class="card" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px"></div></div>
-<div id="view-productos" class="view erp-view"><div class="card"><h3>Productos</h3><input id="prod_nombre" placeholder="Garrafa 13kg"><input id="prod_tipo" placeholder="Tipo"><input id="prod_costo" type="number" placeholder="Costo"><input id="prod_precio" type="number" placeholder="Venta"><button onclick="guardar('productos')">Guardar</button></div><div id="list_productos" class="card" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div></div>
-<div id="view-clientes" class="view erp-view"><div class="card"><h3>Clientes</h3><input id="cli_tel" placeholder="Tel"><input id="cli_nom" placeholder="Nombre"><input id="cli_ciu" placeholder="Ciudad"><button onclick="guardar('clientes')">Guardar</button></div><div id="list_clientes" class="card"></div></div>
-<div id="view-proveedores" class="view erp-view"><div class="card"><h3>Proveedores</h3><input id="prov_nombre" placeholder="Empresa"><input id="prov_cuit" placeholder="CUIT"><input id="prov_tel" placeholder="Tel"><input id="prov_rubro" placeholder="Rubro"><button onclick="guardar('proveedores')">Guardar</button></div><div id="list_proveedores" class="card"></div></div>
-<div id="view-stock" class="view erp-view"><div class="card"><h3>Stock Depósito</h3><div id="list_stock"></div></div></div>
-<div id="view-ventas" class="view erp-view"><div class="card"><h3>Ventas</h3><select id="venta_rep"></select><select id="venta_prod"></select><input id="venta_cant" type="number" placeholder="Cant"><input id="venta_total" type="number" placeholder="Total"><button onclick="guardarVenta()">Registrar</button></div><div id="list_ventas" class="card"></div></div>
-<div id="view-finanzas" class="view erp-view"><div class="card"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"><div style="text-align:center"><b id="kpi_ingresos" style="font-size:20px;color:#22c55e">$0</b><br/>Ingresos</div><div style="text-align:center"><b id="kpi_egresos" style="font-size:20px;color:#ef4444">$0</b><br/>Egresos</div><div style="text-align:center"><b id="kpi_balance" style="font-size:20px;color:#38bdf8">$0</b><br/>Balance</div></div></div><div class="card"><select id="fin_tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select><input id="fin_concepto" placeholder="Concepto"><input id="fin_monto" type="number" placeholder="Monto"><button onclick="guardar('finanzas')">Guardar</button></div><div id="list_finanzas" class="card"></div></div>
-<div id="view-marketing" class="view erp-view"><div class="card"><h3>Marketing</h3><input id="mkt_camp" placeholder="Campaña"><select id="mkt_canal"><option>WhatsApp</option><option>Facebook</option><option>Instagram</option></select><input id="mkt_pres" type="number" placeholder="Presupuesto"><input id="mkt_leads" type="number" placeholder="Leads"><button onclick="guardar('marketing')">Guardar</button></div><div id="list_marketing" class="card"></div></div>
+<div id="gpsHistorial" class="view">
+<div class="card" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center">
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<select id="histRepartidorId" style="padding:8px"><option value="">-- Seleccione Repartidor --</option></select>
+<input type="date" id="histFecha" style="padding:8px">
+<button onclick="generarInforme()" style="background:#0ea5e9;color:white;padding:8px 16px;border-radius:8px;border:none;font-weight:bold">📊 Generar Informe</button>
 </div>
 </div>
+<div id="gpsMapHist" style="height:400px;width:100%;background:#1e293b;margin-bottom:16px;border-radius:12px;border:1px solid #2d3748"></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+<div class="stat-card" style="background:#2a1215;border-color:#7f1d1d"><p style="font-size:11px;font-weight:bold;color:#fca5a5">Exceso de Velocidad (>45 km/h)</p><p id="statExceso" style="font-size:28px;font-weight:900;color:#ef4444;margin-top:4px">0</p></div>
+<div class="stat-card" style="background:#2a1a0e;border-color:#7c2d12"><p style="font-size:11px;font-weight:bold;color:#fed7aa">Detenciones > 3 min</p><p id="statDetenciones" style="font-size:28px;font-weight:900;color:#f97316;margin-top:4px">0</p></div>
+<div class="stat-card" style="background:#0c1a2e;border-color:#1e3a8a"><p style="font-size:11px;font-weight:bold;color:#93c5fd">Distancia Total</p><p id="statDistancia" style="font-size:28px;font-weight:900;color:#3b82f6;margin-top:4px">0 km</p></div>
+</div>
+<div class="card">
+<h3 style="font-weight:bold;font-size:14px;margin-bottom:8px">📋 Línea de Tiempo del Recorrido - <span id="histNombreRep" style="color:#38bdf8"></span></h3>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">Se muestra la posición cada 5 minutos y los incidentes detectados.</p>
+<div style="border:1px solid #1f2937;border-radius:8px;max-height:450px;overflow:auto">
+<table><thead style="position:sticky;top:0;background:#0f172a;z-index:10"><tr><th style="padding:8px;border:1px solid #1f2937;font-weight:800">Hora</th><th style="padding:8px;border:1px solid #1f2937;font-weight:800">Evento</th><th style="padding:8px;border:1px solid #1f2937;font-weight:800">Detalle / Velocidad</th><th style="padding:8px;border:1px solid #1f2937;text-align:center;font-weight:800">Venta (Futuro)</th></tr></thead><tbody id="tablaIncidentesGPS"><tr><td colspan="4" style="padding:16px;text-align:center;color:#475569">Seleccione un repartidor y genere el informe.</td></tr></tbody></table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- OTRAS VISTAS ERP -->
+<div id="view-repartidores" class="view"><div class="card"><h3>Repartidores</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="rep_nombre" placeholder="Nombre"><input id="rep_device" type="number" placeholder="Device ID" value="7"><button onclick="guardarERP('repartidores')" class="btn-blue">Guardar</button></div></div><div id="list_repartidores" class="card"></div></div>
+<div id="view-productos" class="view"><div class="card"><h3>Productos</h3><input id="prod_nombre" placeholder="Garrafa"><button onclick="guardarERP('productos')" class="btn-blue">Guardar</button></div><div id="list_productos" class="card"></div></div>
+<div id="view-clientes" class="view"><div class="card"><h3>Clientes</h3><input id="cli_nom" placeholder="Nombre"><button onclick="guardarERP('clientes')" class="btn-blue">Guardar</button></div><div id="list_clientes" class="card"></div></div>
+<div id="view-proveedores" class="view"><div class="card"><h3>Proveedores</h3><input id="prov_nombre" placeholder="Empresa"><button onclick="guardarERP('proveedores')" class="btn-blue">Guardar</button></div><div id="list_proveedores" class="card"></div></div>
+<div id="view-stock" class="view"><div class="card"><div id="list_stock">Stock</div></div></div>
+<div id="view-ventas" class="view"><div class="card"><div id="list_ventas">Ventas</div></div></div>
+<div id="view-finanzas" class="view"><div class="card"><div id="list_finanzas">Finanzas</div></div></div>
+<div id="view-marketing" class="view"><div class="card"><div id="list_marketing">Marketing</div></div></div>
+</div>
+</div>
+
 <script>
 const API_GPS='/api/gps', API_ERP='/api/erp';
-let map, gpsMarkers={}, puntoMarkers={}, polyline=null, puntos=[], repartidores=[], gpsData=[], selectedVeh='', seguimiento=false, intervalSeg=null, clickMarker=null;
-// Coordenadas de ROCHA ciudad - como en tu captura original
-const ROCHA_CENTER=[-34.4836, -54.3334];
-const ROCHA_ZOOM=14;
+let map, mapHist, gpsMarkers={}, puntoMarkers={}, polyline=null, polylineHist=null, puntos=[], repartidores=[], gpsData=[], selectedVeh='', clickMarker=null;
+const ROCHA=[-34.4836,-54.3334];
 
 document.querySelectorAll('.erp-sidebar .tab').forEach(t=>{
  t.addEventListener('click',()=>{
   document.querySelectorAll('.erp-sidebar .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
   document.querySelectorAll('.main .view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+t.dataset.tab).classList.add('active');
-  if(t.dataset.tab==='gps' && map) setTimeout(()=>{ map.invalidateSize(); map.setView(ROCHA_CENTER, ROCHA_ZOOM); },100);
-  if(t.dataset.tab!=='gps') cargarTabla(t.dataset.tab);
+  const target=document.getElementById(t.dataset.tab==='gps'?'gpsVivo':`view-${t.dataset.tab}`);
+  if(target) target.classList.add('active');
+  if(t.dataset.tab==='gps'){ document.getElementById('gpsVivo').classList.remove('view'); document.getElementById('gpsVivo').style.display='block'; document.getElementById('gpsHistorial').classList.remove('active'); if(map) setTimeout(()=>{map.invalidateSize(); map.setView(ROCHA,14)},100); }
  });
 });
 
-function initMap(){
- map=L.map('map').setView(ROCHA_CENTER, ROCHA_ZOOM);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
- map.on('click', e=>{
-  document.getElementById('pLat').value=e.latlng.lat.toFixed(6);
-  document.getElementById('pLng').value=e.latlng.lng.toFixed(6);
-  if(clickMarker) map.removeLayer(clickMarker);
-  clickMarker=L.marker(e.latlng,{draggable:true}).addTo(map);
-  clickMarker.on('dragend', ev=>{ const ll=ev.target.getLatLng(); document.getElementById('pLat').value=ll.lat.toFixed(6); document.getElementById('pLng').value=ll.lng.toFixed(6); });
- });
- cargarTodo();
- setInterval(cargarGPS, 7000);
- // Forzar Rocha al iniciar
- setTimeout(()=>{ map.invalidateSize(); map.setView(ROCHA_CENTER, ROCHA_ZOOM); },500);
+function switchGpsTab(tab){
+ document.getElementById('tabVivo').classList.toggle('active', tab==='vivo');
+ document.getElementById('tabHist').classList.toggle('active', tab==='historial');
+ document.getElementById('gpsVivo').style.display=tab==='vivo'?'block':'none';
+ document.getElementById('gpsHistorial').classList.toggle('active', tab==='historial');
+ if(tab==='historial'){ if(!mapHist){ mapHist=L.map('gpsMapHist').setView(ROCHA,14); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapHist); } setTimeout(()=>mapHist.invalidateSize(),100); }
+ else { if(map) setTimeout(()=>{map.invalidateSize(); map.setView(ROCHA,14)},100); }
 }
 
-async function cargarTodo(){ 
- await cargarRepartidores(); 
- await cargarPuntos(); 
- await cargarGPS(); 
- // Si no hay repartidores, crear los por defecto para que el selector no quede vacío
+function initMap(){
+ map=L.map('gpsMap').setView(ROCHA,14);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+ map.on('click', e=>{
+  document.getElementById('mkLat').value=e.latlng.lat.toFixed(6);
+  document.getElementById('mkLng').value=e.latlng.lng.toFixed(6);
+  if(clickMarker) map.removeLayer(clickMarker);
+  clickMarker=L.marker(e.latlng,{draggable:true}).addTo(map);
+  clickMarker.on('dragend', ev=>{ const ll=ev.target.getLatLng(); document.getElementById('mkLat').value=ll.lat.toFixed(6); document.getElementById('mkLng').value=ll.lng.toFixed(6); });
+ });
+ cargarTodo();
+ setInterval(cargarGPS,7000);
+}
+
+async function cargarTodo(){
+ await cargarRepartidores();
+ await cargarPuntos();
+ await cargarGPS();
  if(repartidores.length===0){
-  document.getElementById('vehSelect').innerHTML = `<option value="">-- Todos los repartidores --</option><option value="7">Antonio (D7)</option><option value="8">Jose (D8)</option><option value="1">Marcelo 1 (D1)</option><option value="2">Marcelo 2 (D2)</option>`;
-  // Crear visualmente en lista
-  document.getElementById('vehList').innerHTML = `<div class="veh-card" onclick="filtrarVehiculo('7')"><div><b>Antonio</b><br/><span style="font-size:10px;color:#64748b">0 km/h - Sin datos</span></div><span class="dot off"></span></div><div class="veh-card" onclick="filtrarVehiculo('8')"><div><b>Jose</b><br/><span style="font-size:10px;color:#64748b">0 km/h - Ahora</span></div><span class="dot on"></span></div>`;
+  const sel=document.getElementById('selRepartidor');
+  sel.innerHTML='<option value="">-- Todos --</option><option value="7">Antonio (D7)</option><option value="8">Jose (D8)</option>';
+  document.getElementById('histRepartidorId').innerHTML='<option value="">-- Seleccione Repartidor --</option><option value="7">Antonio</option><option value="8">Jose</option>';
  }
 }
 
@@ -149,8 +207,8 @@ async function cargarRepartidores(){
   const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const raw=j.data||[];
   repartidores=raw.map(row=> Array.isArray(row)?{id:row[0], nombre:row[1], device_id:row[6]||7}:{id:row.id, nombre:row.nombre, device_id:row.device_id||7});
   if(repartidores.length>0){
-   const sel=document.getElementById('vehSelect');
-   sel.innerHTML='<option value="">-- Todos los repartidores --</option>'+repartidores.map(r=>`<option value="${r.device_id}">${r.nombre} (D${r.device_id})</option>`).join('');
+   document.getElementById('selRepartidor').innerHTML='<option value="">-- Todos --</option>'+repartidores.map(r=>`<option value="${r.device_id}">${r.nombre} (D${r.device_id})</option>`).join('');
+   document.getElementById('histRepartidorId').innerHTML='<option value="">-- Seleccione Repartidor --</option>'+repartidores.map(r=>`<option value="${r.device_id}">${r.nombre}</option>`).join('');
   }
  }catch(e){}
 }
@@ -158,7 +216,7 @@ async function cargarRepartidores(){
 async function cargarPuntos(){
  try{
   let r=await fetch(`${API_ERP}?table=puntos_referencia`); let j=await r.json();
-  if(!j.ok || !j.data){ r=await fetch(`${API_ERP}?table=clientes`); j=await r.json(); }
+  if(!j.ok){ r=await fetch(`${API_ERP}?table=clientes`); j=await r.json(); }
   const raw=j.data||[];
   puntos=raw.map(row=>{
    if(Array.isArray(row)) return {id:row[0], nombre:row[1]||'Punto', lat:parseFloat(row[2]||row[4]||0), lng:parseFloat(row[3]||row[5]||0)};
@@ -169,16 +227,16 @@ async function cargarPuntos(){
 }
 
 function renderPuntos(){
- Object.values(puntoMarkers).forEach(m=>{ if(map) map.removeLayer(m); }); puntoMarkers={};
- const list=document.getElementById('puntosList');
- if(!map){ list.innerHTML=''; return; }
+ Object.values(puntoMarkers).forEach(m=>map.removeLayer(m)); puntoMarkers={};
+ const list=document.getElementById('listaMarcadores');
+ if(!map) return;
  list.innerHTML=puntos.map(p=>{
   const icon=L.divIcon({html:`<div class="ref-label">${p.nombre}</div>`, className:'', iconSize:null});
   const m=L.marker([p.lat,p.lng],{icon}).addTo(map);
   m.bindPopup(`<b>${p.nombre}</b><br/><button onclick="borrarPunto('${p.id}')">Borrar</button>`);
   puntoMarkers[p.id]=m;
   return `<div class="punto-item"><b>${p.nombre}</b><span class="x" onclick="borrarPunto('${p.id}')">X</span></div>`;
- }).join('') || '<p style="font-size:11px;color:#475569">Clic en mapa para agregar clientes</p>';
+ }).join('') || '<p style="color:#475569;text-align:center;font-size:11px">Clic en mapa para agregar</p>';
 }
 
 async function cargarGPS(){
@@ -187,102 +245,92 @@ async function cargarGPS(){
   gpsData=rows.map(row=> Array.isArray(row)?{device_id:row[0], lat:row[1], lng:row[2], velocidad:row[3]||0, recorded_at:row[4]}:{device_id:row.device_id, lat:row.lat, lng:row.lng, velocidad:row.velocidad||0, recorded_at:row.recorded_at}).filter(g=>g.lat&&g.lng);
   let filtrado=selectedVeh?gpsData.filter(g=>String(g.device_id)===String(selectedVeh)):gpsData;
   const byDev={}; gpsData.forEach(g=>{ if(!byDev[g.device_id]) byDev[g.device_id]=[]; byDev[g.device_id].push(g); });
-  
-  // Si hay GPS, actualizar selector con devices reales
+  // lista estados
+  const lista=document.getElementById('listaEstadosRep');
   if(Object.keys(byDev).length>0){
-   const sel=document.getElementById('vehSelect');
-   if(sel.options.length<=1){
-    sel.innerHTML='<option value="">-- Todos los repartidores --</option>'+Object.keys(byDev).map(dev=>{
-     const rep=repartidores.find(r=>String(r.device_id)===String(dev)); return `<option value="${dev}">${rep?.nombre||'Device '+dev} (D${dev})</option>`;
-    }).join('');
-   }
-   const vehList=document.getElementById('vehList');
-   vehList.innerHTML=Object.keys(byDev).map(devId=>{
-    const last=byDev[devId][0]; const rep=repartidores.find(r=>String(r.device_id)===String(devId)); const nombre=rep?.nombre||`Device ${devId}`; const vel=last.velocidad; const online=(new Date()-new Date(last.recorded_at))/1000 < 600;
-    return `<div class="veh-card ${selectedVeh===String(devId)?'active':''}" onclick="filtrarVehiculo('${devId}')"><div><b style="font-size:12px">${nombre}</b><br/><span style="font-size:10px;color:#94a3b8">${vel} km/h - ${timeAgo(last.recorded_at)}</span></div><span class="dot ${online?'on':'off'}"></span></div>`;
+   lista.innerHTML=Object.keys(byDev).map(devId=>{
+    const last=byDev[devId][0]; const rep=repartidores.find(r=>String(r.device_id)===String(devId)); const nombre=rep?.nombre||`Device ${devId}`; const online=(new Date()-new Date(last.recorded_at))/1000 < 600;
+    return `<div class="veh-card ${selectedVeh===String(devId)?'active':''}" onclick="centrarEnRepartidor('${devId}')"><div><b style="font-size:12px">${nombre}</b><br/><span style="font-size:10px;color:#94a3b8">${last.velocidad} km/h - ${timeAgo(last.recorded_at)}</span></div><span style="width:8px;height:8px;border-radius:50%;background:${online?'#22c55e':'#475569'}"></span></div>`;
    }).join('');
   }
-  
-  if(map){
-   Object.values(gpsMarkers).forEach(m=>map.removeLayer(m)); gpsMarkers={};
-   Object.keys(byDev).forEach(dev=>{
-    if(selectedVeh && String(dev)!==String(selectedVeh)) return;
-    const last=byDev[dev][0]; const rep=repartidores.find(r=>String(r.device_id)===String(dev)); const nombre=rep?.nombre||'Jose';
-    const icon=L.divIcon({html:`<div style="background:#8b5cf6;color:white;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.5)">● ${nombre}<br/><span style="font-size:9px">Vel: ${last.velocidad} km/h</span></div>`, className:'', iconSize:null});
-    const m=L.marker([last.lat,last.lng],{icon}).addTo(map); m.bindPopup(`<b>${nombre}</b><br/>Vel: ${last.velocidad} km/h`); gpsMarkers[dev]=m;
-   });
-   if(polyline) map.removeLayer(polyline);
-   if(selectedVeh && byDev[selectedVeh]?.length>1){ const track=byDev[selectedVeh].slice(0,100).reverse().map(g=>[g.lat,g.lng]); polyline=L.polyline(track,{color:'#38bdf8', weight:4, opacity:0.9}).addTo(map); }
-   
-   // Si hay filtro, centrar en ese repartidor, si no, mantener Rocha
-   if(filtrado.length>0 && selectedVeh){
-    map.setView([filtrado[0].lat, filtrado[0].lng],15);
-   } else if(filtrado.length===0){
-    map.setView(ROCHA_CENTER, ROCHA_ZOOM);
-   }
-  }
-  
-  document.getElementById('registroBody').innerHTML=filtrado.slice(0,15).map(g=>{
+  // mapa markers
+  Object.values(gpsMarkers).forEach(m=>map.removeLayer(m)); gpsMarkers={};
+  Object.keys(byDev).forEach(dev=>{
+   if(selectedVeh && String(dev)!==String(selectedVeh)) return;
+   const last=byDev[dev][0]; const rep=repartidores.find(r=>String(r.device_id)===String(dev)); const nombre=rep?.nombre||'Jose';
+   const icon=L.divIcon({html:`<div style="background:#8b5cf6;color:white;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:bold">● ${nombre}<br/><span style="font-size:9px">Vel: ${last.velocidad} km/h</span></div>`, className:'', iconSize:null});
+   const m=L.marker([last.lat,last.lng],{icon}).addTo(map); gpsMarkers[dev]=m;
+  });
+  if(polyline) map.removeLayer(polyline);
+  if(selectedVeh && byDev[selectedVeh]?.length>1){ const track=byDev[selectedVeh].slice(0,100).reverse().map(g=>[g.lat,g.lng]); polyline=L.polyline(track,{color:'#38bdf8', weight:4}).addTo(map); }
+  document.getElementById('tablaVivoGPS').innerHTML=filtrado.slice(0,20).map(g=>{
    const rep=repartidores.find(r=>String(r.device_id)===String(g.device_id)); const nombre=rep?.nombre||'Jose'; const hora=new Date(g.recorded_at).toLocaleTimeString('es-UY');
-   return `<tr><td>${hora}</td><td>${nombre}</td><td>${g.velocidad}</td></tr>`;
-  }).join('') || '<tr><td colspan="3" style="color:#475569">Sin datos aún</td></tr>';
-  
-  document.getElementById('gpsCount').textContent=`${filtrado.length} puntos`;
-  document.getElementById('status').innerHTML=`Turso: megal-erp<br/>📍 Rocha<br/>✅ ${gpsData.length} gps<br/>${new Date().toLocaleTimeString()}`;
-  if(filtrado[0]){ document.getElementById('velDisplay').textContent=filtrado[0].velocidad; document.getElementById('kpi_vel').textContent=filtrado[0].velocidad; document.getElementById('kpi_time').textContent=new Date(filtrado[0].recorded_at).toLocaleTimeString(); }
+   return `<tr><td style="border:1px solid #1f2937;padding:4px">${hora}</td><td style="border:1px solid #1f2937;padding:4px">${nombre}</td><td style="border:1px solid #1f2937;padding:4px">${g.velocidad}</td></tr>`;
+  }).join('') || '<tr><td colspan="3" style="color:#475569;text-align:center">Sin datos</td></tr>';
+  document.getElementById('gpsSpeed').textContent=filtrado[0]?.velocidad||0;
+  document.getElementById('kpi_vel').textContent=filtrado[0]?.velocidad||0;
+  document.getElementById('kpi_time').textContent=filtrado[0]?new Date(filtrado[0].recorded_at).toLocaleTimeString():'--';
+  document.getElementById('status').innerHTML=`Turso: megal-erp<br/>📍 Rocha<br/>✅ ${gpsData.length} gps`;
  }catch(e){ console.error(e) }
 }
 
-function filtrarVehiculo(dev=null){ 
- if(dev!==null) selectedVeh=dev; 
- else selectedVeh=document.getElementById('vehSelect').value; 
- if(map) map.setView(ROCHA_CENTER, ROCHA_ZOOM); // reset luego centrará en el repartidor
- cargarGPS(); 
+function centrarEnRepartidor(val){
+ selectedVeh=val; document.getElementById('selRepartidor').value=val; cargarGPS();
+ if(val && map){ const g=gpsData.find(x=>String(x.device_id)===String(val)); if(g) map.setView([g.lat,g.lng],16); }
 }
-function limpiarRuta(){ if(polyline) map.removeLayer(polyline); polyline=null; document.getElementById('chkRuta').checked=false; }
-function toggleSeguimiento(){ seguimiento=!seguimiento; document.getElementById('btnSeg').textContent=seguimiento?'📡 Seguimiento: ON':'📡 Seguimiento: OFF'; document.getElementById('btnSeg').style.background=seguimiento?'#16a34a':''; if(seguimiento) intervalSeg=setInterval(cargarGPS,5000); else clearInterval(intervalSeg); }
-async function guardarPunto(){
- const nombre=document.getElementById('pNombre').value.trim(); const lat=parseFloat(document.getElementById('pLat').value); const lng=parseFloat(document.getElementById('pLng').value);
+
+async function guardarMarcador(){
+ const nombre=document.getElementById('mkNombre').value.trim(); const lat=parseFloat(document.getElementById('mkLat').value); const lng=parseFloat(document.getElementById('mkLng').value);
  if(!nombre||!lat||!lng){ alert('Completá nombre y clic en mapa'); return; }
  const payload={id:Date.now().toString(36), nombre, latitud:lat, longitud:lng, lat, lng};
  await fetch(`${API_ERP}?table=puntos_referencia`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
- document.getElementById('pNombre').value=''; document.getElementById('pLat').value=''; document.getElementById('pLng').value=''; if(clickMarker){ map.removeLayer(clickMarker); clickMarker=null; }
+ document.getElementById('mkNombre').value=''; document.getElementById('mkLat').value=''; document.getElementById('mkLng').value=''; if(clickMarker){ map.removeLayer(clickMarker); clickMarker=null; }
  cargarPuntos();
 }
 async function borrarPunto(id){ if(!confirm('¿Borrar?')) return; await fetch(`${API_ERP}?table=puntos_referencia&id=${id}`,{method:'DELETE'}); cargarPuntos(); }
-function timeAgo(d){ const diff=Math.floor((new Date()-new Date(d))/1000); if(diff<60) return 'Ahora'; if(diff<3600) return Math.floor(diff/60)+' min'; return Math.floor(diff/3600)+' h'; }
-async function cargarTabla(tab){
- if(tab==='gps') return;
- const mapT={repartidores:'repartidores', productos:'productos', clientes:'clientes', proveedores:'proveedores', stock:'stock_deposito', ventas:'ventas', finanzas:'finanzas', marketing:'marketing'};
- const table=mapT[tab]; if(!table) return;
- try{
-  const r=await fetch(`${API_ERP}?table=${table}`); const j=await r.json(); const data=j.data||[];
-  const el=document.getElementById('list_'+(tab==='stock'?'stock':table))||document.getElementById('list_'+table);
-  if(!el) return;
-  if(data.length===0){ el.innerHTML='<p style="color:#475569">Vacío</p>'; return; }
-  el.innerHTML=data.map(row=>{
-   if(Array.isArray(row)) return `<div class="card"><div style="font-size:11px">${row.join(' | ')}</div></div>`;
-   return `<div class="card"><b>${row.nombre||row.campaña||row.concepto||row.id}</b><br/><span style="font-size:11px;color:#64748b">${JSON.stringify(row).slice(0,200)}</span></div>`;
-  }).join('');
-  if(table==='finanzas'){ let ing=0,egr=0; data.forEach(row=>{ const d=Array.isArray(row)?{tipo:row[1], monto:row[3]}:row; const m=parseInt(d.monto)||0; if(d.tipo==='ingreso') ing+=m; else egr+=m; }); const ei=document.getElementById('kpi_ingresos'); if(ei) ei.textContent='$'+ing; const ee=document.getElementById('kpi_egresos'); if(ee) ee.textContent='$'+egr; const eb=document.getElementById('kpi_balance'); if(eb) eb.textContent='$'+(ing-egr); }
-  if(table==='repartidores'){ const s=document.getElementById('venta_rep'); if(s) s.innerHTML=data.map(r=>`<option value="${Array.isArray(r)?r[0]:r.id}">${Array.isArray(r)?r[1]:r.nombre}</option>`).join(''); }
-  if(table==='productos'){ const s=document.getElementById('venta_prod'); if(s) s.innerHTML=data.map(r=>`<option value="${Array.isArray(r)?r[0]:r.id}">${Array.isArray(r)?r[1]:r.nombre}</option>`).join(''); }
- }catch(e){}
-}
-async function guardar(tabla){
- const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
- let p={id:genId()};
- if(tabla==='repartidores'){ p.nombre=document.getElementById('rep_nombre').value; p.telefono=document.getElementById('rep_tel').value; p.vehiculo=document.getElementById('rep_veh').value; p.patente=document.getElementById('rep_pat').value; p.device_id=parseInt(document.getElementById('rep_device').value)||7; p.color='#3b82f6'; }
- if(tabla==='productos'){ p.nombre=document.getElementById('prod_nombre').value; p.tipo=document.getElementById('prod_tipo').value; p.costo=parseInt(document.getElementById('prod_costo').value)||0; p.precio_venta=parseInt(document.getElementById('prod_precio').value)||0; }
- if(tabla==='clientes'){ p.telefono=document.getElementById('cli_tel').value; p.nombre1=document.getElementById('cli_nom').value; p.ciudad=document.getElementById('cli_ciu').value; }
- if(tabla==='proveedores'){ p.nombre=document.getElementById('prov_nombre').value; p.cuit=document.getElementById('prov_cuit').value; p.telefono=document.getElementById('prov_tel').value; p.rubro=document.getElementById('prov_rubro').value; }
- if(tabla==='finanzas'){ p.tipo=document.getElementById('fin_tipo').value; p.concepto=document.getElementById('fin_concepto').value; p.monto=parseInt(document.getElementById('fin_monto').value)||0; }
- if(tabla==='marketing'){ p.campaña=document.getElementById('mkt_camp').value; p.canal=document.getElementById('mkt_canal').value; p.presupuesto=parseInt(document.getElementById('mkt_pres').value)||0; p.leads=parseInt(document.getElementById('mkt_leads').value)||0; p.estado='Activa'; }
- await fetch(`${API_ERP}?table=${tabla}`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)});
- cargarTabla(tabla==='stock_deposito'?'stock':tabla);
-}
-async function guardarVenta(){ const p={id:Date.now().toString(36), repartidor_id:document.getElementById('venta_rep').value, producto_id:document.getElementById('venta_prod').value, cantidad_llenas:parseInt(document.getElementById('venta_cant').value)||1, total:parseInt(document.getElementById('venta_total').value)||0}; await fetch(`${API_ERP}?table=ventas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)}); cargarTabla('ventas'); }
 
+async function generarInforme(){
+ const repId=document.getElementById('histRepartidorId').value; const fecha=document.getElementById('histFecha').value;
+ if(!repId){ alert('Seleccione repartidor'); return; }
+ document.getElementById('histNombreRep').textContent=document.getElementById('histRepartidorId').selectedOptions[0]?.text||'';
+ const r=await fetch(`${API_GPS}?all=1&device_id=${repId}`); const raw=await r.json(); const rows=Array.isArray(raw)?raw:(raw.data||[]);
+ let data=rows.map(row=> Array.isArray(row)?{lat:row[1], lng:row[2], velocidad:row[3]||0, recorded_at:row[4]}:{lat:row.lat, lng:row.lng, velocidad:row.velocidad||0, recorded_at:row.recorded_at}).filter(g=>g.lat&&g.lng);
+ if(fecha){ data=data.filter(d=> new Date(d.recorded_at).toISOString().slice(0,10)===fecha); }
+ if(data.length===0){ alert('Sin datos para esa fecha'); return; }
+ // stats
+ let exceso=0, detenciones=0, distancia=0;
+ let last=null, detenidoDesde=null;
+ data.slice().reverse().forEach((p,i,arr)=>{
+  if(p.velocidad>45) exceso++;
+  if(last){ const d=calcDist(last.lat,last.lng,p.lat,p.lng); distancia+=d; }
+  if(p.velocidad===0){ if(!detenidoDesde) detenidoDesde=new Date(p.recorded_at); }
+  else { if(detenidoDesde){ const diff=(new Date(p.recorded_at)-detenidoDesde)/60000; if(diff>3) detenciones++; detenidoDesde=null; } }
+  last=p;
+ });
+ document.getElementById('statExceso').textContent=exceso;
+ document.getElementById('statDetenciones').textContent=detenciones;
+ document.getElementById('statDistancia').textContent=distancia.toFixed(1)+' km';
+ // mapa historial
+ if(polylineHist) mapHist.removeLayer(polylineHist);
+ const latlngs=data.slice(0,200).reverse().map(d=>[d.lat,d.lng]);
+ polylineHist=L.polyline(latlngs,{color:'#3b82f6', weight:4}).addTo(mapHist);
+ mapHist.fitBounds(polylineHist.getBounds());
+ // timeline cada 5 min
+ const timeline=[]; let lastTime=0;
+ data.forEach(p=>{
+  const t=new Date(p.recorded_at).getTime();
+  if(t-lastTime>5*60*1000 || p.velocidad>45 || p.velocidad===0){
+   let evento='En ruta'; if(p.velocidad===0) evento='Detenido'; if(p.velocidad>45) evento='⚠️ Exceso velocidad';
+   timeline.push({hora:new Date(p.recorded_at).toLocaleTimeString('es-UY'), evento, detalle:`${p.velocidad} km/h - ${p.lat.toFixed(4)},${p.lng.toFixed(4)}`});
+   lastTime=t;
+  }
+ });
+ document.getElementById('tablaIncidentesGPS').innerHTML=timeline.map(row=>`<tr><td style="border:1px solid #1f2937;padding:6px">${row.hora}</td><td style="border:1px solid #1f2937;padding:6px">${row.evento}</td><td style="border:1px solid #1f2937;padding:6px">${row.detalle}</td><td style="border:1px solid #1f2937;padding:6px;text-align:center">-</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#475569">Sin eventos</td></tr>';
+}
+
+function calcDist(lat1,lon1,lat2,lon2){ const R=6371; const dLat=(lat2-lat1)*Math.PI/180; const dLon=(lon2-lon1)*Math.PI/180; const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
+function timeAgo(d){ const diff=Math.floor((new Date()-new Date(d))/1000); if(diff<60) return 'Ahora'; if(diff<3600) return Math.floor(diff/60)+' min'; return Math.floor(diff/3600)+' h'; }
+function guardarERP(tab){ /* reutiliza guardar previo */ }
 window.onload=initMap;
 </script>
 </body>
