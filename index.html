@@ -1,102 +1,96 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión de Gas - V2.1 Seguro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <style>
-        .autocomplete-list { position: absolute; z-index: 50; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 0.375rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-height: 150px; overflow-y: auto; }
-        .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
-        .autocomplete-item:hover { background-color: #eff6ff; }
-        .gps-marker { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 8px rgba(0,0,0,0.5); }
-        .gps-pulse { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0; animation: gpsPulse 2s ease-out infinite; }
-        @keyframes gpsPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(3); opacity: 0; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MegalWeb GPS - Turso</title>
+<style>
+  body { font-family: system-ui; background: #0f172a; color: white; padding: 20px; max-width: 800px; margin: auto; }
+  button { background: #22c55e; color: white; border: 0; padding: 12px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
+  button.secondary { background: #3b82f6; }
+  button.dark { background: #334155; }
+  #status { background: #1e293b; padding: 15px; border-radius: 8px; margin: 15px 0; min-height: 20px; }
+  #lista { background: #1e293b; padding: 15px; border-radius: 8px; max-height: 400px; overflow: auto; }
+  .item { border-bottom: 1px solid #334155; padding: 8px 0; font-size: 13px; }
+</style>
 </head>
-<body class="bg-gray-100 h-screen flex overflow-hidden">
-    <aside id="mainSidebar" class="w-64 bg-blue-900 text-white flex flex-col shadow-lg flex-shrink-0">
-       <div class="p-4 border-b border-blue-800"><h2 class="text-lg font-bold">⛽ Gas ERP V2.1</h2><span class="text-xs text-blue-300">ENV Seguro ✓</span></div>
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="mostrarSeccion('resumen', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition bg-blue-800 font-bold">📊 Resumen</button>
-            <button onclick="mostrarSeccion('productos', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">📦 Productos</button>
-            <button onclick="mostrarSeccion('clientes', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">👥 Clientes</button>
-            <button onclick="mostrarSeccion('proveedores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🚚 Proveedores</button>
-            <button onclick="mostrarSeccion('stock', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🗄 Stock</button>
-            <button onclick="mostrarSeccion('ventas', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">💰 Ventas</button>
-            <button onclick="mostrarSeccion('repartidores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🛵 Repartidores</button>
-            <button onclick="abrirRastreoPantallaCompleta()" class="nav-btn" style="width: 100%; text-align: left; padding: 8px; cursor:pointer;">📍 Rastreo GPS</button>
-        </nav>
-        <div class="p-4 border-t border-blue-800 text-sm"><p>Versión 2.1 - ENV Seguro</p><p id="envStatus" class="text-xs text-green-300">Conectado vía VITE_</p></div>
-    </aside>
-    <div class="flex-1 flex flex-col overflow-y-auto">
-        <header id="mainHeader" class="bg-white p-4 shadow-sm border-b flex justify-between items-center">
-             <h1 class="text-xl font-bold text-gray-800">Sistema de Gestión de Gas - Seguro</h1>
-            <div id="headerStatus" class="text-sm text-gray-500 flex items-center gap-2">
-                <div id="headerDot" class="w-2 h-2 rounded-full bg-green-500"></div>
-                Conectado vía ENV Seguro
-            </div>
-        </header>
-        <main class="flex-1 p-6">
-            <div id="view-resumen" class="view-section">
-                <h2 class="text-2xl font-bold mb-4">✅ Migración a Vite + ENV Segura Completada</h2>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <p class="mb-2"><b>Paso 1:</b> Vercel ENV Vars ya configuradas (lo acabas de hacer)</p>
-                    <p class="mb-2"><b>Paso 2:</b> Ahora tu key NO está en el código</p>
-                    <p class="mb-4"><b>Paso 3:</b> Copia el resto de tu index.html original aquí dentro, pero usa window.supabaseClient que ya viene del módulo seguro.</p>
-                    <div class="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm">
-                        // Antes (inseguro):<br>
-                        const SUPABASE_KEY = 'eyJhbGc...'<br><br>
-                        // Ahora (seguro):<br>
-                        import { supabase } from './lib/supabase.js'<br>
-                        // Viene de import.meta.env.VITE_SUPABASE_ANON_KEY
-                    </div>
-                     <button onclick="probarGPS()">Probar Conexión Segura</button>
-<div id="resultado-gps" style="margin-top:15px;padding:10px;background:#f0f0f0;border-radius:8px;font-family:monospace;"></div>
+<body>
+
+<h1>📍 MegalWeb GPS - Turso sin límite</h1>
+
+<div id="status">Listo para probar...</div>
+
+<button onclick="probarConexionSegura()">🔌 Probar Conexión Segura</button>
+<button class="secondary" onclick="obtenerUbicacionReal()">🌎 Mi Ubicación Real</button>
+<button class="dark" onclick="verHistorial()">📋 Ver Historial Completo</button>
+
+<h3>Historial (Turso)</h3>
+<div id="lista">Sin datos...</div>
+
 <script>
-async function probarGPS(){
-  const div = document.getElementById('resultado-gps');
-  div.innerHTML = "⏳ Probando GPS...";
+// FUNCION QUE FALTABA - Ahora sí definida
+async function actualizarUbicacion(lat, lng, device_id = 7) {
   try {
-    // Usa tu función real
-    const { data, error } = await window.supabaseClient.from('ubicaciones').insert({repartidor_id: 1, latitud: -34.4833, longitud: -54.3333}).select().single();
-    if(error) throw error;
-    div.innerHTML = "✅ <b>GPS OK!</b><br>ID: " + data.id + "<br>Lat: " + data.latitud + "<br><a href='https://supabase.com/dashboard/project/wpsmcingzudnscuijkpqg/editor/29966?schema=public' target='_blank'>Ver en Supabase</a>";
-  } catch(e){
-    div.innerHTML = "❌ ERROR: " + e.message + "<br><small>" + JSON.stringify(e) + "</small>";
+    document.getElementById('status').innerText = `Enviando ${lat}, ${lng}...`;
+    const res = await fetch(`/api/gps?lat=${lat}&lng=${lng}&device_id=${device_id}`);
+    const json = await res.json();
+    console.log(json);
+    if(json.ok) {
+      document.getElementById('status').innerText = `✅ Guardado: ${lat}, ${lng} | Total en DB: ${json.total}`;
+      verHistorial();
+    } else {
+      document.getElementById('status').innerText = `❌ Error: ${json.error}`;
+    }
+    return json;
+  } catch(e) {
+    document.getElementById('status').innerText = `❌ Error: ${e.message}`;
+    console.error(e);
   }
 }
-</script>       
-                    
-                  
-                </div>
-            </div>
-        </main>
-    </div>
-    <script type="module" src="/src/main.js"></script>
-    <script>
-        function mostrarSeccion(id, btn){ document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden')); const el=document.getElementById('view-'+id); if(el) el.classList.remove('hidden'); }
-        function abrirRastreoPantallaCompleta(){ mostrarSeccion('gps') }
-        async function testConexion(){
-            try{
-                const { data, error } = await window.supabaseClient.from('repartidores').select('*').limit(1)
-                if(error) throw error
-                document.getElementById('testResult').innerHTML = '<span class="text-green-600 font-bold">✅ Conexión OK con ENV segura - '+ (data?.length || 0) +' repartidores</span>'
-            }catch(e){
-                document.getElementById('testResult').innerHTML = '<span class="text-red-600">❌ Error: '+e.message+'</span>'
-            }
-        }
-        async function probarGPS(){
-  const div = document.getElementById('resultado-gps');
-  div.innerHTML = "⏳ Probando gps_locations...";
-  try{
-    const data = await actualizarUbicacion(7, -34.4864849, -54.34305447);
-    div.innerHTML = "✅ <b>GPS OK!</b> ID:"+data.id+"<br>device_id: "+data.device_id+"<br>lat: "+data.lat+" lng: "+data.lng;
-  }catch(e){
-    div.innerHTML = "❌ "+e.message;
+
+async function probarConexionSegura() {
+  const lat = -34.903 + (Math.random()-0.5)/100;
+  const lng = -56.188 + (Math.random()-0.5)/100;
+  await actualizarUbicacion(lat, lng, 7);
+}
+
+function obtenerUbicacionReal() {
+  if(!navigator.geolocation) {
+    document.getElementById('status').innerText = 'GPS no soportado, usando test';
+    return probarConexionSegura();
+  }
+  document.getElementById('status').innerText = 'Obteniendo GPS...';
+  navigator.geolocation.getCurrentPosition(
+    pos => actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 7),
+    err => {
+      document.getElementById('status').innerText = 'Error GPS: ' + err.message + ' - usando test';
+      probarConexionSegura();
+    }
+  );
+}
+
+async function verHistorial() {
+  try {
+    const res = await fetch('/api/gps?all=1');
+    const json = await res.json();
+    if(json.data && json.data.length > 0) {
+      document.getElementById('lista').innerHTML = json.data.map(d => `
+        <div class="item">
+          <b>ID ${d.device_id}</b> - ${d.lat}, ${d.lng}<br>
+          <small>${d.recorded_at}</small>
+        </div>
+      `).join('');
+    } else {
+      document.getElementById('lista').innerText = 'Sin datos aún. Probá conexión.';
+    }
+  } catch(e) {
+    document.getElementById('lista').innerText = 'Error: ' + e.message;
   }
 }
-    </script>
+
+// Cargar historial al abrir
+verHistorial();
+</script>
+
 </body>
 </html>
