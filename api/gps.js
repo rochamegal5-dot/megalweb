@@ -1,34 +1,39 @@
-// api/gps.js - Node runtime, no Edge
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@libsql/client/web';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  
   if (req.method === 'OPTIONS') return res.status(200).end()
-
+  
   try {
-    const lat = parseFloat(req.query.lat || req.body?.lat || '-34.48')
-    const lng = parseFloat(req.query.lng || req.body?.lng || '-54.33')
-    const device_id = parseInt(req.query.device_id || req.body?.device_id || '7')
+    const lat = parseFloat(req.query.lat || '-34.48')
+    const lng = parseFloat(req.query.lng || '-54.33')
+    const device_id = parseInt(req.query.device_id || '7')
 
-    const SUPA_URL = process.env.VITE_SUPABASE_URL || 'https://pinodukthcnnwmizwsm.supabase.co'
-    const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+    const client = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    })
 
-    if (!SUPA_KEY) return res.status(500).json({ error: 'Falta SERVICE_ROLE_KEY en Vercel ENV' })
+    // Crea tabla si no existe (sin límite de 500MB)
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS gps_locations (
+        id TEXT PRIMARY KEY,
+        device_id INTEGER,
+        lat REAL,
+        lng REAL,
+        recorded_at TEXT
+      )
+    `)
 
-    const supabase = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } })
+    const id = Date.now().toString()
+    await client.execute({
+      sql: 'INSERT INTO gps_locations (id, device_id, lat, lng, recorded_at) VALUES (?, ?, ?, ?, ?)',
+      args: [id, device_id, lat, lng, new Date().toISOString()]
+    })
 
-    const { data, error } = await supabase.from('gps_locations').insert({
-      device_id, lat, lng, recorded_at: new Date().toISOString()
-    }).select().single()
-
-    if (error) return res.status(500).json({ error: error.message, details: error })
-    
-    return res.status(200).json({ ok: true, data })
+    return res.status(200).json({ ok: true, id, device_id, lat, lng })
 
   } catch (e) {
-    return res.status(500).json({ error: e.message, stack: e.toString() })
+    return res.status(500).json({ error: e.message })
   }
 }
