@@ -1,8 +1,9 @@
-import { createClient } from '@libsql/client/web';
+import { createClient } from '@libsql/client';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
@@ -27,12 +28,14 @@ export default async function handler(req, res) {
 
     const id = Date.now().toString();
     await client.execute({
-      sql: 'INSERT INTO gps_locations (id, device_id, lat, lng, recorded_at) VALUES (?, ?, ?, ?, ?)',
+      sql: 'INSERT INTO gps_locations VALUES (?,?,?,?,?)',
       args: [id, device_id, lat, lng, new Date().toISOString()]
     });
 
-    return res.status(200).json({ ok: true, id, device_id, lat, lng });
+    const rs = await client.execute('SELECT COUNT(*) as c FROM gps_locations');
+
+    return res.status(200).json({ ok: true, id, total: rs.rows[0].c });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e.message, stack: e.toString() });
   }
 }
