@@ -1,41 +1,34 @@
-import { createClient } from '@supabase/supabase-js'
+export const config = { runtime: 'edge' }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  if (req.method === 'OPTIONS') return res.status(200).end()
-
+export default async function handler(req) {
   try {
-    const url = process.env.VITE_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
-    if (!url || !key) throw new Error('Faltan ENV VITE_SUPABASE_URL o SERVICE_ROLE_KEY en Vercel')
+    const u = new URL(req.url)
+    const lat = parseFloat(u.searchParams.get('lat') || '-34.48')
+    const lng = parseFloat(u.searchParams.get('lng') || '-54.33')
+    const device_id = parseInt(u.searchParams.get('device_id') || '7')
 
-    const supabase = createClient(url, key)
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || req.query)
-    
-    const device_id = parseInt(body.device_id || body.repartidor_id || 7)
-    const lat = parseFloat(body.lat || body.latitud)
-    const lng = parseFloat(body.lng || body.longitud)
+    const SUPA_URL = 'https://pinodukthcnnwmizwsm.supabase.co'
+    const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
-    if (!lat || !lng) return res.status(400).json({ error: 'Falta lat/lng' })
+    if (!SUPA_KEY) return new Response(JSON.stringify({ error: 'Falta SERVICE_ROLE_KEY en Vercel' }), { status: 500 })
 
-    const { data, error } = await supabase
-      .from('gps_locations')
-      .insert({
-        device_id,
-        lat,
-        lng,
-        speed: 0,
-        accuracy: 10,
-        recorded_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+    const r = await fetch(`${SUPA_URL}/rest/v1/gps_locations`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({ device_id, lat, lng, recorded_at: new Date().toISOString() })
+    })
 
-    if (error) throw error
-    return res.status(200).json({ ok: true, data })
+    const txt = await r.text()
+    if (!r.ok) return new Response(JSON.stringify({ error: `Supabase ${r.status}: ${txt}` }), { status: 500 })
+
+    return new Response(txt, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
+
   } catch (e) {
-    return res.status(500).json({ error: e.message })
+    return new Response(JSON.stringify({ error: e.message, stack: e.toString() }), { status: 500 })
   }
 }
