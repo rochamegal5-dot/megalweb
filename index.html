@@ -1,96 +1,167 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MegalWeb GPS - Turso</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MegalWeb GPS - Panel Completo</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  body { font-family: system-ui; background: #0f172a; color: white; padding: 20px; max-width: 800px; margin: auto; }
-  button { background: #22c55e; color: white; border: 0; padding: 12px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-weight: bold; }
-  button.secondary { background: #3b82f6; }
-  button.dark { background: #334155; }
-  #status { background: #1e293b; padding: 15px; border-radius: 8px; margin: 15px 0; min-height: 20px; }
-  #lista { background: #1e293b; padding: 15px; border-radius: 8px; max-height: 400px; overflow: auto; }
-  .item { border-bottom: 1px solid #334155; padding: 8px 0; font-size: 13px; }
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#0f172a;color:#e2e8f0;display:flex;min-height:100vh}
+nav{width:220px;background:#020617;padding:20px;display:flex;flex-direction:column;gap:8px}
+nav h2{font-size:18px;margin:0 0 20px;color:#22c55e}
+nav button{background:transparent;border:0;color:#94a3b8;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
+nav button.active{background:#1e293b;color:white}
+main{flex:1;padding:20px;overflow:auto}
+.card{background:#1e293b;border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{font-size:28px;font-weight:bold;color:#22c55e}
+#map{height:380px;border-radius:12px}
+#status{font-family:monospace;font-size:13px;background:#020617;padding:10px;border-radius:8px}
+.btn{padding:10px 16px;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
+.btn-g{background:#22c55e;color:white}.btn-b{background:#3b82f6;color:white}.btn-d{background:#334155;color:white}
+table{width:100%;border-collapse:collapse;font-size:13px}th{color:#94a3b8;text-align:left;padding:8px}td{padding:8px;border-top:1px solid #334155}
+.mod{display:none}.mod.active{display:block}
 </style>
 </head>
 <body>
+<nav>
+<h2>🛰️ MEGALWEB</h2>
+<button class="active" onclick="showMod('dashboard')">📊 Dashboard</button>
+<button onclick="showMod('mapa')">🗺️ Mapa Vivo</button>
+<button onclick="showMod('rastreo')">📡 Rastreo</button>
+<button onclick="showMod('historial')">📋 Historial</button>
+<button onclick="showMod('dispositivos')">📱 Dispositivos</button>
+<button onclick="showMod('api')">🔌 API / Turso</button>
+<div style="margin-top:auto;font-size:11px;color:#475569">Turso: gru1<br>DB ilimitada</div>
+</nav>
 
-<h1>📍 MegalWeb GPS - Turso sin límite</h1>
+<main>
+<div id="dashboard" class="mod active">
+  <h1>Dashboard</h1>
+  <div class="grid">
+    <div class="card"><div>Total Puntos</div><div class="stat" id="totalPuntos">0</div></div>
+    <div class="card"><div>Dispositivos Activos</div><div class="stat" id="totalDisp">1</div></div>
+    <div class="card"><div>Última Pos</div><div class="stat" id="lastPos" style="font-size:14px">-</div></div>
+    <div class="card"><div>Estado Turso</div><div class="stat" id="estadoTurso" style="font-size:14px;color:#22c55e">● Conectado</div></div>
+  </div>
+  <div class="card"><h3>Acciones Rápidas</h3>
+    <button class="btn btn-g" onclick="probarConexionSegura()">Probar Conexión Segura</button>
+    <button class="btn btn-b" onclick="obtenerUbicacionReal()">Mi Ubicación Real</button>
+    <button class="btn btn-d" onclick="verHistorial()">Actualizar</button>
+    <div id="status" style="margin-top:12px">Listo...</div>
+  </div>
+</div>
 
-<div id="status">Listo para probar...</div>
+<div id="mapa" class="mod">
+  <h1>Mapa en Vivo</h1>
+  <div class="card"><div id="map"></div></div>
+</div>
 
-<button onclick="probarConexionSegura()">🔌 Probar Conexión Segura</button>
-<button class="secondary" onclick="obtenerUbicacionReal()">🌎 Mi Ubicación Real</button>
-<button class="dark" onclick="verHistorial()">📋 Ver Historial Completo</button>
+<div id="rastreo" class="mod">
+  <h1>Módulo Rastreo</h1>
+  <div class="card"><h3>Rastreo Automático</h3>
+    <button class="btn btn-g" onclick="iniciarRastreo()">▶️ Iniciar Rastreo cada 10s</button>
+    <button class="btn btn-d" onclick="detenerRastreo()">⏹️ Detener</button>
+    <p style="font-size:13px;color:#94a3b8" id="rastreoInfo">Detenido</p>
+  </div>
+</div>
 
-<h3>Historial (Turso)</h3>
-<div id="lista">Sin datos...</div>
+<div id="historial" class="mod">
+  <h1>Historial Completo - JSON Turso</h1>
+  <div class="card">
+    <button class="btn btn-d" onclick="verHistorial()">🔄 Recargar JSON completo</button>
+    <button class="btn btn-d" onclick="exportarJSON()">⬇️ Exportar JSON</button>
+    <div style="margin-top:12px;max-height:500px;overflow:auto">
+      <table><thead><tr><th>ID</th><th>Device</th><th>Lat</th><th>Lng</th><th>Fecha</th></tr></thead><tbody id="tablaBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div id="dispositivos" class="mod">
+  <h1>Dispositivos</h1>
+  <div class="card"><p>Device 7 - Principal</p><span style="color:#22c55e">● Online</span><br><small>Usado en pruebas</small></div>
+  <div class="card"><p>Device 8 - Secundario</p><span style="color:#475569">● Offline</span></div>
+</div>
+
+<div id="api" class="mod">
+  <h1>API / Turso</h1>
+  <div class="card"><h3>Endpoints</h3>
+    <code>/api/gps?lat=...&lng=...&device_id=7</code> - Insertar<br>
+    <code>/api/gps?all=1</code> - JSON completo<br><br>
+    <b>DB:</b> libsql://megalweb-gps-rochamegal5-dot.aws-sa-east-1.turso.io<br>
+    <b>Región:</b> gru (São Paulo) - 9GB gratis, sin límite 500MB
+  </div>
+</div>
+</main>
 
 <script>
-// FUNCION QUE FALTABA - Ahora sí definida
-async function actualizarUbicacion(lat, lng, device_id = 7) {
-  try {
-    document.getElementById('status').innerText = `Enviando ${lat}, ${lng}...`;
-    const res = await fetch(`/api/gps?lat=${lat}&lng=${lng}&device_id=${device_id}`);
-    const json = await res.json();
-    console.log(json);
-    if(json.ok) {
-      document.getElementById('status').innerText = `✅ Guardado: ${lat}, ${lng} | Total en DB: ${json.total}`;
-      verHistorial();
-    } else {
-      document.getElementById('status').innerText = `❌ Error: ${json.error}`;
+let map, markers=[], rastreoInterval=null, allData=[];
+
+function showMod(id){
+  document.querySelectorAll('.mod').forEach(m=>m.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if(id==='mapa' &&!map) initMap();
+}
+
+function initMap(){
+  map = L.map('map').setView([-34.903, -56.188], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  verHistorial();
+}
+
+async function actualizarUbicacion(lat, lng, device_id=7){
+  try{
+    document.getElementById('status').innerText=`Enviando ${lat}, ${lng}...`;
+    const res=await fetch(`/api/gps?lat=${lat}&lng=${lng}&device_id=${device_id}`);
+    const json=await res.json();
+    if(json.ok){
+      document.getElementById('status').innerText=`✅ Guardado: ${lat.toFixed(5)}, ${lng.toFixed(5)} | Total: ${json.total}`;
+      document.getElementById('totalPuntos').innerText=json.total;
+      document.getElementById('lastPos').innerText=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      if(map){
+        const m=L.marker([lat,lng]).addTo(map).bindPopup(`Device ${device_id}<br>${new Date().toLocaleString()}`);
+        markers.push(m);
+        map.setView([lat,lng], 14);
+      }
     }
     return json;
-  } catch(e) {
-    document.getElementById('status').innerText = `❌ Error: ${e.message}`;
-    console.error(e);
-  }
+  }catch(e){document.getElementById('status').innerText='❌ '+e.message}
 }
 
-async function probarConexionSegura() {
-  const lat = -34.903 + (Math.random()-0.5)/100;
-  const lng = -56.188 + (Math.random()-0.5)/100;
-  await actualizarUbicacion(lat, lng, 7);
+async function probarConexionSegura(){
+  const lat=-34.903+(Math.random()-0.5)/50;
+  const lng=-56.188+(Math.random()-0.5)/50;
+  await actualizarUbicacion(lat,lng);
+  verHistorial();
 }
 
-function obtenerUbicacionReal() {
-  if(!navigator.geolocation) {
-    document.getElementById('status').innerText = 'GPS no soportado, usando test';
-    return probarConexionSegura();
-  }
-  document.getElementById('status').innerText = 'Obteniendo GPS...';
-  navigator.geolocation.getCurrentPosition(
-    pos => actualizarUbicacion(pos.coords.latitude, pos.coords.longitude, 7),
-    err => {
-      document.getElementById('status').innerText = 'Error GPS: ' + err.message + ' - usando test';
-      probarConexionSegura();
-    }
-  );
+function obtenerUbicacionReal(){
+  if(!navigator.geolocation) return probarConexionSegura();
+  document.getElementById('status').innerText='Obteniendo GPS...';
+  navigator.geolocation.getCurrentPosition(p=>actualizarUbicacion(p.coords.latitude,p.coords.longitude), ()=>probarConexionSegura());
 }
 
-async function verHistorial() {
-  try {
-    const res = await fetch('/api/gps?all=1');
-    const json = await res.json();
-    if(json.data && json.data.length > 0) {
-      document.getElementById('lista').innerHTML = json.data.map(d => `
-        <div class="item">
-          <b>ID ${d.device_id}</b> - ${d.lat}, ${d.lng}<br>
-          <small>${d.recorded_at}</small>
-        </div>
-      `).join('');
-    } else {
-      document.getElementById('lista').innerText = 'Sin datos aún. Probá conexión.';
-    }
-  } catch(e) {
-    document.getElementById('lista').innerText = 'Error: ' + e.message;
-  }
+async function verHistorial(){
+  const res=await fetch('/api/gps?all=1'); const json=await res.json(); allData=json.data||[];
+  document.getElementById('totalPuntos').innerText=json.total||0;
+  document.getElementById('tablaBody').innerHTML=allData.map(d=>`<tr><td>${d.id.slice(-6)}</td><td>${d.device_id}</td><td>${d.lat}</td><td>${d.lng}</td><td>${d.recorded_at?.slice(0,19)}</td></tr>`).join('');
+  if(map){ markers.forEach(m=>map.removeLayer(m)); markers=[]; allData.forEach(d=>{ const m=L.marker([parseFloat(d.lat),parseFloat(d.lng)]).addTo(map); markers.push(m); }); if(allData.length) map.setView([allData[0].lat,allData[0].lng],13); }
 }
 
-// Cargar historial al abrir
+function iniciarRastreo(){
+  if(rastreoInterval) return;
+  document.getElementById('rastreoInfo').innerText='Rastreando cada 10s...';
+  rastreoInterval=setInterval(()=>obtenerUbicacionReal(),10000);
+  obtenerUbicacionReal();
+}
+function detenerRastreo(){ clearInterval(rastreoInterval); rastreoInterval=null; document.getElementById('rastreoInfo').innerText='Detenido'; }
+function exportarJSON(){
+  const blob=new Blob([JSON.stringify(allData,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='megalweb_gps.json'; a.click();
+}
 verHistorial();
 </script>
-
 </body>
 </html>
