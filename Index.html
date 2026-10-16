@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Gas - GasTrack v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        .autocomplete-list { position: absolute; z-index: 50; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 0.375rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-height: 150px; overflow-y: auto; }
+        .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
+        .autocomplete-item:hover { background-color: #eff6ff; }
+        .gps-marker { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 8px rgba(0,0,0,0.5); }
+        .gps-pulse { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0; animation: gpsPulse 2s ease-out infinite; }
+        @keyframes gpsPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; } 100% { transform: translate(-50%, -50%) scale(3); opacity: 0; } }
+        .leaflet-container { background: #f1f5f9; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+      <aside id="mainSidebar" class="w-64 bg-blue-900 text-white flex flex-col shadow-lg flex-shrink-0">
+       <div class="p-4 border-b border-blue-800"><h2 class="text-lg font-bold">⛽ Gas ERP</h2></div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="mostrarSeccion('resumen', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition bg-blue-800 font-bold">📊 Resumen</button>
+            <button onclick="mostrarSeccion('productos', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">📦 Productos</button>
+            <button onclick="mostrarSeccion('clientes', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">👥 Clientes</button>
+            <button onclick="mostrarSeccion('proveedores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🚚 Proveedores</button>
+            <button onclick="mostrarSeccion('stock', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🗄 Stock</button>
+            <button onclick="mostrarSeccion('ventas', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">💰 Ventas</button>
+            <button onclick="mostrarSeccion('finanzas', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🏦 Finanzas</button>
+         <div style="display: flex; flex-direction: column; width: 100%; margin-top: 10px;">
+            <button onclick="mostrarSeccion('marketing', this)" class="nav-btn" style="width: 100%; text-align: left; margin-bottom: 8px; padding: 8px;">📣 Marketing IA</button>
+             <button onclick="abrirRastreoPantallaCompleta()" class="nav-btn" style="width: 100%; text-align: left; padding: 8px; cursor:pointer;">📍 Rastreo GPS</button>
+             <button onclick="mostrarSeccion('repartidores', this)" class="nav-btn w-full text-left px-4 py-3 rounded transition hover:bg-blue-800">🛵 Repartidores</button>       
+            </div>
+            </nav>
+        <div class="p-4 border-t border-blue-800 text-sm"><p>Versión 2.0 - GasTrack</p></div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-y-auto">
+        <header id="mainHeader" class="bg-white p-4 shadow-sm border-b flex justify-between items-center">
+             <h1 class="text-xl font-bold text-gray-800">Sistema de Gestión de Gas</h1>
+            <div id="headerStatus" class="text-sm text-gray-500 flex items-center gap-2">
+                <div id="headerDot" class="w-2 h-2 rounded-full bg-gray-400"></div>
+                Conectando...
+            </div>
+        </header>
+        <main class="flex-1 p-6">
+            
+            <div id="view-resumen" class="view-section flex flex-col h-full">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex-shrink-0">Panel de Control</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4 flex-shrink-0">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500"><h3 class="text-gray-500 text-sm font-bold uppercase">Clientes</h3><p id="statClientes" class="text-3xl font-bold text-blue-600 mt-2">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500"><h3 class="text-gray-500 text-sm font-bold uppercase">Ventas Hoy</h3><p id="statVentas" class="text-3xl font-bold text-green-600 mt-2">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500"><h3 class="text-gray-500 text-sm font-bold uppercase">Stock Llenas</h3><p id="statLlenas" class="text-3xl font-bold text-yellow-600 mt-2">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border-l-4 border-gray-500"><h3 class="text-gray-500 text-sm font-bold uppercase">Stock Vacías</h3><p id="statVacias" class="text-3xl font-bold text-gray-600 mt-2">0</p></div>
+                </div>
+                <div class="flex-1 min-h-0 flex flex-col items-center px-16 pb-10 pt-4">
+                    <div class="bg-white p-4 rounded-lg shadow flex-1 w-full max-w-7xl flex flex-col min-h-0">
+                        <h3 class="font-bold text-gray-700 mb-2 flex-shrink-0">📍 Ubicación en Vivo de Repartidores</h3>
+                        <div id="dashMap" class="flex-1 min-h-0 w-full rounded-lg border border-gray-200 z-0" style="min-height:400px"></div>
+                    </div>
+                </div>
+            </div>
+
+              <div id="view-productos" class="view-section hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Cargar Productos</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="prodIdEditando">
+                        <div class="relative"><label class="block text-sm font-medium text-gray-700">Nombre</label><input type="text" id="prodNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Ej: Garrafa 13kg" oninput="autocompletarProducto()"><div id="dropProdNombre" class="autocomplete-list hidden"></div></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Tipo</label><select id="prodTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"><option value="garrafa_11">Garrafa 11kg</option><option value="garrafa_13">Garrafa 13kg</option><option value="garrafa_45">Garrafa 45kg</option><option value="tubo_43">Tubo 43.5kg</option><option value="recarga_3kg">Recarga 3kg</option><option value="accesorio">Accesorio</option></select></div>
+                        <div><label class="blck text-sm font-medium text-gray-700">Precio Costo ($)</label><input type="number" id="prodCosto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Precio Venta Base ($)</label><input type="number" id="prodVenta" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="guardarProducto()" id="btnGuardarProd" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Producto</button>
+                        <button onclick="cancelarEdicionProd()" id="btnCancelarProd" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Productos</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">Tipo</th><th class="p-2 border">Costo</th><th class="p-2 border">Venta Base</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProductos"></tbody></table></div>
+            </div>   
+
+            <div id="view-clientes" class="view-section hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Gestión de Clientes</h2>
+                <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input type="hidden" id="cliIdEditando">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tipo de Cliente *</label>
+                            <select id="cliTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white">
+                                <option value="particular">Particular Común</option><option value="particular_mides">Particular Mides</option><option value="comercio">Comercio Común</option><option value="comercio_mides">Comercio Mides</option>
+                            </select>
+                        </div>
+                        <div class="relative">
+                            <label class="block text-sm font-medium text-gray-700">Teléfono * (Buscar existente)</label>
+                            <input type="text" id="cliTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Obligatorio" oninput="autocompletarClientePorTelefono()">
+                            <div id="dropCliTelefono" class="autocomplete-list hidden"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="cliEmail" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="cliente@correo.com">
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700">C.I. / RUT</label><input type="text" id="cliCI" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Opcional"></div>
+                        
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">👤 Datos Personales</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">1er Nombre</label><input type="text" id="cliNombre1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Juan"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">2do Nombre</label><input type="text" id="cliNombre2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Carlos"></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">1er Apellido</label><input type="text" id="cliApellido1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Pérez" oninput="autocompletarApellido()"><div id="dropCliApellido1" class="autocomplete-list hidden"></div></div>
+                                <div><label class="block text-sm font-medium text-gray-700">2do Apellido</label><input type="text" id="cliApellido2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Gómez"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">📍 Dirección de Entrega</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">País</label><input type="text" id="cliPais" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 uppercase" value="URUGUAY" readonly></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">Departamento</label><input type="text" id="cliDepto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="MONTEVIDEO" oninput="autocompletarDepto()"><div id="dropCliDepto" class="autocomplete-list hidden"></div></div>
+                                <div class="relative"><label class="block text-sm font-medium text-gray-700">Ciudad / Localidad</label><input type="text" id="cliCiudad" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="PUNTA CARRETAS" oninput="autocompletarCiudad()"><div id="dropCliCiudad" class="autocomplete-list hidden"></div></div>
+                                <div class="relative md:col-span-2"><label class="block text-sm font-medium text-gray-700">Calle</label><input type="text" id="cliCalle" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="RIVERA" oninput="autocompletarCalle()"><div id="dropCliCalle" class="autocomplete-list hidden"></div></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Nº</label><input type="text" id="cliNumero" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="1234"></div>
+                                <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Complejo / Edificio</label><input type="text" id="cliComplejo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="COMPLEJO LOS PINOS"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Apto / Unidad</label><input type="text" id="cliApto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="2B"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Entre calle 1</label><input type="text" id="cliEntre1" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="MISIONES"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Entre calle 2</label><input type="text" id="cliEntre2" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="ARTIGAS"></div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-4 border-t pt-4 mt-2">
+                            <h4 class="text-md font-bold text-gray-700 mb-2">🗺 Ubicación Exacta (GPS)</h4>
+                            <div class="flex gap-4 items-end">
+                                <div class="flex-1"><label class="block text-xs font-medium text-gray-700">Latitud</label><input type="number" step="any" id="cliLatitud" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50" readonly></div>
+                                <div class="flex-1"><label class="block text-xs font-medium text-gray-700">Longitud</label><input type="number" step="any" id="cliLongitud" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50" readonly></div>
+                                <button onclick="buscarUbicacionPorDireccion()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-bold text-sm cursor-pointer">🗺 Buscar Dir. en Mapa</button>
+                                <button onclick="obtenerUbicacionGPS()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-bold text-sm cursor-pointer">📍 Usar mi GPS</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-4">
+                            <input type="checkbox" id="cliFiado" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="cliFiado" class="ml-2 text-sm font-medium text-gray-700">Permite Cuenta Corriente (Fiado)</label>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 mt-6">
+                        <button onclick="guardarCliente()" id="btnGuardarCli" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Cliente</button>
+                        <button onclick="cancelarEdicionCli()" id="btnCancelarCli" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Clientes</h3>
+                    <table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre Completo</th><th class="p-2 border">Teléfono</th><th class="p-2 border">Email</th><th class="p-2 border">Tipo</th><th class="p-2 border">Dirección</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaClientes"></tbody></table>
+                </div>
+            </div>
+
+         <div id="view-proveedores" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">🚚 Proveedores y Remitos</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Datos del Proveedor</h3>
+                        <input type="hidden" id="provIdEditando">
+                        <div class="grid grid-cols-1 gap-3">
+                            <div><label class="block text-sm font-medium text-gray-700">Nombre / Razón Social *</label><input type="text" id="provNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">RUT / CUIT</label><input type="text" id="provCuit" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Contacto</label><input type="text" id="provContacto" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Teléfono</label><input type="text" id="provTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Dirección</label><input type="text" id="provDireccion" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase"></div>
+                            <button onclick="guardarProveedor()" class="mt-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer w-full">Guardar Proveedor</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">📥 Cargar Remito (Actualiza Stock)</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div><label class="block text-sm font-medium text-gray-700">Proveedor *</label><select id="remProvId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Nº Remito *</label><input type="text" id="remNumero" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">Ingresa cantidades en los productos que se movieron.</p>
+                    <input type="hidden" id="remProdId1">
+                    <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                        <div class="col-span-1 font-bold text-gray-800 text-sm">Garrafa 13kg</div>
+                        <div><label class="block text-xs text-center text-green-700 font-bold">Entran Llenas</label><input type="number" id="remLlenas1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-gray-700 font-bold">Salen Vacías</label><input type="number" id="remVacias1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-red-700 font-bold">Salen Defect. (Llenas)</label><input type="number" id="remDefect1" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                    </div>
+                    <input type="hidden" id="remProdId2">
+                    <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                        <div class="col-span-1 font-bold text-gray-800 text-sm">Garrafa 11kg</div>
+                        <div><label class="block text-xs text-center text-green-700 font-bold">Entran Llenas</label><input type="number" id="remLlenas2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-gray-700 font-bold">Salen Vacías</label><input type="number" id="remVacias2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-red-700 font-bold">Salen Defect. (Llenas)</label><input type="number" id="remDefect2" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                    </div>
+                    <input type="hidden" id="remProdId3">
+                    <div class="grid grid-cols-4 gap-2 mb-2 items-center bg-gray-50 p-2 rounded border">
+                        <div class="col-span-1 font-bold text-gray-800 text-sm">Tubos 45kg</div>
+                        <div><label class="block text-xs text-center text-green-700 font-bold">Entran Llenas</label><input type="number" id="remLlenas3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-gray-700 font-bold">Salen Vacías</label><input type="number" id="remVacias3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-red-700 font-bold">Salen Defect. (Llenas)</label><input type="number" id="remDefect3" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                    </div>
+                    <input type="hidden" id="remProdId4">
+                    <div class="grid grid-cols-4 gap-2 mb-3 items-center bg-gray-50 p-2 rounded border">
+                        <div class="col-span-1 font-bold text-gray-800 text-sm">Tubos 43.5kg</div>
+                        <div><label class="block text-xs text-center text-green-700 font-bold">Entran Llenas</label><input type="number" id="remLlenas4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-gray-700 font-bold">Salen Vacías</label><input type="number" id="remVacias4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                        <div><label class="block text-xs text-center text-red-700 font-bold">Salen Defect. (Llenas)</label><input type="number" id="remDefect4" class="block w-full px-1 py-1 border rounded-md shadow-sm text-center" value="0"></div>
+                    </div>
+                        <button onclick="guardarRemito()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-bold cursor-pointer w-full">📥 Procesar Remito y Actualizar Stock</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Proveedores Cargados</h3><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-200"><th class="p-2 border">Nombre</th><th class="p-2 border">RUT</th><th class="p-2 border">Teléfono</th><th class="p-2 border text-center">Acciones</th></tr></thead><tbody id="tablaProveedores"></tbody></table></div>
+            </div>
+        
+                <div id="view-stock" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">🗄 Stock en Depósito Central</h2>
+    <div class="bg-white p-6 rounded-lg shadow-sm mt-8">
+        <h3 class="text-lg font-bold text-gray-700 mb-2">⚙ Configuraciones Generales</h3>
+        <p class="text-xs text-gray-500 mb-4">El flete se sumará automáticamente en la App de los repartidores al vender a Particulares.</p>
+        <div class="flex gap-4 items-end">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">🚚 Flete de Reparto ($)</label>
+                <input type="number" id="configFlete" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm font-bold text-lg" value="0">
+            </div>
+            <button onclick="guardarConfigFlete()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-bold cursor-pointer">Guardar Flete</button>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 mt-6">
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-blue-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢 Garrafa 13kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum13Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum13Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum13Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢 Garrafa 11kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum11Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum11Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum11Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-indigo-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">🛢 Tubos 45kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum45Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum45Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum45Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-purple-500">
+            <h3 class="text-gray-600 text-sm font-bold uppercase">⛽ Tubos 43.5kg</h3>
+            <div class="mt-3 space-y-1 text-sm">
+                <div class="flex justify-between items-center"><span class="text-green-700 font-bold">Llenas</span><span id="sum43Llenas" class="text-lg font-extrabold text-green-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-gray-700 font-bold">Vacías</span><span id="sum43Vacias" class="text-lg font-extrabold text-gray-700">0</span></div>
+                <div class="flex justify-between items-center"><span class="text-red-700 font-bold">Defect.</span><span id="sum43Defect" class="text-lg font-extrabold text-red-700">0</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <h3 class="text-lg font-bold text-gray-700 mb-4">📊 Detalle Depósito</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">Producto</th>
+                        <th class="p-2 border text-center text-green-700">Llenas</th>
+                        <th class="p-2 border text-center text-gray-700">Vacías</th>
+                        <th class="p-2 border text-center text-red-700">Defect.</th>
+                        <th class="p-2 border text-center text-blue-700">Total Envases</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaStockDeposito"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <h3 class="text-lg font-bold text-gray-700 mb-2">⚠ Ajuste Manual de Stock</h3>
+        <p class="text-xs text-gray-500 mb-4">Usa esto solo para corregir diferencias físicas vs sistema (roturas, pérdidas, etc.).</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+            <div><label class="block text-sm font-medium text-gray-700">Producto</label><select id="ajusteProdId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Estado</label><select id="ajusteEstado" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"><option value="llenas">Llena</option><option value="vacias">Vacía</option><option value="defectuosas">Defectuosa</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Movimiento</label><select id="ajusteTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white text-sm"><option value="1">➕ Sumar</option><option value="-1">➖ Restar</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700">Cantidad</label><input type="number" id="ajusteCantidad" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center text-sm" value="1" min="1"></div>
+            <button onclick="ejecutarAjusteStock()" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 font-bold cursor-pointer w-full text-sm">Aplicar</button>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold text-gray-700 mb-2">⛽ Control de Recargas (Tubo 43.5kg)</h3>
+        <p class="text-xs text-gray-500 mb-4">El gas baja automáticamente con cada venta de "Recarga 3kg". Use este botón solo para cambiar el tubo físico.</p>
+        <div class="bg-gray-50 p-3 rounded-md border mb-4 flex items-center justify-between">
+            <div>
+                <span class="block text-xs font-medium text-gray-700">Gas Restante en Tubo</span>
+                <span id="gasRestanteTexto" class="text-2xl font-bold text-purple-700">0 kg</span>
+            </div>
+            <div class="w-1/2 bg-gray-200 rounded-full h-4">
+                <div id="gasBarra" class="bg-purple-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+        <button onclick="cambiarTubo43()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-bold cursor-pointer w-full">🔄 Cambiar Tubo (Pasa a Vacío y Repone 43.5kg)</button>
+    </div>
+</div>
+
+<div id="view-ventas" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">💰 Punto de Venta</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div><label class="block text-sm font-medium text-gray-700">Tipo de Venta</label><select id="ventaTipo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="ajustarFormularioVenta()"><option value="mostrador">🏪 Mostrador</option><option value="reparto">🛵 Reparto</option></select></div>
+                <div><label class="block text-sm font-medium text-gray-700">Repartidor</label><select id="ventaRepartidorId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white disabled:bg-gray-200" disabled><option value="">-- Seleccionar --</option></select></div>
+                <div class="relative"><label class="block text-sm font-medium text-gray-700">Cliente</label><input type="text" id="ventaClienteBusq" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Buscar..." oninput="autocompletarClienteVenta()"><input type="hidden" id="ventaClienteId"><div id="dropVentaCliente" class="autocomplete-list hidden"></div></div>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700">Producto *</label><select id="ventaProductoId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()"></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Modo de Venta *</label><select id="ventaModo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()"><option value="intercambio">🔄 Intercambio</option><option value="envase_gas">🛒 Envase + Gas</option><option value="recarga_variable">⛽ Recarga 3kg (Local)</option><option value="cambio_falla">🔄 Cambio por Falla ($0)</option></select></div>
+                    <div id="bloqueKilosRecarga" class="hidden">
+                        <label class="block text-sm font-medium text-purple-700 font-bold">Kilos a Cargar</label>
+                        <select id="ventaKilos" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white" onchange="calcularTotalVenta()">
+                            <option value="1">1 kg</option><option value="1.5">1.5 kg</option><option value="2">2 kg</option><option value="2.5">2.5 kg</option><option value="3" selected>3 kg</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-sm font-medium text-green-700 font-bold">Cant. Llenas *</label><input type="number" id="ventaCantLlenas" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center font-bold" value="1" min="1" onchange="calcularTotalVenta()"></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Precio ($)</label><input type="number" id="ventaPrecio" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-gray-100 font-bold text-green-700" readonly></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Cant. Vacías (Recibe)</label><input type="number" id="ventaCantVacias" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center bg-gray-100" value="0" min="0" readonly></div>
+                    <div><label class="block text-sm font-medium text-red-700 font-bold">Cant. Defect.</label><input type="number" id="ventaCantDefect" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm text-center bg-gray-100" value="0" min="0" readonly></div>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg border mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div><label class="block text-sm font-medium text-gray-700">Método de Pago *</label><select id="ventaMetodoPago" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm bg-white"><option value="efectivo">💵 Efectivo</option><option value="tarjeta">💳 Tarjeta</option><option value="transferencia">📱 Transferencia</option><option value="cuenta_corriente">📓 Fiado</option></select></div>
+                    <div class="bg-white p-2 rounded-md border-2 border-dashed border-green-500 text-center h-full flex flex-col justify-center"><p class="text-xs text-gray-600 uppercase font-bold">Total a Cobrar</p><p id="ventaTotalMostrar" class="text-3xl font-black text-green-600">$0</p></div>
+                </div>
+            </div>
+            <div class="flex justify-end"><button onclick="procesarVenta()" class="bg-green-600 text-white px-8 py-3 rounded-md hover:bg-green-700 font-bold cursor-pointer text-lg shadow-md">✅ Cobrar y Vender</button></div>
+        </div>
+        <div class="space-y-6">
+            <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-blue-500"><h3 class="text-md font-bold text-blue-800 mb-3">🏪 Caja Local (Mostrador)</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>💵 Efectivo</span><span id="localEfectivo" class="font-bold text-green-700">$0</span></div><div class="flex justify-between"><span>💳 Tarjeta</span><span id="localTarjeta" class="font-bold text-blue-700">$0</span></div><div class="flex justify-between"><span>📱 Transferencia</span><span id="localTransferencia" class="font-bold text-purple-700">$0</span></div><div class="flex justify-between"><span>📓 Fiado</span><span id="localFiado" class="font-bold text-yellow-700">$0</span></div><hr><div class="flex justify-between font-extrabold text-base"><span>Unid. Vendidas</span><span id="localUnidades">0</span></div></div></div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-purple-500"><h3 class="text-md font-bold text-purple-800 mb-3">🛵 Caja Repartidores</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>💵 Efectivo</span><span id="repEfectivo" class="font-bold text-green-700">$0</span></div><div class="flex justify-between"><span>💳 Tarjeta</span><span id="repTarjeta" class="font-bold text-blue-700">$0</span></div><div class="flex justify-between"><span>📱 Transferencia</span><span id="repTransferencia" class="font-bold text-purple-700">$0</span></div><div class="flex justify-between"><span>📓 Fiado</span><span id="repFiado" class="font-bold text-yellow-700">$0</span></div><hr><div class="flex justify-between font-extrabold text-base"><span>Unid. Vendidas</span><span id="repUnidades">0</span></div></div></div>
+            <div class="bg-gray-800 text-white p-4 rounded-lg shadow-sm"><h3 class="text-md font-bold mb-3">📊 General del Día</h3><div class="space-y-2 text-sm"><div class="flex justify-between"><span>Total Efectivo</span><span id="genEfectivo" class="font-bold text-green-400">$0</span></div><div class="flex justify-between"><span>Total Digital</span><span id="genDigital" class="font-bold text-blue-400">$0</span></div><div class="flex justify-between"><span>Total Fiado</span><span id="genFiado" class="font-bold text-yellow-400">$0</span></div><hr class="border-gray-600"><div class="flex justify-between text-lg"><span class="font-bold">TOTAL GENERAL</span><span id="genTotal" class="font-black text-white">$0</span></div><hr class="border-gray-600 my-2"><p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Unidades / Kilos Vendidos</p><div class="flex justify-between"><span>🛢 Garrafas 13kg</span><span id="genUni13" class="font-bold">0</span></div><div class="flex justify-between"><span>🛢 Garrafas 11kg</span><span id="genUni11" class="font-bold">0</span></div><div class="flex justify-between"><span>🛢 Tubos 45kg</span><span id="genUni45" class="font-bold">0</span></div><div class="flex justify-between"><span>⛽ Kilos Tubo 43.5</span><span id="genKilos43" class="font-bold">0</span></div></div><button onclick="cerrarCajaDia()" class="mt-4 w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-bold cursor-pointer text-sm">🔒 Cerrar Caja del Día</button></div>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="text-lg font-bold text-gray-700 mb-4">Historial de Hoy</h3><div class="overflow-x-auto"><table class="w-full text-left border-collapse text-xs"><thead><tr class="bg-gray-200"><th class="p-2 border">Hora</th><th class="p-2 border">Origen</th><th class="p-2 border">Cliente</th><th class="p-2 border">Producto</th><th class="p-2 border text-center">Llenas</th><th class="p-2 border text-center">Vacías</th><th class="p-2 border text-center">Def.</th><th class="p-2 border">Pago</th><th class="p-2 border text-right">Total</th></tr></thead><tbody id="tablaVentasHoy"></tbody></table></div></div>
+</div>      
+            
+            <div id="view-repartidores" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">🛵 Gestión de Repartidores</h2>
+    <div class="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <input type="hidden" id="repIdEditando">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre del Repartidor *</label>
+                <input type="text" id="repNombre" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: JUAN PEREZ">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Teléfono</label>
+                <input type="text" id="repTelefono" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Ej: 099123456">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Vehículo</label>
+                <input type="text" id="repVehiculo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: Toyota Hilux">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Patente</label>
+                <input type="text" id="repPatente" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm uppercase" placeholder="Ej: RCH 1234">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Color en Mapa GPS *</label>
+                <input type="color" id="repColor" class="mt-1 block w-full h-10 px-1 py-1 border rounded-md shadow-sm cursor-pointer" value="#3b82f6">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Device ID Traccar *</label>
+                <input type="number" id="repDeviceId" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" value="7" placeholder="7">
+                <p class="text-[10px] text-gray-500">ID del GPS en Traccar</p>
+            </div>
+        </div>
+        <div class="flex gap-4 mt-4">
+            <button onclick="guardarRepartidor()" id="btnGuardarRep" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-bold cursor-pointer">Guardar Repartidor</button>
+            <button onclick="cancelarEdicionRep()" id="btnCancelarRep" class="hidden bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-bold cursor-pointer">Cancelar</button>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Repartidores</h3>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-2 border">Color</th>
+                    <th class="p-2 border">Nombre</th>
+                    <th class="p-2 border">Teléfono</th>
+                    <th class="p-2 border">Vehículo / Patente</th>
+                    <th class="p-2 border text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaRepartidores"></tbody> 
+        </table>
+    </div>
+</div>
+            <div id="view-finanzas" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">🏦 Finanzas y Contabilidad</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+            <div id="view-marketing" class="view-section hidden"><h2 class="text-2xl font-semibold text-gray-800 mb-6">📣 Marketing IA</h2><p class="text-gray-500">Módulo en construcción...</p></div>
+
+<div id="view-gps" class="view-section hidden">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">📍 Rastreo Vehicular - TURSO LIVE</h2>
+    <button id="btnVolverERP" onclick="volverAERP()" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-[5000] bg-blue-900/80 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg font-bold hover:bg-blue-700 transition cursor-pointer text-xs flex items-center gap-2">
+        🔙 Volver al Sistema ERP
+    </button>
+    <div class="flex border-b border-gray-200 mb-4">
+        <button onclick="mostrarTabGPS('vivo')" id="tabGPSVivo" class="py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600">📍 En Vivo (Turso)</button>
+        <button onclick="mostrarTabGPS('historial')" id="tabGPSHist" class="py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent">📊 Historial</button>
+    </div>
+    <div id="gpsVivo">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 bg-white p-2 rounded-lg shadow-sm relative" style="min-height: 550px;">
+                <div id="gpsMap" style="height: 100%; width: 100%; border-radius: 0.5rem; z-index: 1;"></div>
+                <div class="absolute top-4 right-4 z-10">
+                    <div class="bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md text-center">
+                        <p class="text-xs text-gray-500 font-bold">VELOCIDAD</p>
+                        <p id="gpsSpeed" class="text-3xl font-black text-blue-700">0</p>
+                        <p class="text-xs text-gray-500">km/h</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-2">🚚 Vehículos (Turso)</h3>
+                    <select id="selRepartidor" onchange="centrarEnRepartidor(this.value)" class="w-full border rounded p-2 text-sm mb-2">
+                        <option value="">-- Todos --</option>
+                    </select>
+                    <div id="listaEstadosRep" class="space-y-2 mt-3 max-h-48 overflow-y-auto"></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-3">📌 Agregar Punto</h3>
+                    <p class="text-xs text-gray-500 mb-2">Hacé clic en el mapa para obtener coordenadas.</p>
+                    <div class="space-y-2">
+                        <div><label class="block text-xs font-bold text-gray-600">Nombre *</label><input type="text" id="mkNombre" class="mt-1 block w-full px-2 py-1 border rounded text-sm" placeholder="Ej: Cliente Mides"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="block text-xs font-bold text-gray-600">Latitud</label><input type="number" id="mkLat" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly></div>
+                            <div><label class="block text-xs font-bold text-gray-600">Longitud</label><input type="number" id="mkLng" step="any" class="mt-1 block w-full px-2 py-1 border rounded text-sm bg-gray-50" readonly></div>
+                        </div>
+                        <button onclick="guardarMarcador()" class="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold text-sm w-full cursor-pointer">Guardar Punto</button>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm max-h-40 overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📍 Puntos de Referencia</h3>
+                    <div id="listaMarcadores" class="space-y-2 text-xs">
+                        <p class="text-gray-400 text-center">Cargando...</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm max-h-56 overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm">📋 Registro en Vivo</h3>
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead><tr class="bg-gray-100"><th class="p-1 border">Hora</th><th class="p-1 border">Repartidor</th><th class="p-1 border">Velocidad</th></tr></thead>
+                        <tbody id="tablaVivoGPS"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="gpsHistorial" class="hidden">
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex gap-4 items-center w-full md:w-auto flex-wrap">
+                <select id="histRepartidorId" class="border rounded p-2 text-sm flex-1 md:flex-none">
+                    <option value="">-- Seleccione Repartidor --</option>
+                </select>
+                <input type="date" id="histFecha" class="border rounded p-2 text-sm cursor-pointer">
+                <button onclick="generarInforme()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm cursor-pointer whitespace-nowrap">📊 Generar Informe</button>
+          </div>
+        </div>
+        <div id="gpsMapHist" style="height: 400px; width: 100%;" class="bg-gray-200 mb-4 rounded-lg shadow-sm"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200 text-center">
+                <p class="text-xs font-bold text-red-700 uppercase">Exceso de Velocidad (>45 km/h)</p>
+                <p id="statExceso" class="text-3xl font-black text-red-600 mt-1">0</p>
+            </div>
+            <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 text-center">
+                <p class="text-xs font-bold text-orange-700 uppercase">Detenciones > 3 min</p>
+                <p id="statDetenciones" class="text-3xl font-black text-orange-600 mt-1">0</p>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 text-center">
+                <p class="text-xs font-bold text-blue-700 uppercase">Distancia Total</p>
+                <p id="statDistancia" class="text-3xl font-black text-blue-600 mt-1">0 km</p>
+            </div>
+        </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm mt-4">
+            <h3 class="font-bold text-gray-700 mb-2 text-lg">📋 Línea de Tiempo del Recorrido - <span id="histNombreRep" class="text-blue-600"></span></h3>
+            <div class="border rounded" style="max-height: 450px; overflow-y: scroll;">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="sticky top-0 bg-gray-200 z-10 shadow-md">
+                        <tr>
+                            <th class="p-2 border font-extrabold">Hora</th>
+                            <th class="p-2 border font-extrabold">Evento</th>
+                            <th class="p-2 border font-extrabold">Detalle / Velocidad</th>
+                            <th class="p-2 border text-center font-extrabold">Venta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaIncidentesGPS">
+                        <tr><td colspan="4" class="p-4 text-center text-gray-500">Seleccione un repartidor y genere el informe.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</div>
+        </main>
+    </div>
+
+<script>
+    const SUPABASE_URL = 'https://plnodukthcnnwmxlzwsm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsbm9kdWt0aGNubndteGx6d3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTkwMTcsImV4cCI6MjA5NTYzNTAxN30.WkTzFvNiM0BotwTLtxzQpq9-b08stueIlsp8K0b9iq8';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    const ROCHA_CENTER = [-34.4833, -54.3333];
+    const UMBRAL_ONLINE = 120;
+    let dashMap, gpsMap, gpsMapHist;
+    let repartidores = new Map();
+    let markers = new Map();
+    let dashMarkers = new Map();
+    let trailData = new Map();
+    let lastUpdate = new Map();
+    let productosCache = [];
+    let histMarkers = L.layerGroup();
+    let puntosRutaLayer = null; 
+
+    function mostrarSeccion(id, btn) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+        const el = document.getElementById(`view-${id}`);
+        if(el) el.classList.remove('hidden');
+        document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('bg-blue-800', 'font-bold'); b.classList.add('hover:bg-blue-800'); });
+        if(btn) { btn.classList.add('bg-blue-800', 'font-bold'); btn.classList.remove('hover:bg-blue-800'); }
+        setTimeout(() => {
+            if(id === 'resumen' && dashMap) dashMap.invalidateSize();
+            if(id === 'gps') { 
+                if(gpsMap) gpsMap.invalidateSize();
+                if(gpsMapHist) gpsMapHist.invalidateSize();
+                cargarPuntosRuta();
+                cargarGPSdesdeTurso();
+            }
+            if(id === 'productos') { if(typeof cargarModuloProductos === 'function') cargarModuloProductos(); }
+            if(id === 'proveedores') { if(typeof cargarModuloProveedores === 'function') cargarModuloProveedores(); }
+            if(id === 'stock') { if(typeof cargarModuloStock === 'function') cargarModuloStock(); }
+            if(id === 'ventas') { if(typeof cargarModuloVentas === 'function') cargarModuloVentas(); }
+            if(id === 'clientes') { if(typeof cargarModuloClientes === 'function') cargarModuloClientes(); }
+            if(id === 'repartidores') { if(typeof cargarRepartidores === 'function') cargarRepartidores(); }
+        }, 100);
+    }
+
+    function initMaps() {
+        dashMap = L.map('dashMap').setView(ROCHA_CENTER, 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(dashMap);
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('histFecha').value = `${yyyy}-${mm}-${dd}`;
+        gpsMap = L.map('gpsMap').setView(ROCHA_CENTER, 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gpsMap);
+        gpsMap.on('click', function(e) {
+            document.getElementById('mkLat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('mkLng').value = e.latlng.lng.toFixed(6);
+            if(document.getElementById('mkNombre').value.trim() === '') {
+                document.getElementById('mkNombre').focus();
+            }
+        });
+        gpsMapHist = L.map('gpsMapHist').setView(ROCHA_CENTER, 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gpsMapHist);
+    }
+
+    // ======== NUEVO: TURSO GPS ========
+    async function cargarGPSdesdeTurso(){
+        try{
+            const res = await fetch('/api/gps?all=1');
+            const json = await res.json();
+            if(!json.ok || !json.data) return;
+            // json.data viene de Turso: {device_id, lat, lng, recorded_at, velocidad?}
+            json.data.forEach(row => {
+                // Mapear device_id a repartidor. Si repartidor tiene device_id column, usarlo. Si no, usar 7 = primer repartidor
+                let repId = null;
+                // buscar repartidor con ese device_id
+                for(let [id, rep] of repartidores){
+                    if(rep.device_id == row.device_id || (row.device_id==7 && id==Array.from(repartidores.keys())[0])){
+                        repId = id; break;
+                    }
+                }
+                if(!repId && repartidores.size>0){
+                    // fallback: primer repartidor
+                    repId = Array.from(repartidores.keys())[0];
+                }
+                if(!repId) return;
+                const rep = repartidores.get(repId);
+                rep.latitud = parseFloat(row.lat);
+                rep.longitud = parseFloat(row.lng);
+                rep.velocidad = parseFloat(row.velocidad || 0);
+                rep.lastTimestamp = new Date(row.recorded_at);
+                lastUpdate.set(repId, new Date(row.recorded_at));
+                actualizarMarcador(repId);
+                agregarLogVivo(rep.nombre, (rep.velocidad*3.6 || row.velocidad || 0).toFixed(0));
+            });
+            actualizarUI();
+            document.getElementById('headerStatus').innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div> Turso GPS Conectado';
+        }catch(e){
+            console.error("Error Turso GPS", e);
+            document.getElementById('headerStatus').innerHTML = '<div class="w-2 h-2 rounded-full bg-yellow-500"></div> Turso Error';
+        }
+    }
+
+    async function initSupabase() {
+        try {
+            const { data: reps, error: errRep } = await supabaseClient.from('repartidores').select('*');
+            if(errRep) throw errRep;
+            const selectRep = document.getElementById('selRepartidor');
+            const selectHist = document.getElementById('histRepartidorId');
+            selectRep.innerHTML = '<option value="">-- Todos --</option>';
+            selectHist.innerHTML = '<option value="">-- Seleccione Repartidor --</option>';
+            reps.forEach(r => {
+                repartidores.set(r.id, { ...r, latitud: ROCHA_CENTER[0], longitud: ROCHA_CENTER[1], velocidad: 0, en_movimiento: false });
+                trailData.set(r.id, []);
+                const opt = document.createElement('option');
+                opt.value = r.id; opt.textContent = r.nombre + (r.device_id ? ` (Dev ${r.device_id})` : '');
+                selectRep.appendChild(opt);
+                const optHist = document.createElement('option');
+                optHist.value = r.id; optHist.textContent = r.nombre;
+                selectHist.appendChild(optHist);
+            });
+            renderizarMapas();
+            cargarRepartidores();
+            cargarPuntosRuta();
+            actualizarUI();
+            await cargarGPSdesdeTurso();
+            document.getElementById('headerStatus').innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div> Conectado Supabase + Turso';
+
+            supabaseClient.channel('ubicaciones-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ubicaciones' }, payload => {
+                    manejarNuevaUbicacion(payload.new);
+                })
+                .subscribe();
+
+        } catch(e) {
+            console.error("Error conectando:", e);
+            document.getElementById('headerStatus').innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500"></div> Error conexión';
+            // aunque falle Supabase, intentar Turso
+            cargarGPSdesdeTurso();
+        }
+    }
+
+    function manejarNuevaUbicacion(data) {
+        const id = data.repartidor_id;
+        const rep = repartidores.get(id);
+        if(!rep) return;
+        rep.latitud = data.latitud; rep.longitud = data.longitud;
+        rep.velocidad = data.velocidad; rep.en_movimiento = data.en_movimiento;
+        rep.lastTimestamp = new Date(data.timestamp);
+        lastUpdate.set(id, new Date());
+        const trail = trailData.get(id) || [];
+        trail.push([data.latitud, data.longitud]);
+        if(trail.length > 100) trail.shift();
+        trailData.set(id, trail);
+        actualizarMarcador(id);
+        actualizarUI();
+        agregarLogVivo(rep.nombre, (rep.velocidad * 3.6).toFixed(0));
+    }
+
+    function crearIcono(color, esDash = false) {
+        const size = esDash ? 12 : 18;
+        return L.divIcon({
+            className: '',
+            html: `<div style="position:relative; width:${size}px; height:${size}px;">
+                     <div class="gps-pulse" style="background:${color}; width:${size}px; height:${size}px;"></div>
+                     <div class="gps-marker" style="background:${color}; width:${size}px; height:${size}px;"></div>
+                   </div>`,
+            iconSize: [size, size], iconAnchor: [size/2, size/2]
+        });
+    }
+
+    function renderizarMapas() {
+        if(gpsMap){
+            markers.forEach(m=>gpsMap.removeLayer(m));
+            markers.clear();
+        }
+        if(dashMap){
+            dashMarkers.forEach(m=>dashMap.removeLayer(m));
+            dashMarkers.clear();
+        }
+        repartidores.forEach((rep, id) => {
+            const marker = L.marker([rep.latitud, rep.longitud], { icon: crearIcono(rep.color || '#3b82f6') }).addTo(gpsMap);
+            marker.bindPopup(`<b>${rep.nombre}</b><br>Dev: ${rep.device_id||7}`);
+            markers.set(id, marker);
+            const dMarker = L.marker([rep.latitud, rep.longitud], { icon: crearIcono(rep.color || '#3b82f6', true) }).addTo(dashMap).bindPopup(`<b>${rep.nombre}</b>`);
+            dashMarkers.set(id, dMarker);
+        });
+        if(repartidores.size > 0) {
+            try{
+                const group = L.featureGroup(Array.from(markers.values()));
+                gpsMap.fitBounds(group.getBounds().pad(0.3));
+            }catch(e){ gpsMap.setView(ROCHA_CENTER,14); }
+            dashMap.setView(ROCHA_CENTER, 14);
+        }
+    }
+
+    function actualizarMarcador(id) {
+        const rep = repartidores.get(id);
+        const marker = markers.get(id);
+        const dMarker = dashMarkers.get(id);
+        if(!rep) return;
+        if(marker) {
+            marker.setLatLng([rep.latitud, rep.longitud]);
+            marker.setPopupContent(`<b>${rep.nombre}</b><br>Vel: ${(rep.velocidad*3.6 || 0).toFixed(0)} km/h`);
+        }
+        if(dMarker) dMarker.setLatLng([rep.latitud, rep.longitud]);
+    }
+
+    function centrarEnRepartidor(id) {
+        if(!id) { gpsMap.setView(ROCHA_CENTER, 14); return; }
+        const rep = repartidores.get(id);
+        if(rep) {
+            gpsMap.flyTo([rep.latitud, rep.longitud], 16);
+            markers.get(id)?.openPopup();
+            document.getElementById('gpsSpeed').textContent = (rep.velocidad * 3.6 || 0).toFixed(0);
+        }
+    }
+
+    function actualizarUI() {
+        let htmlEstados = '';
+        repartidores.forEach((rep, id) => {
+            const online = estaOnline(id);
+            const velocidad = (rep.velocidad * 3.6 || rep.velocidad || 0).toFixed(0);
+            const tiempo = rep.lastTimestamp ? tiempoAtras(rep.lastTimestamp) : 'Sin datos';
+            htmlEstados += `
+                <div class="flex items-center gap-2 p-2 rounded border ${online ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'} cursor-pointer" onclick="centrarEnRepartidor('${id}')">
+                    <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:${rep.color||'#3b82f6'}"></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold truncate">${rep.nombre}</p>
+                        <p class="text-[10px] text-gray-600">${velocidad} km/h - ${tiempo}</p>
+                    </div>
+                    <div class="w-2 h-2 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}"></div>
+                </div>
+            `;
+        });
+        document.getElementById('listaEstadosRep').innerHTML = htmlEstados || '<p class="text-xs text-gray-400">Sin repartidores</p>';
+    }
+
+    function agregarLogVivo(nombre, velocidad) {
+        const tbody = document.getElementById('tablaVivoGPS');
+        const hora = new Date().toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="p-1 border">${hora}</td><td class="p-1 border">${nombre}</td><td class="p-1 border text-center font-bold">${velocidad}</td>`;
+        tbody.prepend(tr);
+        if(tbody.children.length > 20) tbody.lastChild.remove();
+    }
+
+    function estaOnline(id) { const last = lastUpdate.get(id); return last ? (Date.now() - last.getTime()) / 1000 < UMBRAL_ONLINE : false; }
+    function tiempoAtras(date) {
+        const s = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (s < 5) return 'Ahora'; if (s < 60) return `Hace ${s}s`;
+        const m = Math.floor(s / 60); if (m < 60) return `Hace ${m}m`;
+        return `Hace ${Math.floor(m/60)}h`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initMaps();
+        initSupabase();
+        setInterval(actualizarUI, 10000);
+        setInterval(cargarGPSdesdeTurso, 5000);
+    });
+
+    async function cargarRepartidores() {
+        const { data, error } = await supabaseClient.from('repartidores').select('*').order('nombre');
+        if(error) { console.error(error); return; }
+        const tbody = document.getElementById('tablaRepartidores');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No hay repartidores</td></tr>';
+            return;
+        }
+        data.forEach(rep => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border text-center"><div class="w-6 h-6 rounded-full mx-auto border border-gray-300" style="background:${rep.color||'#3b82f6'}"></div></td>
+                <td class="p-2 border font-semibold">${rep.nombre} <span class="text-[10px] text-gray-500">Dev:${rep.device_id||7}</span></td>
+                <td class="p-2 border">${rep.telefono || '-'}</td>
+                <td class="p-2 border">${rep.vehiculo || '-'} (${rep.patente || '-'})</td>
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="editarRepartidor('${rep.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-yellow-600 cursor-pointer">✏ Editar</button>
+                    <button onclick="eliminarRepartidor('${rep.id}', '${rep.nombre}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 cursor-pointer">🗑 Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function guardarRepartidor() {
+        const id = document.getElementById('repIdEditando').value;
+        const nombre = document.getElementById('repNombre').value.trim();
+        const telefono = document.getElementById('repTelefono').value.trim();
+        const vehiculo = document.getElementById('repVehiculo').value.trim();
+        const patente = document.getElementById('repPatente').value.trim();
+        const color = document.getElementById('repColor').value;
+        const device_id = parseInt(document.getElementById('repDeviceId').value) || 7;
+        if(!nombre) { alert('El nombre es obligatorio'); return; }
+        const repData = { nombre, telefono, vehiculo, patente, color, device_id, activo: true };
+        let error;
+        if(id) {
+            const res = await supabaseClient.from('repartidores').update(repData).eq('id', id);
+            error = res.error;
+        } else {
+            const res = await supabaseClient.from('repartidores').insert(repData);
+            error = res.error;
+        }
+        if(error){ alert('Error: '+error.message); return; }
+        cancelarEdicionRep();
+        cargarRepartidores();
+        initSupabase();
+    }
+
+    async function editarRepartidor(id) {
+        const { data, error } = await supabaseClient.from('repartidores').select('*').eq('id', id).single();
+        if(error) { alert('Error al buscar repartidor'); return; }
+        document.getElementById('repIdEditando').value = data.id;
+        document.getElementById('repNombre').value = data.nombre;
+        document.getElementById('repTelefono').value = data.telefono || '';
+        document.getElementById('repVehiculo').value = data.vehiculo || '';
+        document.getElementById('repPatente').value = data.patente || '';
+        document.getElementById('repColor').value = data.color || '#3b82f6';
+        document.getElementById('repDeviceId').value = data.device_id || 7;
+        document.getElementById('btnCancelarRep').classList.remove('hidden');
+        document.getElementById('btnGuardarRep').textContent = '✏ Actualizar Repartidor';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelarEdicionRep() {
+        document.getElementById('repIdEditando').value = '';
+        document.getElementById('repNombre').value = '';
+        document.getElementById('repTelefono').value = '';
+        document.getElementById('repVehiculo').value = '';
+        document.getElementById('repPatente').value = '';
+        document.getElementById('repColor').value = '#3b82f6';
+        document.getElementById('repDeviceId').value = '7';
+        document.getElementById('btnCancelarRep').classList.add('hidden');
+        document.getElementById('btnGuardarRep').textContent = 'Guardar Repartidor';
+    }
+
+    async function eliminarRepartidor(id, nombre) {
+        if(confirm(`¿Eliminar a ${nombre}?`)) {
+            await supabaseClient.from('ubicaciones').delete().eq('repartidor_id', id);
+            const { error } = await supabaseClient.from('repartidores').delete().eq('id', id);
+            if(!error){ cargarRepartidores(); initSupabase(); }
+            else alert('Error: '+error.message);
+        }
+    }
+
+    function mostrarTabGPS(tab) {
+        document.getElementById('gpsVivo').classList.toggle('hidden', tab !== 'vivo');
+        document.getElementById('gpsHistorial').classList.toggle('hidden', tab !== 'historial');
+        document.getElementById('tabGPSVivo').className = tab === 'vivo' ? 'py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600' : 'py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent';
+        document.getElementById('tabGPSHist').className = tab === 'historial' ? 'py-2 px-4 font-bold text-blue-600 border-b-2 border-blue-600' : 'py-2 px-4 font-bold text-gray-500 border-b-2 border-transparent';
+        setTimeout(() => {
+            if(tab === 'vivo' && gpsMap) gpsMap.invalidateSize();
+            if(tab === 'historial' && gpsMapHist) gpsMapHist.invalidateSize();
+        }, 200);
+    }
+
+    async function cargarPuntosRuta() {
+        if(!gpsMap) return;
+        if(!puntosRutaLayer) { puntosRutaLayer = L.layerGroup().addTo(gpsMap); } 
+        else { puntosRutaLayer.clearLayers(); }
+        const { data, error } = await supabaseClient.from('puntos_ruta').select('*').order('creado_en');
+        if(error) { console.error("Error cargando puntos:", error); return; }
+        const lista = document.getElementById('listaMarcadores');
+        if(lista) lista.innerHTML = '';
+        data.forEach(punto => {
+            L.marker([punto.latitud, punto.longitud], {
+                icon: L.divIcon({ className: '', html: `<div style="background:#1e40af; color:white; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; white-space:nowrap; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);">📍 ${punto.nombre}</div>`, iconSize: [100, 30], iconAnchor: [15, 30] })
+            }).addTo(puntosRutaLayer);
+            if(lista) {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 bg-gray-50 rounded border';
+                div.innerHTML = `<span class="truncate text-xs font-semibold">${punto.nombre}</span><button onclick="eliminarMarcador('${punto.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs ml-1 cursor-pointer">X</button>`;
+                lista.appendChild(div);
+            }
+        });
+    }
+
+    async function guardarMarcador() {
+        const nombre = document.getElementById('mkNombre').value.trim();
+        const lat = parseFloat(document.getElementById('mkLat').value);
+        const lng = parseFloat(document.getElementById('mkLng').value);
+        if(!nombre || isNaN(lat) || isNaN(lng)) { alert('Completá el nombre y hacé clic en el mapa'); return; }
+        const { error } = await supabaseClient.from('puntos_ruta').insert({ nombre, latitud: lat, longitud: lng });
+        if(error) { alert('Error: ' + error.message); return; }
+        document.getElementById('mkNombre').value = ''; document.getElementById('mkLat').value = ''; document.getElementById('mkLng').value = '';
+        cargarPuntosRuta();
+    }
+
+    async function eliminarMarcador(id) {
+        if(confirm('¿Eliminar este punto?')) {
+            const { error } = await supabaseClient.from('puntos_ruta').delete().eq('id', id);
+            if(!error) cargarPuntosRuta();
+        }
+    }
+
+    function abrirRastreoPantallaCompleta() {
+        document.getElementById('mainSidebar').style.display = 'none';
+        document.getElementById('mainHeader').style.display = 'none';
+        document.getElementById('btnVolverERP').classList.remove('hidden');
+        mostrarSeccion('gps');
+        setTimeout(() => { if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize(); }, 300);
+    }
+
+    function volverAERP() {
+        document.getElementById('mainSidebar').style.display = 'flex';
+        document.getElementById('mainHeader').style.display = 'flex';
+        document.getElementById('btnVolverERP').classList.add('hidden');
+        mostrarSeccion('resumen');
+    }
+
+    async function generarInforme() {
+        try {
+            const repId = document.getElementById('histRepartidorId').value;
+            const fecha = document.getElementById('histFecha').value;
+            if(!repId || !fecha) { alert('Seleccioná un repartidor y una fecha.'); return; }
+            const rep = repartidores.get(repId);
+            document.getElementById('histNombreRep').textContent = rep ? rep.nombre : '';
+            const startDate = new Date(fecha + 'T00:00:00');
+            const endDate = new Date(fecha + 'T23:59:59');
+            let allData = []; let page = 0; const limit = 1000; let hasMore = true;
+            while(hasMore) {
+                const from = page * limit; const to = from + limit - 1;
+                const { data, error } = await supabaseClient.from('ubicaciones').select('*').eq('repartidor_id', repId).gte('timestamp', startDate.toISOString()).lte('timestamp', endDate.toISOString()).order('timestamp', { ascending: true }).range(from, to);
+                if(error) throw new Error(error.message);
+                if(data.length === 0) hasMore = false; else { allData = allData.concat(data); if(data.length < limit) hasMore = false; }
+                page++;
+            }
+            if(allData.length===0){
+                // fallback a Turso
+                const res = await fetch(`/api/gps?device_id=${rep.device_id||7}&all=1`);
+                const j = await res.json();
+                if(j.data) allData = j.data.map(d=>({latitud:d.lat, longitud:d.lng, timestamp:d.recorded_at, velocidad:d.velocidad||0, en_movimiento:true}));
+            }
+            if(allData.length===0){ alert('No hay datos para esa fecha'); return; }
+            if(histMarkers) gpsMapHist.removeLayer(histMarkers);
+            histMarkers = L.layerGroup().addTo(gpsMapHist);
+            const tbody = document.getElementById('tablaIncidentesGPS');
+            tbody.innerHTML = '';
+            let bounds = [];
+            allData.forEach(p=>{
+                bounds.push([p.latitud||p.lat, p.longitud||p.lng]);
+                const t = new Date(p.timestamp||p.recorded_at).toLocaleTimeString('es-UY');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-2 border">${t}</td><td class="p-2 border">En Ruta</td><td class="p-2 border">${(p.velocidad*3.6||0).toFixed(0)} km/h</td><td class="p-2 border text-center">-</td>`;
+                tbody.appendChild(tr);
+            });
+            if(bounds.length>0) gpsMapHist.fitBounds(L.latLngBounds(bounds).pad(0.2));
+        } catch(e){ alert("Error: "+e.message); }
+    }
+
+    // --- PRODUCTOS, PROVEEDORES, CLIENTES, STOCK, VENTAS (IGUAL QUE TENIAS) ---
+    async function cargarModuloProveedores() { await cargarProveedores(); await cargarProductosParaRemito(); }
+    async function cargarProveedores() {
+        const { data } = await supabaseClient.from('proveedores').select('*').order('nombre');
+        if(!data) return;
+        const tbody = document.getElementById('tablaProveedores');
+        tbody.innerHTML = ''; const selectProv = document.getElementById('remProvId');
+        selectProv.innerHTML = '<option value="">-- Seleccionar --</option>';
+        data.forEach(p => {
+            tbody.innerHTML += `<tr><td class="p-2 border font-bold">${p.nombre}</td><td class="p-2 border">${p.cuit||'-'}</td><td class="p-2 border">${p.telefono||'-'}</td><td class="p-2 border text-center"><button onclick="editarProveedor('${p.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1">✏</button><button onclick="eliminarProveedor('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">🗑</button></td></tr>`;
+            selectProv.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+        });
+    }
+    async function guardarProveedor() {
+        const id = document.getElementById('provIdEditando').value;
+        const provData = { nombre: document.getElementById('provNombre').value.trim(), cuit: document.getElementById('provCuit').value.trim(), contacto: document.getElementById('provContacto').value.trim(), telefono: document.getElementById('provTelefono').value.trim(), direccion: document.getElementById('provDireccion').value.trim() };
+        if(!provData.nombre){ alert('Nombre obligatorio'); return; }
+        if(id) await supabaseClient.from('proveedores').update(provData).eq('id', id); else await supabaseClient.from('proveedores').insert(provData);
+        document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provCuit').value=''; document.getElementById('provContacto').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provDireccion').value='';
+        cargarProveedores();
+    }
+    async function editarProveedor(id){ const {data}= await supabaseClient.from('proveedores').select('*').eq('id',id).single(); if(!data) return; document.getElementById('provIdEditando').value=data.id; document.getElementById('provNombre').value=data.nombre; document.getElementById('provCuit').value=data.cuit||''; document.getElementById('provContacto').value=data.contacto||''; document.getElementById('provTelefono').value=data.telefono||''; document.getElementById('provDireccion').value=data.direccion||''; }
+    async function eliminarProveedor(id){ if(confirm('¿Eliminar?')){ await supabaseClient.from('proveedores').delete().eq('id',id); cargarProveedores(); } }
+    async function cargarProductosParaRemito(){ const {data}= await supabaseClient.from('productos').select('*').order('nombre'); if(!data) return; productosCache=data; data.forEach(p=>{ if(p.tipo==='garrafa_13') document.getElementById('remProdId1').value=p.id; if(p.tipo==='garrafa_11') document.getElementById('remProdId2').value=p.id; if(p.tipo==='garrafa_45') document.getElementById('remProdId3').value=p.id; if(p.tipo==='tubo_43') document.getElementById('remProdId4').value=p.id; }); }
+    async function guardarRemito(){
+        const provId = document.getElementById('remProvId').value; const remNumero = document.getElementById('remNumero').value.trim();
+        if(!provId||!remNumero){ alert('Falta proveedor o numero'); return; }
+        const {data:remitoData, error}= await supabaseClient.from('remitos').insert({proveedor_id:provId, numero:remNumero}).select().single();
+        if(error){ alert(error.message); return; }
+        for(let i=1;i<=4;i++){
+            const prodId = document.getElementById(`remProdId${i}`).value;
+            const entran = parseInt(document.getElementById(`remLlenas${i}`).value)||0;
+            const salenVac = parseInt(document.getElementById(`remVacias${i}`).value)||0;
+            const salenDef = parseInt(document.getElementById(`remDefect${i}`).value)||0;
+            if(entran>0||salenVac>0||salenDef>0){
+                await supabaseClient.from('remito_items').insert({remito_id:remitoData.id, producto_id:prodId, entran_llenas:entran, salen_vacias:salenVac, salen_defectuosas:salenDef});
+                await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: entran, p_vacias: -salenVac, p_defectuosas: -salenDef });
+                document.getElementById(`remLlenas${i}`).value=0; document.getElementById(`remVacias${i}`).value=0; document.getElementById(`remDefect${i}`).value=0;
+            }
+        }
+        document.getElementById('remNumero').value=''; alert('Remito procesado');
+        if(typeof cargarModuloStock==='function') cargarModuloStock();
+    }
+    async function cargarModuloProductos(){ const {data}= await supabaseClient.from('productos').select('*').order('nombre'); const tbody=document.getElementById('tablaProductos'); tbody.innerHTML=''; if(!data) return; data.forEach(p=>{ tbody.innerHTML+=`<tr><td class="p-2 border font-bold">${p.nombre}</td><td class="p-2 border text-sm">${p.tipo}</td><td class="p-2 border">$${p.costo||0}</td><td class="p-2 border">$${p.precio_venta||0}</td><td class="p-2 border text-center"><button onclick="editarProducto('${p.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mr-1">✏</button><button onclick="eliminarProducto('${p.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">🗑</button></td></tr>`; }); }
+    async function guardarProducto(){ const id=document.getElementById('prodIdEditando').value; const prodData={ nombre: document.getElementById('prodNombre').value.trim(), tipo: document.getElementById('prodTipo').value, costo: parseInt(document.getElementById('prodCosto').value)||0, precio_venta: parseInt(document.getElementById('prodVenta').value)||0 }; if(!prodData.nombre){ alert('Nombre obligatorio'); return; } if(id) await supabaseClient.from('productos').update(prodData).eq('id',id); else await supabaseClient.from('productos').insert(prodData); cancelarEdicionProd(); cargarModuloProductos(); }
+    async function editarProducto(id){ const {data}= await supabaseClient.from('productos').select('*').eq('id',id).single(); document.getElementById('prodIdEditando').value=data.id; document.getElementById('prodNombre').value=data.nombre; document.getElementById('prodTipo').value=data.tipo; document.getElementById('prodCosto').value=data.costo||''; document.getElementById('prodVenta').value=data.precio_venta||''; document.getElementById('btnCancelarProd').classList.remove('hidden'); }
+    function cancelarEdicionProd(){ document.getElementById('prodIdEditando').value=''; document.getElementById('prodNombre').value=''; document.getElementById('prodCosto').value=''; document.getElementById('prodVenta').value=''; document.getElementById('btnCancelarProd').classList.add('hidden'); }
+    async function eliminarProducto(id){ if(confirm('¿Eliminar producto?')){ await supabaseClient.from('productos').delete().eq('id',id); cargarModuloProductos(); } }
+    function autocompletarProducto(){}
+
+    async function cargarModuloClientes(){ const {data}= await supabaseClient.from('clientes').select('*').order('apellido1'); const tbody=document.getElementById('tablaClientes'); tbody.innerHTML=''; if(!data) return; data.forEach(c=>{ const nombre=`${c.apellido1||''} ${c.apellido2||''}, ${c.nombre1||''} ${c.nombre2||''}`; tbody.innerHTML+=`<tr><td class="p-2 border font-bold">${nombre}</td><td class="p-2 border">${c.telefono||'-'}</td><td class="p-2 border text-xs">${c.email||'-'}</td><td class="p-2 border text-xs">${c.tipo||'-'}</td><td class="p-2 border text-xs">${c.calle||''} ${c.numero||''}</td><td class="p-2 border text-center"><button onclick="editarCliente('${c.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs">✏</button><button onclick="eliminarCliente('${c.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs">🗑</button></td></tr>`; }); }
+    async function guardarCliente(){ const id=document.getElementById('cliIdEditando').value; const cData={ tipo: document.getElementById('cliTipo').value, telefono: document.getElementById('cliTelefono').value.trim(), email: document.getElementById('cliEmail').value.trim(), ci: document.getElementById('cliCI').value.trim(), nombre1: document.getElementById('cliNombre1').value.trim(), nombre2: document.getElementById('cliNombre2').value.trim(), apellido1: document.getElementById('cliApellido1').value.trim(), apellido2: document.getElementById('cliApellido2').value.trim(), pais: document.getElementById('cliPais').value.trim(), depto: document.getElementById('cliDepto').value.trim(), ciudad: document.getElementById('cliCiudad').value.trim(), calle: document.getElementById('cliCalle').value.trim(), numero: document.getElementById('cliNumero').value.trim(), complejo: document.getElementById('cliComplejo').value.trim(), apto: document.getElementById('cliApto').value.trim(), entre1: document.getElementById('cliEntre1').value.trim(), entre2: document.getElementById('cliEntre2').value.trim(), latitud: parseFloat(document.getElementById('cliLatitud').value)||null, longitud: parseFloat(document.getElementById('cliLongitud').value)||null, fiado: document.getElementById('cliFiado').checked }; if(!cData.telefono){ alert('Telefono obligatorio'); return; } if(id) await supabaseClient.from('clientes').update(cData).eq('id',id); else await supabaseClient.from('clientes').insert(cData); cancelarEdicionCli(); cargarModuloClientes(); }
+    async function editarCliente(id){ const {data}= await supabaseClient.from('clientes').select('*').eq('id',id).single(); document.getElementById('cliIdEditando').value=data.id; document.getElementById('cliTipo').value=data.tipo; document.getElementById('cliTelefono').value=data.telefono||''; document.getElementById('cliEmail').value=data.email||''; document.getElementById('cliCI').value=data.ci||''; document.getElementById('cliNombre1').value=data.nombre1||''; document.getElementById('cliNombre2').value=data.nombre2||''; document.getElementById('cliApellido1').value=data.apellido1||''; document.getElementById('cliApellido2').value=data.apellido2||''; document.getElementById('cliPais').value=data.pais||'URUGUAY'; document.getElementById('cliDepto').value=data.depto||''; document.getElementById('cliCiudad').value=data.ciudad||''; document.getElementById('cliCalle').value=data.calle||''; document.getElementById('cliNumero').value=data.numero||''; document.getElementById('cliComplejo').value=data.complejo||''; document.getElementById('cliApto').value=data.apto||''; document.getElementById('cliEntre1').value=data.entre1||''; document.getElementById('cliEntre2').value=data.entre2||''; document.getElementById('cliLatitud').value=data.latitud||''; document.getElementById('cliLongitud').value=data.longitud||''; document.getElementById('cliFiado').checked=data.fiado||false; document.getElementById('btnCancelarCli').classList.remove('hidden'); }
+    function cancelarEdicionCli(){ document.getElementById('cliIdEditando').value=''; document.querySelectorAll('#view-clientes input[type="text"], #view-clientes input[type="email"], #view-clientes input[type="number"]').forEach(i=>i.value=''); document.getElementById('cliPais').value='URUGUAY'; document.getElementById('btnCancelarCli').classList.add('hidden'); }
+    async function eliminarCliente(id){ if(confirm('¿Eliminar?')){ await supabaseClient.from('clientes').delete().eq('id',id); cargarModuloClientes(); } }
+    async function autocompletarClientePorTelefono(){}
+    function obtenerUbicacionGPS(){ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ document.getElementById('cliLatitud').value=pos.coords.latitude.toFixed(6); document.getElementById('cliLongitud').value=pos.coords.longitude.toFixed(6); }); } }
+    async function buscarUbicacionPorDireccion(){ const calle=document.getElementById('cliCalle').value; const numero=document.getElementById('cliNumero').value; const ciudad=document.getElementById('cliCiudad').value||'Rocha'; const depto=document.getElementById('cliDepto').value||'Rocha'; const direccion=`${calle} ${numero}, ${ciudad}, ${depto}, Uruguay`; try{ const resp= await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}`); const data= await resp.json(); if(data.length>0){ document.getElementById('cliLatitud').value=parseFloat(data[0].lat).toFixed(6); document.getElementById('cliLongitud').value=parseFloat(data[0].lon).toFixed(6); } }catch(e){} }
+    function autocompletarApellido(){} function autocompletarDepto(){} function autocompletarCiudad(){} function autocompletarCalle(){}
+
+    async function cargarModuloStock(){ await cargarStockDeposito(); await cargarTubos(); cargarSelectAjuste(); cargarConfigFlete(); }
+    async function cargarStockDeposito(){ const {data}= await supabaseClient.from('stock_deposito').select('*, productos(nombre, tipo)').order('producto_id'); const tbody=document.getElementById('tablaStockDeposito'); if(!tbody) return; tbody.innerHTML=''; ['13','11','45','43'].forEach(t=>{ const a=document.getElementById('sum'+t+'Llenas'); if(a) a.textContent='0'; const b=document.getElementById('sum'+t+'Vacias'); if(b) b.textContent='0'; const c=document.getElementById('sum'+t+'Defect'); if(c) c.textContent='0'; }); if(!data) return; data.forEach(s=>{ const total=(s.llenas||0)+(s.vacias||0)+(s.defectuosas||0); const tipo=s.productos? s.productos.tipo:''; if(tipo==='garrafa_13'){ document.getElementById('sum13Llenas').textContent=s.llenas; document.getElementById('sum13Vacias').textContent=s.vacias; document.getElementById('sum13Defect').textContent=s.defectuosas; } if(tipo==='garrafa_11'){ document.getElementById('sum11Llenas').textContent=s.llenas; document.getElementById('sum11Vacias').textContent=s.vacias; document.getElementById('sum11Defect').textContent=s.defectuosas; } if(tipo==='garrafa_45'){ document.getElementById('sum45Llenas').textContent=s.llenas; document.getElementById('sum45Vacias').textContent=s.vacias; document.getElementById('sum45Defect').textContent=s.defectuosas; } if(tipo==='tubo_43'){ document.getElementById('sum43Llenas').textContent=s.llenas; document.getElementById('sum43Vacias').textContent=s.vacias; document.getElementById('sum43Defect').textContent=s.defectuosas; } tbody.innerHTML+=`<tr><td class="p-2 border font-bold">${s.productos? s.productos.nombre:'?'}</td><td class="p-2 border text-center font-bold text-green-700">${s.llenas}</td><td class="p-2 border text-center">${s.vacias}</td><td class="p-2 border text-center text-red-700">${s.defectuosas}</td><td class="p-2 border text-center font-extrabold">${total}</td></tr>`; }); }
+    async function cargarTubos(){ const {data}= await supabaseClient.from('tubos_gas').select('*').eq('activo',true).limit(1).maybeSingle(); const gasTexto=document.getElementById('gasRestanteTexto'); const gasBarra=document.getElementById('gasBarra'); if(data){ const pct=(data.gas_restante/data.capacidad)*100; gasTexto.textContent=data.gas_restante+' kg'; gasBarra.style.width=pct+'%'; } else { gasTexto.textContent='Sin tubo'; gasBarra.style.width='0%'; } }
+    function cargarSelectAjuste(){ const select=document.getElementById('ajusteProdId'); if(!select) return; supabaseClient.from('productos').select('*').order('nombre').then(res=>{ if(res.data){ select.innerHTML='<option value="">-- Seleccionar --</option>'; res.data.forEach(p=>{ select.innerHTML+=`<option value="${p.id}">${p.nombre}</option>`; }); } }); }
+    async function ejecutarAjusteStock(){ const prodId=document.getElementById('ajusteProdId').value; const estado=document.getElementById('ajusteEstado').value; const signo=parseInt(document.getElementById('ajusteTipo').value); const cantidad=parseInt(document.getElementById('ajusteCantidad').value)*signo; if(!prodId) return; const payload={ p_producto_id: prodId, p_llenas:0, p_vacias:0, p_defectuosas:0 }; if(estado==='llenas') payload.p_llenas=cantidad; if(estado==='vacias') payload.p_vacias=cantidad; if(estado==='defectuosas') payload.p_defectuosas=cantidad; await supabaseClient.rpc('modificar_stock_deposito', payload); cargarModuloStock(); }
+    async function cambiarTubo43(){ if(!confirm('¿Cambiar tubo?')) return; const {data:prod}= await supabaseClient.from('productos').select('id').eq('tipo','tubo_43').limit(1).maybeSingle(); if(!prod){ alert('No existe producto Tubo 43'); return; } await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prod.id, p_llenas: -1, p_vacias: 1, p_defectuosas: 0 }); const {data:activo}= await supabaseClient.from('tubos_gas').select('id').eq('activo',true).limit(1).maybeSingle(); if(activo) await supabaseClient.from('tubos_gas').update({activo:false, gas_restante:0}).eq('id',activo.id); await supabaseClient.from('tubos_gas').insert({producto_id:prod.id, gas_restante:43.5, activo:true}); alert('Tubo cambiado'); cargarModuloStock(); }
+    async function cargarConfigFlete(){ const {data}= await supabaseClient.from('configuraciones').select('valor').eq('clave','flete_reparto').maybeSingle(); if(data) document.getElementById('configFlete').value=data.valor; }
+    async function guardarConfigFlete(){ const valor=parseFloat(document.getElementById('configFlete').value)||0; await supabaseClient.from('configuraciones').upsert({clave:'flete_reparto', valor:valor}); alert('Flete guardado $'+valor); }
+    async function cargarModuloVentas(){ await cargarSelectsVentas(); await cargarHistorialVentas(); await calcularCaja(); }
+    async function cargarSelectsVentas(){ const {data:reps}= await supabaseClient.from('repartidores').select('*').eq('activo',true).order('nombre'); const selRep=document.getElementById('ventaRepartidorId'); selRep.innerHTML='<option value="">-- Seleccionar --</option>'; if(reps) reps.forEach(r=>{ selRep.innerHTML+=`<option value="${r.id}">${r.nombre}</option>`; }); const {data:prods}= await supabaseClient.from('productos').select('*').order('nombre'); const selProd=document.getElementById('ventaProductoId'); if(!prods) return; productosCache=prods; selProd.innerHTML='<option value="">-- Seleccionar producto --</option>'; prods.forEach(p=>{ selProd.innerHTML+=`<option value="${p.id}" data-precio="${p.precio_venta}" data-tipo="${p.tipo}">${p.nombre} — $${p.precio_venta||0}</option>`; }); }
+    function ajustarFormularioVenta(){ const tipo=document.getElementById('ventaTipo').value; document.getElementById('ventaRepartidorId').disabled=(tipo==='mostrador'); if(tipo==='mostrador') document.getElementById('ventaRepartidorId').value=''; calcularTotalVenta(); }
+    function calcularTotalVenta(){ const modo=document.getElementById('ventaModo').value; const prodSel=document.getElementById('ventaProductoId'); const precioBase=parseFloat(prodSel.options[prodSel.selectedIndex]? prodSel.options[prodSel.selectedIndex].dataset.precio:0); const cantidad=parseInt(document.getElementById('ventaCantLlenas').value)||1; const kilos=parseFloat(document.getElementById('ventaKilos').value)||3; let total=0, cantVacias=0, cantDefect=0; const bloqueKilos=document.getElementById('bloqueKilosRecarga'); if(modo==='intercambio'){ total=precioBase*cantidad; cantVacias=cantidad; bloqueKilos.classList.add('hidden'); } else if(modo==='envase_gas'){ total=precioBase*cantidad*1.5; bloqueKilos.classList.add('hidden'); } else if(modo==='recarga_variable'){ total=(precioBase/3)*kilos; bloqueKilos.classList.remove('hidden'); } else if(modo==='cambio_falla'){ total=0; cantDefect=cantidad; bloqueKilos.classList.add('hidden'); } document.getElementById('ventaCantVacias').value=cantVacias; document.getElementById('ventaCantDefect').value=cantDefect; document.getElementById('ventaPrecio').value=total.toFixed(0); document.getElementById('ventaTotalMostrar').textContent="$"+total.toLocaleString('es-UY'); }
+    async function procesarVenta(){ const tipoVenta=document.getElementById('ventaTipo').value; const modo=document.getElementById('ventaModo').value; const prodSel=document.getElementById('ventaProductoId'); const prodId=prodSel.value||null; const tipoProd=prodSel.options[prodSel.selectedIndex]? prodSel.options[prodSel.selectedIndex].dataset.tipo:''; const clienteId=document.getElementById('ventaClienteId').value||null; const repIdInput=document.getElementById('ventaRepartidorId').value; const repId=(tipoVenta==='mostrador'||!repIdInput)? null:repIdInput; const esRecarga=(modo==='recarga_variable'||tipoProd==='recarga_3kg'||tipoProd==='tubo_43'); const cantLlenas=esRecarga?0:(parseInt(document.getElementById('ventaCantLlenas').value)||0); const cantVacias=parseInt(document.getElementById('ventaCantVacias').value)||0; const cantDefect=parseInt(document.getElementById('ventaCantDefect').value)||0; const kilos=esRecarga? parseFloat(document.getElementById('ventaKilos').value):0; const total=parseFloat(document.getElementById('ventaPrecio').value)||0; const metodo=document.getElementById('ventaMetodoPago').value; if(!prodId){ alert('Seleccione producto'); return; } const ventaRegistro={ origen:'web', tipo_venta:modo, repartidor_id:repId, cliente_id:clienteId, producto_id:prodId, cantidad_llenas:cantLlenas, cantidad_vacias:cantVacias, cantidad_defectuosas:cantDefect, kilos_recarga:kilos, total:total, metodo_pago:metodo, estado:'Cobrado' }; const {data, error}= await supabaseClient.from('ventas').insert([ventaRegistro]).select().single(); if(error){ alert(error.message); return; } if(tipoVenta==='mostrador'){ if(esRecarga&&kilos>0){ const {data:tubo}= await supabaseClient.from('tubos_gas').select('gas_restante, id').eq('activo',true).limit(1).maybeSingle(); if(tubo){ await supabaseClient.from('tubos_gas').update({gas_restante:Math.max(0,tubo.gas_restante-kilos)}).eq('id',tubo.id); } } else { await supabaseClient.rpc('modificar_stock_deposito', { p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias, p_defectuosas: cantDefect }); } } else { await supabaseClient.rpc('modificar_stock_camioneta', { p_repartidor_id: repId, p_producto_id: prodId, p_llenas: -cantLlenas, p_vacias: cantVacias }); } alert('¡Venta registrada!'); document.getElementById('ventaCantLlenas').value=1; document.getElementById('ventaClienteBusq').value=''; document.getElementById('ventaClienteId').value=''; calcularTotalVenta(); cargarModuloVentas(); }
+    async function cargarHistorialVentas(){ const hoy=new Date().toISOString().split('T')[0]; const {data}= await supabaseClient.from('ventas').select('*, productos(nombre), clientes(nombre), repartidores(nombre)').gte('created_at',hoy).order('created_at',{ascending:false}); const tbody=document.getElementById('tablaVentasHoy'); if(!tbody||!data) return; tbody.innerHTML=''; data.forEach(v=>{ const hora=new Date(v.created_at).toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'}); tbody.innerHTML+=`<tr><td class="p-2 border">${hora}</td><td class="p-2 border">${v.origen}</td><td class="p-2 border">${v.clientes? v.clientes.nombre:'-'} </td><td class="p-2 border">${v.productos? v.productos.nombre:'?'}</td><td class="p-2 border text-center">${v.cantidad_llenas}</td><td class="p-2 border text-center">${v.cantidad_vacias}</td><td class="p-2 border text-center">${v.cantidad_defectuosas}</td><td class="p-2 border">${v.metodo_pago}</td><td class="p-2 border text-right">$${v.total}</td></tr>`; }); }
+    async function calcularCaja(){ const hoy=new Date().toISOString().split('T')[0]; const {data}= await supabaseClient.from('ventas').select('*').gte('created_at',hoy); if(!data) return; let localEfectivo=0, localTarjeta=0, localTrans=0, localFiado=0, localUnid=0, repEfectivo=0, repTarjeta=0, repTrans=0, repFiado=0, repUnid=0, uni13=0, uni11=0, uni45=0, kilos43=0; data.forEach(v=>{ const prod=productosCache.find(p=>p.id===v.producto_id); if(prod){ if(prod.tipo==='garrafa_13') uni13+=v.cantidad_llenas; if(prod.tipo==='garrafa_11') uni11+=v.cantidad_llenas; if(prod.tipo==='garrafa_45') uni45+=v.cantidad_llenas; } if(v.tipo_venta==='recarga_variable') kilos43+=v.kilos_recarga; if(v.origen==='web'){ localUnid+=v.cantidad_llenas; if(v.metodo_pago==='efectivo') localEfectivo+=v.total; else if(v.metodo_pago==='tarjeta') localTarjeta+=v.total; else if(v.metodo_pago==='transferencia') localTrans+=v.total; else if(v.metodo_pago==='cuenta_corriente') localFiado+=v.total; } else { repUnid+=v.cantidad_llenas; if(v.metodo_pago==='efectivo') repEfectivo+=v.total; else if(v.metodo_pago==='tarjeta') repTarjeta+=v.total; else if(v.metodo_pago==='transferencia') repTrans+=v.total; else if(v.metodo_pago==='cuenta_corriente') repFiado+=v.total; } }); document.getElementById('localEfectivo').textContent="$"+localEfectivo; document.getElementById('localTarjeta').textContent="$"+localTarjeta; document.getElementById('localTransferencia').textContent="$"+localTrans; document.getElementById('localFiado').textContent="$"+localFiado; document.getElementById('localUnidades').textContent=localUnid; document.getElementById('repEfectivo').textContent="$"+repEfectivo; document.getElementById('repTarjeta').textContent="$"+repTarjeta; document.getElementById('repTransferencia').textContent="$"+repTrans; document.getElementById('repFiado').textContent="$"+repFiado; document.getElementById('repUnidades').textContent=repUnid; document.getElementById('genEfectivo').textContent="$"+(localEfectivo+repEfectivo); document.getElementById('genDigital').textContent="$"+(localTarjeta+repTarjeta+localTrans+repTrans); document.getElementById('genFiado').textContent="$"+(localFiado+repFiado); document.getElementById('genTotal').textContent="$"+(localEfectivo+repEfectivo+localTarjeta+repTarjeta+localTrans+repTrans+localFiado+repFiado); document.getElementById('genUni13').textContent=uni13; document.getElementById('genUni11').textContent=uni11; document.getElementById('genUni45').textContent=uni45; document.getElementById('genKilos43').textContent=kilos43; }
+    function cerrarCajaDia(){ alert('Cierre ejecutado'); }
+    async function autocompletarClienteVenta(){ const input=document.getElementById('ventaClienteBusq'); const dropdown=document.getElementById('dropVentaCliente'); const termino=input.value.trim().toLowerCase(); if(termino.length<2){ dropdown.classList.add('hidden'); return; } const {data}= await supabaseClient.from('clientes').select('id, nombre1, apellido1').or(`nombre1.ilike.%${termino}%,apellido1.ilike.%${termino}%,telefono.ilike.%${termino}%`).limit(5); if(!data||data.length===0){ dropdown.classList.add('hidden'); return; } dropdown.innerHTML=''; data.forEach(c=>{ const nombre=`${c.apellido1||''} ${c.nombre1||''}`; const div=document.createElement('div'); div.className='autocomplete-item'; div.textContent=nombre; div.onclick=()=>{ input.value=nombre; document.getElementById('ventaClienteId').value=c.id; dropdown.classList.add('hidden'); }; dropdown.appendChild(div); }); dropdown.classList.remove('hidden'); }
+</script>
+</body>
+</html>
