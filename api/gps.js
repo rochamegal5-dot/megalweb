@@ -1,69 +1,112 @@
-// api/gps.js - Backend Turso (soporta web + APK GasTrack)
-export default async function handler(req, res) {
-  const TURSO_URL = process.env.TURSO_DATABASE_URL;
-  const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
-  if (!TURSO_URL || !TURSO_TOKEN) return res.status(500).json({ ok: false, error: "Falta TURSO config" });
-  
-  const HTTP_URL = TURSO_URL.replace("libsql://", "https://");
-  
-  // Soporta POST JSON del APK y GET query de la web
-  const body = req.method === 'POST' ? (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) : {};
-  const query = req.query || {};
-  
-  const device_id = query.device_id || body.device_id;
-  const lat = query.lat || body.lat;
-  const lng = query.lng || body.lng || body.longitud;
-  const velocidad = query.velocidad || body.velocidad || body.speed || 0;
-  const repartidor = body.repartidor || query.repartidor;
-  const all = query.all;
-  const init = query.init;
+import L from 'leaflet'
 
-  async function tursoExec(sql, args=[]) {
-    const r = await fetch(HTTP_URL, { method: "POST", headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ statements: [{ q: sql, params: args }] }) });
-    const j = await r.json(); if (!r.ok) throw new Error(JSON.stringify(j)); return j;
-  }
+// Centro Rocha (si no lo tenés en supabase.js, definilo acá)
+const ROCHA_CENTER = [-34.4833, -54.3333]
+
+let map, markers = {}
+
+export function initMap(containerId = 'map') {
+  if (map) { map.remove(); map = null }
+  map = L.map(containerId).setView(ROCHA_CENTER, 13)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map)
+  return map
+}
+
+export async function cargarYMostrarRepartidores() {
+  if (!map) initMap()
+  
+  // Limpia markers
+  Object.values(markers).forEach(m => map.removeLayer(m))
+  markers = {}
   
   try {
-    if (init === "1") {
-      const creates = [
-        `CREATE TABLE IF NOT EXISTS gps_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, device_id INTEGER NOT NULL, lat REAL, lng REAL, velocidad REAL DEFAULT 0, recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE INDEX IF NOT EXISTS idx_device_time ON gps_locations(device_id, recorded_at)`,
-        `CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, vehiculo TEXT, patente TEXT, color TEXT DEFAULT '#3b82f6', device_id INTEGER DEFAULT 7, activo INTEGER DEFAULT 1)`,
-        `CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT, costo INTEGER, precio_venta INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, telefono TEXT, nombre1 TEXT, apellido1 TEXT, depto TEXT, ciudad TEXT, calle TEXT, numero TEXT, latitud REAL, longitud REAL, fiado INTEGER DEFAULT 0)`,
-        `CREATE TABLE IF NOT EXISTS puntos_referencia (id TEXT PRIMARY KEY, nombre TEXT, latitud REAL, longitud REAL, lat REAL, lng REAL, cliente_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, cuit TEXT, telefono TEXT, rubro TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS stock_deposito (producto_id TEXT PRIMARY KEY, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`,
-        `CREATE TABLE IF NOT EXISTS stock_camioneta (repartidor_id TEXT, producto_id TEXT, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, PRIMARY KEY (repartidor_id, producto_id))`,
-        `CREATE TABLE IF NOT EXISTS ventas (id TEXT PRIMARY KEY, origen TEXT DEFAULT 'web', repartidor_id TEXT, cliente_id TEXT, producto_id TEXT, cantidad_llenas INTEGER DEFAULT 0, total INTEGER DEFAULT 0, metodo_pago TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS finanzas (id TEXT PRIMARY KEY, tipo TEXT, concepto TEXT, monto INTEGER, fecha DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS marketing (id TEXT PRIMARY KEY, campaña TEXT, canal TEXT, presupuesto INTEGER, leads INTEGER DEFAULT 0, estado TEXT DEFAULT 'Activa', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS configuraciones (clave TEXT PRIMARY KEY, valor REAL)`,
-        `INSERT OR IGNORE INTO configuraciones (clave, valor) VALUES ('flete_reparto', 150)`
-      ];
-      for (const sql of creates) await tursoExec(sql);
-      return res.status(200).json({ ok: true, message: "Tablas completas creadas (con puntos_referencia)" });
+    // 1. Traer repartidores de Turso
+    const respRep = await fetch('/api/repartidores?all=1').catch(() => null);
+    let repartidores = [];
+    if (respRep && respRep.ok) {
+      const data = await respRep.json();
+      repartidores = Array.isArray(data) ? data : (data.results?.[0]?.rows || []);
     }
+
+    // 2. Traer ubicaciones de Turso (tu tabla gps_locations)
+    const respGps = await fetch('/api/gps?all=1');
+    const tursoData = await respGps.json();
+    const ubicaciones = Array.isArray(tursoData) ? tursoData : [];
     
-    if (all === "1") {
-      const id = device_id ? parseInt(device_id) : null;
-      const sql = id ? "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 200" : "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations ORDER BY recorded_at DESC LIMIT 500";
-      const result = await tursoExec(sql, id ? [id] : []);
-      const rows = result.results?.[0]?.rows || [];
-      return res.status(200).json(rows);
+    console.log("Turso GPS data:", ubicaciones.length, "puntos");
+
+    // 3. Mostrar repartidores con su última ubicación
+    for (const row of ubicaciones.slice(0, 20)) {
+      // Turso devuelve [device_id, lat, lng, velocidad, recorded_at]
+      const device_id = Array.isArray(row) ? row[0] : row.device_id;
+      const lat = Array.isArray(row) ? row[1] : row.lat;
+      const lng = Array.isArray(row) ? row[2] : row.lng;
+      const velocidad = Array.isArray(row) ? row[3] : row.velocidad;
+      const fecha = Array.isArray(row) ? row[4] : row.recorded_at;
+
+      if (!lat || !lng) continue;
+
+      // Buscar nombre del repartidor
+      const rep = repartidores.find(r => {
+        const id = Array.isArray(r) ? r[0] : r.id;
+        const devId = Array.isArray(r) ? r[6] : r.device_id;
+        return devId == device_id || id == device_id;
+      });
+      
+      const nombre = rep ? (Array.isArray(rep) ? rep[1] : rep.nombre) : `Moto ${device_id}`;
+      const color = rep ? (Array.isArray(rep) ? rep[5] : rep.color) : '#ef4444';
+
+      const icon = L.divIcon({
+        className: 'gps-marker',
+        html: `<div style="background:${color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); position:relative;"><div class="gps-pulse" style="background:${color}; width:20px; height:20px; border-radius:50%; position:absolute; top:-3px; left:-3px; animation: pulse 2s infinite;"></div></div>`,
+        iconSize: [20,20]
+      })
+      
+      const marker = L.marker([lat, lng], { icon }).addTo(map)
+        .bindPopup(`<b>${nombre}</b><br>${parseFloat(lat).toFixed(6)},${parseFloat(lng).toFixed(6)}<br>${velocidad || 0} km/h<br>${fecha ? new Date(fecha).toLocaleString() : ''}`)
+      
+      markers[device_id] = marker
     }
-    
-    // AQUÍ es donde entra el APK GasTrack (5.3MB) - POST con lat/lng
-    if (lat && lng) {
-      // Si viene repartidor del APK (Moto-Samsung...), lo usamos como device_id 7 por defecto o guardamos
-      const finalDeviceId = parseInt(device_id) || 7;
-      await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [finalDeviceId, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
-      console.log(`GPS Guardado: ${repartidor || finalDeviceId} - ${lat},${lng} ${velocidad}km/h`);
-      return res.status(200).json({ ok: true, saved: { device_id: finalDeviceId, lat, lng, velocidad } });
+
+    // Si no hay datos, centrar en Rocha
+    if (ubicaciones.length === 0) {
+      console.log("Sin datos GPS aún, esperando APK");
+    } else {
+      // Centrar en última ubicación
+      const ultima = ubicaciones[0];
+      const lat = Array.isArray(ultima) ? ultima[1] : ultima.lat;
+      const lng = Array.isArray(ultima) ? ultima[2] : ultima.lng;
+      if (lat && lng) map.setView([lat, lng], 15);
     }
-    
-    return res.status(400).json({ ok: false, error: "falta lat/lng" });
-  } catch (e) { 
-    return res.status(500).json({ ok: false, error: e.message }); 
+
+    return repartidores
+
+  } catch(e) {
+    console.error("Error cargando Turso:", e);
+    return []
   }
 }
+
+export function centrarEnRepartidor(id) {
+  const m = markers[id]
+  if (m && map) map.setView(m.getLatLng(), 15)
+}
+
+// === INTEGRACIÓN GASTRACK ANDROID + TURSO ===
+if (typeof navigator !== 'undefined' && navigator.geolocation) {
+  navigator.geolocation.watchPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0";
+    console.log(`GPS Web: ${lat},${lng}`);
+    if (window.AndroidGPS) {
+      window.AndroidGPS.sendLocation(lat.toString(), lng.toString(), speed.toString());
+    }
+  }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000});
+}
+
+window.initMap = initMap
+window.cargarYMostrarRepartidores = cargarYMostrarRepartidores
+window.centrarEnRepartidor = centrarEnRepartidor
