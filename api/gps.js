@@ -41,6 +41,40 @@ export default async function handler(req, res) {
       await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [parseInt(device_id)||7, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
       return res.status(200).json({ ok: true });
     }
+    // === INTEGRACIÓN GASTRACK ANDROID + TURSO ===
+(function() {
+  if (typeof navigator !== 'undefined' && navigator.geolocation) {
+    console.log("GasTrack: Iniciando tracking para Android");
+    
+    navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0";
+        const heading = pos.coords.heading || 0;
+
+        console.log(`GasTrack GPS: ${lat},${lng} ${speed}km/h`);
+
+        // Si estamos dentro del APK Android, enviar a Turso vía puente nativo
+        if (window.AndroidGPS && window.AndroidGPS.sendLocation) {
+          window.AndroidGPS.sendLocation(
+            lat.toString(), 
+            lng.toString(), 
+            speed.toString()
+          );
+        }
+      },
+      (err) => {
+        console.error("GasTrack GPS Error:", err.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      }
+    );
+  }
+})();
     return res.status(400).json({ ok: false, error: "falta lat/lng" });
   } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
 }
