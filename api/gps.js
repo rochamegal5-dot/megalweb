@@ -1,14 +1,28 @@
-// Actualizar api/gps.js para incluir puntos_referencia
+// api/gps.js - Backend Turso (soporta web + APK GasTrack)
 export default async function handler(req, res) {
   const TURSO_URL = process.env.TURSO_DATABASE_URL;
   const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
   if (!TURSO_URL || !TURSO_TOKEN) return res.status(500).json({ ok: false, error: "Falta TURSO config" });
+  
   const HTTP_URL = TURSO_URL.replace("libsql://", "https://");
-  const { device_id, lat, lng, velocidad, all, init } = req.query;
+  
+  // Soporta POST JSON del APK y GET query de la web
+  const body = req.method === 'POST' ? (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) : {};
+  const query = req.query || {};
+  
+  const device_id = query.device_id || body.device_id;
+  const lat = query.lat || body.lat;
+  const lng = query.lng || body.lng || body.longitud;
+  const velocidad = query.velocidad || body.velocidad || body.speed || 0;
+  const repartidor = body.repartidor || query.repartidor;
+  const all = query.all;
+  const init = query.init;
+
   async function tursoExec(sql, args=[]) {
     const r = await fetch(HTTP_URL, { method: "POST", headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ statements: [{ q: sql, params: args }] }) });
     const j = await r.json(); if (!r.ok) throw new Error(JSON.stringify(j)); return j;
   }
+  
   try {
     if (init === "1") {
       const creates = [
@@ -30,6 +44,7 @@ export default async function handler(req, res) {
       for (const sql of creates) await tursoExec(sql);
       return res.status(200).json({ ok: true, message: "Tablas completas creadas (con puntos_referencia)" });
     }
+    
     if (all === "1") {
       const id = device_id ? parseInt(device_id) : null;
       const sql = id ? "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 200" : "SELECT device_id, lat, lng, velocidad, recorded_at FROM gps_locations ORDER BY recorded_at DESC LIMIT 500";
@@ -37,45 +52,18 @@ export default async function handler(req, res) {
       const rows = result.results?.[0]?.rows || [];
       return res.status(200).json(rows);
     }
-    if (lat && lng) {
-      await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [parseInt(device_id)||7, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
-      return res.status(200).json({ ok: true });
-    }
-    // === INTEGRACIÓN GASTRACK ANDROID + TURSO ===
-(function() {
-  if (typeof navigator !== 'undefined' && navigator.geolocation) {
-    console.log("GasTrack: Iniciando tracking para Android");
     
-    navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0";
-        const heading = pos.coords.heading || 0;
-
-        console.log(`GasTrack GPS: ${lat},${lng} ${speed}km/h`);
-
-        // Si estamos dentro del APK Android, enviar a Turso vía puente nativo
-        if (window.AndroidGPS && window.AndroidGPS.sendLocation) {
-          window.AndroidGPS.sendLocation(
-            lat.toString(), 
-            lng.toString(), 
-            speed.toString()
-          );
-        }
-      },
-      (err) => {
-        console.error("GasTrack GPS Error:", err.message);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      }
-    );
-  }
-})();
+    // AQUÍ es donde entra el APK GasTrack (5.3MB) - POST con lat/lng
+    if (lat && lng) {
+      // Si viene repartidor del APK (Moto-Samsung...), lo usamos como device_id 7 por defecto o guardamos
+      const finalDeviceId = parseInt(device_id) || 7;
+      await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [finalDeviceId, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
+      console.log(`GPS Guardado: ${repartidor || finalDeviceId} - ${lat},${lng} ${velocidad}km/h`);
+      return res.status(200).json({ ok: true, saved: { device_id: finalDeviceId, lat, lng, velocidad } });
+    }
+    
     return res.status(400).json({ ok: false, error: "falta lat/lng" });
-  } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
+  } catch (e) { 
+    return res.status(500).json({ ok: false, error: e.message }); 
+  }
 }
-
