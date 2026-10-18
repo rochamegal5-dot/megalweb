@@ -1,28 +1,28 @@
-import { createClient } from "@libsql/client";
-
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN
-});
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const TURSO_URL = process.env.TURSO_DATABASE_URL;
+  const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
+  const HTTP_URL = TURSO_URL.replace("libsql://", "https://");
   
-  if (req.method !== 'POST') return res.status(405).json({error: 'Method not allowed'});
-  
-  const { repartidor, lat, lng, velocidad, direccion } = req.body;
-  
-  try {
-    await client.execute({
-      sql: `INSERT INTO gps_tracking (repartidor, lat, lng, velocidad, direccion, fecha) VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-      args: [repartidor, lat, lng, velocidad || 0, direccion || 0]
-    });
-    return res.status(200).json({ok: true});
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({error: e.message});
+  const body = req.method === 'POST' ? (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) : req.query;
+  const lat = body.lat;
+  const lng = body.lng || body.longitud;
+  const velocidad = body.velocidad || 0;
+  const repartidor = body.repartidor || 'Moto-Desconocida';
+
+  async function tursoExec(sql, args=[]) {
+    const r = await fetch(HTTP_URL, { method: "POST", headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify({ statements: [{ q: sql, params: args }] }) });
+    return r.json();
   }
+
+  if (!lat || !lng) return res.status(400).json({ok:false, error:'falta lat/lng'});
+  
+  await tursoExec("INSERT INTO gps_locations (device_id, lat, lng, velocidad) VALUES (?, ?, ?, ?)", [7, parseFloat(lat), parseFloat(lng), parseFloat(velocidad)||0]);
+  
+  console.log(`TRACK APK: ${repartidor} -> ${lat},${lng}`);
+  return res.status(200).json({ok:true});
 }
