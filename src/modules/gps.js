@@ -1,5 +1,6 @@
-import { supabase, ROCHA_CENTER } from '../lib/supabase.js'
 import L from 'leaflet'
+
+const ROCHA_CENTER = [-34.4833, -54.3333]
 
 let map, markers = {}
 
@@ -15,47 +16,75 @@ export function initMap(containerId = 'map') {
 export async function cargarYMostrarRepartidores() {
   if (!map) initMap()
   
-  const { data: repartidores } = await supabase.from('repartidores').select('*')
-  const { data: ubicaciones } = await supabase.from('ubicaciones').select('*').order('created_at', {ascending:false}).limit(100)
-  
-  // Limpia markers
   Object.values(markers).forEach(m => map.removeLayer(m))
   markers = {}
   
-  for (const rep of repartidores || []) {
-    const ultimaUbic = ubicaciones?.find(u => u.repartidor_id === rep.id) || rep
-    if (!ultimaUbic.latitud && !ultimaUbic.lat && !rep.lat) continue
+  try {
+    const resp = await fetch('/api/gps?all=1');
+    const data = await resp.json();
     
-    const lat = ultimaUbic.latitud || ultimaUbic.lat || rep.lat
-    const lng = ultimaUbic.longitud || ultimaUbic.lng || rep.lng
+    // data es [[device_id, lat, lng, velocidad, fecha], ...]
+    const ubicaciones = Array.isArray(data) && data.length > 0 && Array.isArray(data[0]) ? data : (data.normalized || []);
     
-    const icon = L.divIcon({
-      className: 'gps-marker',
-      html: `<div style="background:${rep.color || '#3b82f6'}; width:16px; height:16px; border-radius:50%; border:3px solid white; position:relative;"><div class="gps-pulse" style="background:${rep.color || '#3b82f6'}; width:16px; height:16px;"></div></div>`,
-      iconSize: [16,16]
-    })
-    
-    const marker = L.marker([lat, lng], { icon }).addTo(map).bindPopup(`<b>${rep.nombre}</b><br>Última: ${new Date(ultimaUbic.created_at || rep.last_seen).toLocaleTimeString()}`)
-    markers[rep.id] = marker
+    console.log("GPS Turso:", ubicaciones);
+
+    if (ubicaciones.length === 0) {
+      console.log("Sin datos GPS aún");
+      return []
+    }
+
+    // Mostrar últimos 20 puntos
+    ubicaciones.slice(0, 20).forEach((row, idx) => {
+      const device_id = row[0];
+      const lat = row[1];
+      const lng = row[2];
+      const velocidad = row[3];
+      const fecha = row[4];
+
+      if (!lat || !lng) return;
+
+      const isLatest = idx === 0;
+      const color = isLatest ? '#ef4444' : '#3b82f6';
+      const size = isLatest ? 20 : 12;
+
+      const icon = L.divIcon({
+        className: 'gps-marker',
+        html: `<div style="background:${color}; width:${size}px; height:${size}px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [size, size]
+      })
+      
+      const marker = L.marker([lat, lng], { icon }).addTo(map)
+        .bindPopup(`<b>Moto ${device_id}</b><br>${lat.toFixed(5)},${lng.toFixed(5)}<br>${velocidad || 0} km/h<br>${fecha ? new Date(fecha).toLocaleString() : ''}`)
+      
+      if (isLatest) {
+        map.setView([lat, lng], 15);
+        markers[device_id] = marker;
+      }
+    });
+
+    return ubicaciones
+
+  } catch(e) {
+    console.error("Error Turso map:", e);
+    return []
   }
-  
-  return repartidores
 }
 
 export function centrarEnRepartidor(id) {
   const m = markers[id]
   if (m && map) map.setView(m.getLatLng(), 15)
 }
-// === INTEGRACIÓN GASTRACK ANDROID + TURSO ===
+
+// === PUENTE ANDROID APK ===
 if (typeof navigator !== 'undefined' && navigator.geolocation) {
   navigator.geolocation.watchPosition((pos) => {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0";
-    if (window.AndroidGPS) {
+    if (window.AndroidGPS && window.AndroidGPS.sendLocation) {
       window.AndroidGPS.sendLocation(lat.toString(), lng.toString(), speed.toString());
     }
-  }, null, {enableHighAccuracy: true, maximumAge: 0});
+  }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000});
 }
 
 window.initMap = initMap
