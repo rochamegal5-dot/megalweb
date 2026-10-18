@@ -46,6 +46,17 @@ export function centrarEnRepartidor(id) {
   const m = markers[id]
   if (m && map) map.setView(m.getLatLng(), 15)
 }
+// === INTEGRACIÓN GASTRACK ANDROID + TURSO ===
+if (typeof navigator !== 'undefined' && navigator.geolocation) {
+  navigator.geolocation.watchPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : "0";
+    if (window.AndroidGPS) {
+      window.AndroidGPS.sendLocation(lat.toString(), lng.toString(), speed.toString());
+    }
+  }, null, {enableHighAccuracy: true, maximumAge: 0});
+}
 
 window.initMap = initMap
 window.cargarYMostrarRepartidores = cargarYMostrarRepartidores
