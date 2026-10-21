@@ -4,12 +4,14 @@ const turso = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN
 });
 
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const device_id = searchParams.get("device_id") || "7";
-  const res = await turso.execute({
-    sql: "SELECT * FROM gps_locations WHERE device_id = ? ORDER BY created_at DESC LIMIT 100",
-    args: [device_id]
+export async function POST(req) {
+  const body = await req.json();
+  const { device_id, usuario, jornada_id, lat, lng, accuracy, velocidad, battery } = body;
+  if(!lat || !lng) return Response.json({error:"sin coords"}, {status:400});
+
+  await turso.execute({
+    sql: `INSERT INTO gps_locations (device_id, usuario, jornada_id, lat, lng, accuracy, velocidad, battery, created_at) VALUES (?,?,?,?,?,?,?,?,?)`,
+    args: [device_id, usuario, jornada_id, lat, lng, accuracy, velocidad, battery, new Date().toISOString()]
   });
-  return Response.json(res.rows);
+  return Response.json({ok:true});
 }
