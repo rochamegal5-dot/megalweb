@@ -1,7 +1,8 @@
 // api/stock.js - API STOCK MEGAL COMPLETO
 export default async function handler(req, res) {
-  const TURSO_URL = process.env.TURSO_DATABASE_URL;
-  const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
+  const TURSO_RAW = process.env.TURSO_DATABASE_URL;
+  const TURSO_URL = TURSO_RAW ? TURSO_RAW.replace('libsql://', 'https://') : null;
+
   if (!TURSO_URL || !TURSO_TOKEN) return res.status(500).json({error: "Falta TURSO config"});
   async function fetchAll(q){
     const r = await fetch(TURSO_URL,{method:"POST",headers:{"Authorization":`Bearer ${TURSO_TOKEN}`,"Content-Type":"application/json"},body:JSON.stringify({statements:[{q}]})});
