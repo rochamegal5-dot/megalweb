@@ -9,9 +9,12 @@ export default async function handler(req, res) {
   try {
     const client = getClient();
     if (req.method === "POST") {
-      const { device_id, lat, lng, speed } = req.body || {};
-      if (!device_id || lat === undefined) return res.status(400).json({ error: "faltan datos" });
-      const args = [String(device_id), Number(lat), Number(lng), Number(speed || 0)];
+      const b = req.body || {};
+      const device_id = String(b.device_id || 7);
+      const lat = Number(b.lat || b.latitud);
+      const lng = Number(b.lng || b.longitud);
+      const speed = Number(b.speed || b.velocidad || 0);
+      const args = [device_id, lat, lng, speed];
       await client.execute({ sql: "INSERT INTO locations (device_id, lat, lng, speed) VALUES (?,?,?,?)", args });
       await client.execute({ sql: "INSERT INTO gps_locations (device_id, lat, lng, speed) VALUES (?,?,?,?)", args });
       return res.status(200).json({ ok: true });
@@ -21,8 +24,5 @@ export default async function handler(req, res) {
     const args = device_id && device_id !== "Todos" ? [String(device_id)] : [];
     const rs = await client.execute({ sql, args });
     return res.status(200).json(rs.rows);
-  } catch (e) {
-    console.error(e);
-    return res.status(200).json([]);
-  }
+  } catch(e) { return res.status(200).json([]); }
 }
