@@ -43,3 +43,13 @@ window.testConexion = async () => {
     throw e
   }
 }
+// FIX rápido para cargar repartidores en el sidebar
+fetch('/api/repartidores').then(r=>r.json()).then(data=>{
+  const sel = document.querySelector('select');
+  // busca el de Vehículos (Turso) a la derecha
+  document.querySelectorAll('select').forEach(s=>{
+    if(s.innerHTML.includes('Todos')){
+      s.innerHTML = '<option value="Todos">-- Todos --</option>' + data.map(r=>`<option value="${r.device_id}">${r.device_id} - ${r.nombre}</option>`).join('');
+    }
+  });
+});
