@@ -1,5 +1,4 @@
 import { createClient } from "@libsql/client";
-
 const getClient = () => createClient({
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
@@ -15,38 +14,28 @@ export default async function handler(req, res) {
 
   if (req.method === "POST") {
     try {
-      // La app manda device_id como string "7"
       const { device_id, lat, lng, speed, accuracy } = req.body;
-      console.log("INGEST:", req.body); // Para ver en Logs de Vercel
-      if (!device_id || lat === undefined || lng === undefined) {
-        return res.status(400).json({ error: "faltan device_id/lat/lng", body: req.body });
-      }
-      await client.execute({
-        sql: "INSERT INTO locations (device_id, lat, lng, speed, accuracy, timestamp) VALUES (?,?,?,?,?, datetime('now'))",
-        args: [String(device_id), Number(lat), Number(lng), Number(speed||0), Number(accuracy||0)],
-      });
-      return res.json({ ok: true, saved: { device_id, lat, lng } });
-    } catch (e) {
-      console.error(e);
-      return res.status(500).json({ error: e.message });
-    }
+      if (!device_id || lat === undefined || lng === undefined) return res.status(400).json({ error: "faltan datos" });
+      
+      // ESCRIBE EN LAS 2 TABLAS PARA QUE NO HAYA CONFLICTO
+      const args = [String(device_id), Number(lat), Number(lng), Number(speed||0), Number(accuracy||0)];
+      await client.execute({ sql: "INSERT INTO locations (device_id, lat, lng, speed, accuracy) VALUES (?,?,?,?,?)", args });
+      await client.execute({ sql: "INSERT INTO gps_locations (device_id, lat, lng, speed, accuracy) VALUES (?,?,?,?,?)", args });
+      
+      return res.json({ ok: true });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
   }
 
-  // GET
+  // GET - devuelve de gps_locations que es la que tu web usa
   try {
     const device_id = req.query.device_id;
-    if (device_id) {
-      const rs = await client.execute({
-        sql: "SELECT device_id, lat, lng, speed, accuracy, timestamp FROM locations WHERE device_id=? ORDER BY timestamp DESC LIMIT 200",
-        args: [String(device_id)],
-      });
-      return res.json(rs.rows);
-    } else {
-      // Para el mapa "Todos"
-      const rs = await client.execute("SELECT device_id, lat, lng, speed, timestamp FROM locations WHERE timestamp > datetime('now','-2 hours') ORDER BY timestamp DESC");
-      return res.json(rs.rows);
+    let sql = "SELECT device_id, lat, lng, speed, created_at as timestamp FROM gps_locations WHERE created_at > datetime('now','-6 hours') ORDER BY created_at DESC LIMIT 500";
+    let args = [];
+    if (device_id && device_id !== 'Todos') {
+      sql = "SELECT device_id, lat, lng, speed, created_at as timestamp FROM gps_locations WHERE device_id=? ORDER BY created_at DESC LIMIT 200";
+      args = [String(device_id)];
     }
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
+    const rs = await client.execute({ sql, args });
+    return res.json(rs.rows);
+  } catch (e) { return res.status(500).json({ error: e.message }); }
 }
