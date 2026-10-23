@@ -50,7 +50,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <div class="gps-tabs">
 <button id="tabGPSVivo" class="gps-tab active" onclick="mostrarTabGPS('vivo')">📍 En Vivo (Turso)</button>
 <button id="tabGPSHist" class="gps-tab" onclick="mostrarTabGPS('historial')">📊 Historial</button>
-<button id="btnVolverERP" class="hidden" onclick="volverAERP()" style="margin-left:auto;background:#0ea5e9;color:white;padding:6px 12px;border-radius:20px;border:none">↩️ Volver al ERP</button>
+<button id="btnVolverERP" class="hidden" onclick="volverAERP()" style="margin-left:auto;background:#0ea5e9;color:white;padding:6px 12px;border-radius:20px;border:none">↩ Volver al ERP</button>
 </div>
 
 <div id="gpsVivo">
@@ -84,13 +84,13 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <div id="view-productos" class="view-section hidden"><div class="card">Productos - implementar cargarModuloProductos()</div></div>
 <div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
 <div id="view-proveedores" class="view-section hidden"><div class="card">Proveedores</div></div>
-<div id="view-stock" class="view-section hidden"><div class="card">Stock</div></div>
+<div id="view-stock" class="view-section hidden"><div class="card"><h3>📦 Stock TURSO</h3><div id="stockStatus" style="font-size:12px;color:#94a3b8">Cargando...</div></div><div id="stockContent"></div></div>
 <div id="view-ventas" class="view-section hidden"><div class="card">Ventas</div></div>
 </div>
 </div>
 
 <script>
-const API_GPS='/api/gps', API_ERP='/api/erp';
+const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock';
 const ROCHA_CENTER=[-34.4836,-54.3334];
 const UMBRAL_ONLINE=300;
 let dashMap, gpsMap, gpsMapHist;
@@ -100,12 +100,80 @@ let puntosRutaLayer=null, histMarkers=null, clickMarker=null;
 function mostrarSeccion(id, btn){
  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
  const el=document.getElementById(`view-${id}`); if(el) el.classList.remove('hidden');
- document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('bg-blue-800','font-bold'); b.classList.add('hover:bg-blue-800'); });
- if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
+ document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('active'); });
+ if(btn){ btn.classList.add('active'); }
  setTimeout(()=>{
   if(id==='resumen' && dashMap) dashMap.invalidateSize();
   if(id==='gps'){ if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize(); cargarPuntosRuta(); }
+  if(id==='stock'){ cargarStock(); }
  },100);
+}
+
+async function cargarStock(){
+  const status=document.getElementById('stockStatus');
+  const content=document.getElementById('stockContent');
+  if(status) status.textContent='Cargando Turso /api/stock...';
+  try{
+    const r=await fetch(API_STOCK);
+    const data=await r.json();
+    console.log('STOCK TURSO',data);
+    if(!data.ok) throw new Error(data.error||'Error');
+    const dep=data.deposito||[];
+    const cams=data.camionetas||[];
+    const movs=data.movimientos||[];
+    const fracc=data.fraccionadas||[];
+    if(status) status.parentElement.style.display='none';
+    content.innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+        ${dep.map(d=>`<div class="card" style="margin:0;border:2px solid ${d.producto_id==='43.5'?'#38bdf8':'#2d3748'}"><div style="font-weight:900">${d.producto_id}kg - ${d.nombre||''}</div><div style="font-size:13px;margin-top:8px;line-height:1.8">Llenas: <b style="color:#22c55e;font-size:18px">${d.llenas}</b><br>Vacías: <b style="color:#f59e0b">${d.vacias}</b><br>Cambio: <b style="color:#ef4444">${d.cambio||0}</b>${d.producto_id==='43.5'?`<div style="margin-top:8px;background:#0f172a;padding:6px;border-radius:6px;border:1px solid #38bdf8">En uso: <b style="color:#38bdf8">${d.kilos_en_uso} kg</b><div style="background:#334155;height:8px;border-radius:4px;margin-top:4px"><div style="width:${Math.max(5,(d.kilos_en_uso/43.5*100)).toFixed(0)}%;height:100%;background:#38bdf8;border-radius:4px"></div></div></div>`:''}</div><div style="margin-top:6px">${d.permite_completo?'<span style="font-size:10px;background:#22c55e22;color:#22c55e;padding:2px 6px;border-radius:4px">COMPLETO</span>':''} ${d.es_fraccionado?'<span style="font-size:10px;background:#38bdf822;color:#38bdf8;padding:2px 6px;border-radius:4px">FRACC 1-3kg</span>':''}</div></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="card" style="margin:0"><h4 style="font-weight:bold">🚚 Cargar Camioneta (con hora)</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="repStock" style="flex:1"><option value="antonio">Antonio</option><option value="jose">José</option></select><select id="prodStock" style="flex:1"><option value="11">11kg</option><option value="13">13kg</option><option value="43.5">43.5kg</option><option value="45">45kg</option></select><input id="cantStock" type="number" value="1" min="1" style="width:60px"></div><button onclick="cargarCamioneta()" style="width:100%;margin-top:8px;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">CARGAR</button></div>
+        <div class="card" style="margin:0"><h4 style="font-weight:bold">⚖️ Fraccionado 43.5</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="kilosStock" style="flex:1"><option value="1">1 kg</option><option value="1.5">1.5 kg</option><option value="2" selected>2 kg</option><option value="2.5">2.5 kg</option><option value="3">3 kg</option></select><input id="clienteStock" type="text" placeholder="Cliente" style="flex:1"></div><button onclick="venderFraccionado()" style="width:100%;margin-top:8px;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">VENDER kg</button></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card" style="margin:0"><b>🚚 Camionetas</b><div style="font-size:12px;margin-top:8px">${cams.length?cams.map(c=>`<div style="padding:3px 0">${c.repartidor_id} - ${c.producto_id}: ${c.llenas}L / ${c.vacias||0}V</div>`).join(''):'<i style="color:#64748b">Vacías</i>'}</div><button onclick="descargarCamioneta()" style="margin-top:8px;padding:6px 10px;background:#475569;color:white;border:none;border-radius:6px;font-size:11px">Descargar todo</button></div>
+        <div class="card" style="margin:0"><b>📋 Movimientos - hora para auditar</b><div style="font-size:11px;max-height:200px;overflow:auto;margin-top:8px">${movs.map(m=>`<div style="padding:3px 0;border-bottom:1px solid #ffffff0a">${(m.fecha_hora||'').substring(11,19)} - ${m.detalle||m.tipo}</div>`).join('')||'<i style="color:#64748b">Sin movimientos</i>'}</div></div>
+      </div>
+      <div class="card" style="margin-top:12px"><b>🏭 Proveedor</b><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><select id="provTipo" style="flex:1"><option value="canje_vacio">Canje Vacías → Llenas</option><option value="canje_cambio">Canje Cambio → Llenas</option><option value="compra_envase">Compra Envase (aumenta total)</option></select><select id="provProd" style="flex:1"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg</option></select><input id="provCant" type="number" value="1" min="1" style="width:60px"><input id="provRemito" type="text" placeholder="Remito" style="width:100px"><button onclick="ingresoProveedor()" style="padding:8px 14px;background:#f59e0b;color:#000;font-weight:900;border:none;border-radius:8px">INGRESAR</button></div></div>
+    `;
+  }catch(e){
+    console.error(e);
+    if(status) status.textContent='❌ '+e.message;
+    content.innerHTML=`<div class="card" style="color:#ef4444">Error: ${e.message}<br>Abrí /api/stock en otra pestaña para verificar</div>`;
+  }
+}
+async function cargarCamioneta(){
+  const rep=document.getElementById('repStock').value;
+  const prod=document.getElementById('prodStock').value;
+  const cant=parseInt(document.getElementById('cantStock').value)||1;
+  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'carga_camioneta',repartidor_id:rep,producto_id:prod,cantidad:cant})});
+  const j=await r.json();
+  if(j.ok){ alert(`Cargado ${cant}x ${prod} a ${rep}`); cargarStock(); } else alert(j.error);
+}
+async function venderFraccionado(){
+  const kilos=parseFloat(document.getElementById('kilosStock').value);
+  const cliente=document.getElementById('clienteStock').value||'Cliente';
+  if(kilos<0.5||kilos>3){ alert('1 a 3kg'); return; }
+  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos,cliente_nombre:cliente,precio_kilo:0})});
+  const j=await r.json();
+  if(j.ok){ alert(`Vendido ${kilos}kg - Restante ${j.restante?.toFixed(1)}kg`); cargarStock(); } else alert(j.error);
+}
+async function descargarCamioneta(){
+  const rep=document.getElementById('repStock')?.value||'antonio';
+  if(!confirm(`Descargar ${rep}?`)) return;
+  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'descarga_camioneta',repartidor_id:rep})});
+  const j=await r.json();
+  if(j.ok){ alert('Descargado'); cargarStock(); } else alert(j.error);
+}
+async function ingresoProveedor(){
+  const tipo=document.getElementById('provTipo').value;
+  const prod=document.getElementById('provProd').value;
+  const cant=parseInt(document.getElementById('provCant').value)||1;
+  const remito=document.getElementById('provRemito').value||'S/N';
+  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'proveedor',tipo,numero_remito:remito,producto_id:prod,cantidad:cant})});
+  const j=await r.json();
+  if(j.ok){ alert(`Proveedor ${tipo} ${cant}x ${prod}`); cargarStock(); } else alert(j.error);
 }
 
 function initMaps(){
@@ -131,27 +199,21 @@ function initMaps(){
 
 async function initTurso(){
  try{
-  // Cargar repartidores desde Turso
   const r=await fetch(`${API_ERP}?table=repartidores`);
   const j=await r.json();
   const reps=(j.data||[]).map(row=> Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]||'#3b82f6', device_id:row[6]||7}:{id:row.id, nombre:row.nombre, telefono:row.telefono, vehiculo:row.vehiculo, patente:row.patente, color:row.color||'#3b82f6', device_id:row.device_id||7});
-  
   const selectRep=document.getElementById('selRepartidor');
   const selectHist=document.getElementById('histRepartidorId');
-  // Si está vacío, crear por defecto para que funcione como tu sistema
   let listaReps=reps;
   if(listaReps.length===0){
    listaReps=[{id:'7', nombre:'Antonio', color:'#ef4444', device_id:7},{id:'8', nombre:'Jose', color:'#8b5cf6', device_id:8}];
   }
-  
   listaReps.forEach(r=>{
    repartidores.set(String(r.device_id), {...r, id:String(r.device_id), latitud:ROCHA_CENTER[0], longitud:ROCHA_CENTER[1], velocidad:0, en_movimiento:false});
    trailData.set(String(r.device_id),[]);
    const opt=document.createElement('option'); opt.value=String(r.device_id); opt.textContent=r.nombre; selectRep.appendChild(opt);
    const optHist=document.createElement('option'); optHist.value=String(r.device_id); optHist.textContent=r.nombre; selectHist.appendChild(optHist);
   });
-
-  // Cargar última ubicación desde Turso gps_locations
   const gpsResp=await fetch(`${API_GPS}?all=1`);
   const gpsRaw=await gpsResp.json();
   const gpsRows=Array.isArray(gpsRaw)?gpsRaw:(gpsRaw.data||[]);
@@ -161,7 +223,6 @@ async function initTurso(){
    if(!byDevice[d.device_id]) byDevice[d.device_id]=[];
    byDevice[d.device_id].push(d);
   });
-  
   Object.keys(byDevice).forEach(devId=>{
    const ubs=byDevice[devId].slice(0,100);
    if(ubs.length>0){
@@ -173,14 +234,11 @@ async function initTurso(){
     }
    }
   });
-
   renderizarMapas();
   cargarRepartidores();
   cargarPuntosRuta();
   actualizarUI();
   document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></div> Conectado a Turso megal-erp';
-  
-  // Polling cada 7s para simular realtime
   setInterval(async ()=>{
    const rr=await fetch(`${API_GPS}?all=1`); const raw=await rr.json(); const rows=Array.isArray(raw)?raw:(raw.data||[]);
    rows.slice(0,5).forEach(row=>{
@@ -188,10 +246,8 @@ async function initTurso(){
     manejarNuevaUbicacion({repartidor_id:String(d.device_id), latitud:d.lat, longitud:d.lng, velocidad:d.velocidad, en_movimiento:d.velocidad>2, timestamp:d.recorded_at});
    });
   },7000);
-
  }catch(e){ console.error(e); document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block"></div> Error'; }
 }
-
 function manejarNuevaUbicacion(data){
  const id=String(data.repartidor_id); const rep=repartidores.get(id); if(!rep) return;
  rep.latitud=data.latitud; rep.longitud=data.longitud; rep.velocidad=data.velocidad; rep.en_movimiento=data.en_movimiento; rep.lastTimestamp=new Date(data.timestamp); lastUpdate.set(id, new Date());
@@ -200,12 +256,10 @@ function manejarNuevaUbicacion(data){
  const selectedRepId=document.getElementById('selRepartidor').value;
  if(id===selectedRepId){ gpsMap.panTo([data.latitud,data.longitud],{animate:true,duration:0.5}); }
 }
-
 function crearIcono(color, esDash=false){
  const size=esDash?12:18;
  return L.divIcon({className:'', html:`<div style="position:relative;width:${size}px;height:${size}px"><div class="gps-pulse" style="background:${color};width:${size}px;height:${size}px"></div><div class="gps-marker" style="background:${color};width:${size}px;height:${size}px"></div></div>`, iconSize:[size,size], iconAnchor:[size/2,size/2]});
 }
-
 function renderizarMapas(){
  repartidores.forEach((rep,id)=>{
   const marker=L.marker([rep.latitud,rep.longitud],{icon:crearIcono(rep.color)}).addTo(gpsMap);
@@ -214,19 +268,16 @@ function renderizarMapas(){
  });
  if(repartidores.size>0){ const group=L.featureGroup(Array.from(markers.values())); try{gpsMap.fitBounds(group.getBounds().pad(0.2));}catch(e){gpsMap.setView(ROCHA_CENTER,14);} dashMap.setView(ROCHA_CENTER,14); }
 }
-
 function actualizarMarcador(id){
  const rep=repartidores.get(id); const marker=markers.get(id); if(!rep||!marker) return;
  marker.setLatLng([rep.latitud,rep.longitud]);
  marker.setPopupContent(`<b>${rep.nombre}</b><br>Velocidad: ${rep.velocidad} km/h`);
 }
-
 function centrarEnRepartidor(id){
  if(!id){ gpsMap.setView(ROCHA_CENTER,14); return; }
  const rep=repartidores.get(id);
  if(rep){ gpsMap.flyTo([rep.latitud,rep.longitud],16); markers.get(id)?.openPopup(); document.getElementById('gpsSpeed').textContent=rep.velocidad; }
 }
-
 function mostrarTabGPS(tab){
  document.getElementById('gpsVivo').classList.toggle('hidden', tab!=='vivo');
  document.getElementById('gpsHistorial').classList.toggle('hidden', tab!=='historial');
@@ -234,7 +285,6 @@ function mostrarTabGPS(tab){
  document.getElementById('tabGPSHist').className=tab==='historial'?'gps-tab active':'gps-tab';
  setTimeout(()=>{ if(tab==='vivo'&&gpsMap) gpsMap.invalidateSize(); if(tab==='historial'&&gpsMapHist) gpsMapHist.invalidateSize(); },200);
 }
-
 function actualizarUI(){
  let html='';
  repartidores.forEach((rep,id)=>{
@@ -243,14 +293,12 @@ function actualizarUI(){
  });
  document.getElementById('listaEstadosRep').innerHTML=html;
 }
-
 function agregarLogVivo(nombre, velocidad){
  const tbody=document.getElementById('tablaVivoGPS'); const hora=new Date().toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
  const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:4px;border:1px solid #1f2937">${hora}</td><td style="padding:4px;border:1px solid #1f2937">${nombre}</td><td style="padding:4px;border:1px solid #1f2937;text-align:center;font-weight:bold">${velocidad}</td>`; tbody.prepend(tr); if(tbody.children.length>20) tbody.lastChild.remove();
 }
 function estaOnline(id){ const last=lastUpdate.get(id); return last? (Date.now()-last.getTime())/1000 < UMBRAL_ONLINE : false; }
 function tiempoAtras(date){ const s=Math.floor((Date.now()-date.getTime())/1000); if(s<5) return 'Ahora'; if(s<60) return `Hace ${s}s`; const m=Math.floor(s/60); if(m<60) return `Hace ${m}m`; return `Hace ${Math.floor(m/60)}h`; }
-
 async function cargarPuntosRuta(){
  if(!gpsMap) return;
  if(!puntosRutaLayer){ puntosRutaLayer=L.layerGroup().addTo(gpsMap); } else { puntosRutaLayer.clearLayers(); }
@@ -262,7 +310,6 @@ async function cargarPuntosRuta(){
   const div=document.createElement('div'); div.style.cssText='display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;border:1px solid #1f2937;font-size:11px'; div.innerHTML=`<span>${nombre}</span><button onclick="eliminarMarcador('${punto.id||punto[0]}')" style="color:#ef4444;font-weight:bold;background:none;border:none;cursor:pointer">X</button>`; lista.appendChild(div);
  });
 }
-
 async function guardarMarcador(){
  const nombre=document.getElementById('mkNombre').value.trim(); const lat=parseFloat(document.getElementById('mkLat').value); const lng=parseFloat(document.getElementById('mkLng').value);
  if(!nombre||isNaN(lat)||isNaN(lng)){ alert('Completá el nombre y hacé clic en el mapa'); return; }
@@ -270,12 +317,7 @@ async function guardarMarcador(){
  document.getElementById('mkNombre').value=''; document.getElementById('mkLat').value=''; document.getElementById('mkLng').value=''; if(clickMarker){ gpsMap.removeLayer(clickMarker); clickMarker=null; }
  cargarPuntosRuta();
 }
-
 async function eliminarMarcador(id){ if(confirm('¿Eliminar punto?')){ await fetch(`${API_ERP}?table=puntos_referencia&id=${id}`,{method:'DELETE'}); cargarPuntosRuta(); } }
-
-function abrirRastreoPantallaCompleta(){ const sidebar=document.getElementById('mainSidebar'); const header=document.getElementById('mainHeader'); if(sidebar) sidebar.style.display='none'; mostrarSeccion('gps'); setTimeout(()=>{ if(gpsMap) gpsMap.invalidateSize(); },300); }
-function volverAERP(){ const sidebar=document.getElementById('mainSidebar'); if(sidebar) sidebar.style.display='flex'; mostrarSeccion('resumen'); }
-
 async function generarInforme(){
  try{
   const repId=document.getElementById('histRepartidorId').value; const fecha=document.getElementById('histFecha').value;
@@ -300,11 +342,9 @@ async function generarInforme(){
  }catch(e){ console.error(e); alert('Error: '+e.message); }
 }
 function verIncidenteEnMapa(lat,lng){ if(gpsMapHist){ gpsMapHist.flyTo([lat,lng],17); L.popup().setLatLng([lat,lng]).setContent('<b>Incidente</b>').openOn(gpsMapHist); } }
-
-// CRUD repartidores adaptado a Turso
-async function cargarRepartidores(){ /* ya cargado en initTurso */ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const data=j.data||[]; const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML=''; data.forEach(rep=>{ const row=Array.isArray(rep)?{id:rep[0], nombre:rep[1], telefono:rep[2], vehiculo:rep[3], patente:rep[4], color:rep[5]}:rep; const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:8px;border:1px solid #1f2937;text-align:center"><div style="width:20px;height:20px;border-radius:50%;background:${row.color};margin:auto"></div></td><td style="padding:8px;border:1px solid #1f2937">${row.nombre}</td><td style="padding:8px;border:1px solid #1f2937">${row.telefono||'-'}</td><td style="padding:8px;border:1px solid #1f2937">${row.vehiculo||'-'} (${row.patente||'-'})</td><td style="padding:8px;border:1px solid #1f2937;text-align:center"><button onclick="editarRepartidor('${row.id}')" style="background:#eab308;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px;margin-right:4px">✏️ Editar</button><button onclick="eliminarRepartidor('${row.id}','${row.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px">🗑 Eliminar</button></td>`; tbody.appendChild(tr); }); }
+async function cargarRepartidores(){ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const data=j.data||[]; const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML=''; data.forEach(rep=>{ const row=Array.isArray(rep)?{id:rep[0], nombre:rep[1], telefono:rep[2], vehiculo:rep[3], patente:rep[4], color:rep[5]}:rep; const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:8px;border:1px solid #1f2937;text-align:center"><div style="width:20px;height:20px;border-radius:50%;background:${row.color};margin:auto"></div></td><td style="padding:8px;border:1px solid #1f2937">${row.nombre}</td><td style="padding:8px;border:1px solid #1f2937">${row.telefono||'-'}</td><td style="padding:8px;border:1px solid #1f2937">${row.vehiculo||'-'} (${row.patente||'-'})</td><td style="padding:8px;border:1px solid #1f2937;text-align:center"><button onclick="editarRepartidor('${row.id}')" style="background:#eab308;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px;margin-right:4px">✏ Editar</button><button onclick="eliminarRepartidor('${row.id}','${row.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px">🗑 Eliminar</button></td>`; tbody.appendChild(tr); }); }
 async function guardarRepartidor(){ const id=document.getElementById('repIdEditando').value; const nombre=document.getElementById('repNombre').value.trim(); const telefono=document.getElementById('repTelefono').value.trim(); const vehiculo=document.getElementById('repVehiculo').value.trim(); const patente=document.getElementById('repPatente').value.trim(); const color=document.getElementById('repColor').value; if(!nombre){ alert('Nombre obligatorio'); return; } const payload={id:id||Date.now().toString(36), nombre, telefono, vehiculo, patente, color, device_id:parseInt(id)||7}; await fetch(`${API_ERP}?table=repartidores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); cancelarEdicionRep(); cargarRepartidores(); initTurso(); }
-async function editarRepartidor(id){ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)===id); if(!row) return; const data=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]}:row; document.getElementById('repIdEditando').value=data.id; document.getElementById('repNombre').value=data.nombre; document.getElementById('repTelefono').value=data.telefono||''; document.getElementById('repVehiculo').value=data.vehiculo||''; document.getElementById('repPatente').value=data.patente||''; document.getElementById('repColor').value=data.color||'#3b82f6'; document.getElementById('btnCancelarRep').classList.remove('hidden'); document.getElementById('btnGuardarRep').textContent='✏️ Actualizar'; }
+async function editarRepartidor(id){ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)===id); if(!row) return; const data=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]}:row; document.getElementById('repIdEditando').value=data.id; document.getElementById('repNombre').value=data.nombre; document.getElementById('repTelefono').value=data.telefono||''; document.getElementById('repVehiculo').value=data.vehiculo||''; document.getElementById('repPatente').value=data.patente||''; document.getElementById('repColor').value=data.color||'#3b82f6'; document.getElementById('btnCancelarRep').classList.remove('hidden'); document.getElementById('btnGuardarRep').textContent='✏ Actualizar'; }
 function cancelarEdicionRep(){ document.getElementById('repIdEditando').value=''; document.getElementById('repNombre').value=''; document.getElementById('repTelefono').value=''; document.getElementById('repVehiculo').value=''; document.getElementById('repPatente').value=''; document.getElementById('repColor').value='#3b82f6'; document.getElementById('btnCancelarRep').classList.add('hidden'); document.getElementById('btnGuardarRep').textContent='Guardar Repartidor'; }
 async function eliminarRepartidor(id,nombre){ if(confirm(`¿Eliminar a ${nombre}?`)){ await fetch(`${API_ERP}?table=repartidores&id=${id}`,{method:'DELETE'}); cargarRepartidores(); initTurso(); } }
 
