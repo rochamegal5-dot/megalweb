@@ -83,68 +83,71 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <div id="view-repartidores" class="view-section hidden"><div class="card"><h3>Repartidores</h3><input type="hidden" id="repIdEditando"><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="repNombre" placeholder="Nombre"><input id="repTelefono" placeholder="Tel"><input id="repVehiculo" placeholder="Vehículo"><input id="repPatente" placeholder="Patente"><input id="repColor" type="color" value="#3b82f6" style="width:50px"><button id="btnGuardarRep" onclick="guardarRepartidor()" style="background:#0ea5e9;color:white;padding:8px 12px;border:none;border-radius:8px">Guardar Repartidor</button><button id="btnCancelarRep" onclick="cancelarEdicionRep()" class="hidden" style="background:#475569;color:white;padding:8px 12px;border:none;border-radius:8px">Cancelar</button></div></div><div class="card"><table style="width:100%"><tbody id="tablaRepartidores"></tbody></table></div></div>
 <div id="view-productos" class="view-section hidden"><div class="card">Productos - implementar cargarModuloProductos()</div></div>
 <div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
-<div id="view-proveedores" class="view-section hidden"><div class="card">Proveedores</div></div>
 
-  <div id="view-stock" class="view-section hidden">
+<div id="view-proveedores" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-    <h3 style="font-weight:900">📦 Stock TURSO - Depósito + Productos</h3>
-    <div style="display:flex;gap:8px">
-      <button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">📝 Balance Inicial</button>
-      <button onclick="abrirNuevoProducto()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">➕ Nuevo Producto</button>
+    <div>
+      <h3 style="font-weight:900">🏭 Proveedores</h3>
+      <p style="font-size:11px;color:#94a3b8;margin-top:4px">Ingreso, edición y eliminar - Guarda en Turso tabla proveedores</p>
     </div>
+    <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Proveedor</button>
   </div>
-  <div id="stockStatus" style="font-size:12px;color:#94a3b8;margin:8px 0 0 4px">Cargando /api/stock...</div>
-  <div id="stockContent" style="margin-top:12px"></div>
 
-
-  <!-- Modal Balance Inicial -->
-  <div id="modalBalance" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div class="card" style="width:100%;max-width:650px;max-height:90vh;overflow:auto">
-      <h3 style="font-weight:900;margin-bottom:12px">📝 Balance Inicial - Stock real hoy</h3>
-      <p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Cargá lo que tenés HOY en depósito. Esto sobreescribe el stock actual. Ideal para arranque.</p>
-      <div id="balanceForm" style="display:grid;gap:10px"></div>
+  <div class="card">
+    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
+      <h4 id="tituloFormProv" style="font-weight:900;margin-bottom:12px">Nuevo Proveedor</h4>
+      <input type="hidden" id="provIdEditando">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label style="font-size:11px;font-weight:bold">Nombre / Empresa *</label><input id="provNombre" placeholder="ANCAP, Riogas, Distribuidora..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">RUT</label><input id="provRUT" placeholder="RUT" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Teléfono *</label><input id="provTelefono" placeholder="4479..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">WhatsApp</label><input id="provWhatsapp" placeholder="099..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Email</label><input id="provEmail" placeholder="email" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Ruta 9 km 208..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Tipo</label><select id="provTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="gas">Gas Envasado</option><option value="accesorios">Accesorios / Válvulas</option><option value="mangueras">Mangueras / Reguladores</option><option value="transporte">Transporte / Flete</option><option value="otro">Otro</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Persona Contacto</label><input id="provContacto" placeholder="Juan Pérez" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Condiciones / Notas</label><input id="provNotas" placeholder="Canje vacías, crédito 30 días..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="guardarBalanceInicial()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">💾 Guardar Balance Inicial</button>
-        <button onclick="cerrarBalanceInicial()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
+        <button id="btnGuardarProv" onclick="guardarProveedor()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar Proveedor</button>
+        <button onclick="cancelarEdicionProv()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
       </div>
     </div>
-  </div>
 
-  <!-- Modal Nuevo Producto -->
-  <div id="modalProducto" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div class="card" style="width:100%;max-width:450px">
-      <h3 style="font-weight:900;margin-bottom:12px">➕ Nuevo Producto / Insumo</h3>
-      <p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Para todo lo que comercializa Megal hoy o a futuro: válvulas, reguladores, mangueras, precintos, etc.</p>
+    <div style="overflow:auto">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Empresa</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Tel / Contacto</th><th style="padding:10px;border:1px solid #1f2937">Dirección</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead>
+        <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando proveedores desde Turso...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <div id="modalProducto" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div class="card" style="width:100%;max-width:500px;background:#1e293b">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>➕ Nuevo Producto</h3><button onclick="cerrarNuevoProducto()" style="background:#334155;color:white;padding:6px 12px;border:none;border-radius:8px">✖</button></div>
       <div style="display:grid;gap:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Código *</label><input id="npId" placeholder="Ej: VALVULA-13" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Nombre *</label><input id="npNombre" placeholder="Ej: Válvula 13kg" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Tipo</label><select id="npTipo" style="width:100%;margin-top:4px"><option value="envase">Envase Gas (11/13/45)</option><option value="fraccionado">Fraccionado (43.5)</option><option value="insumo">Insumo / Accesorio</option><option value="otro">Otro</option></select></div>
-          <div><label style="font-size:11px">Precio ref</label><input id="npPrecio" type="number" placeholder="0" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Llenas</label><input id="npLlenas" type="number" value="0" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Vacías</label><input id="npVacias" type="number" value="0" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Cambio/Defect</label><input id="npCambio" type="number" value="0" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div><label style="font-size:11px">Si es 43.5 - Kg en uso</label><input id="npKilos" type="number" value="0" step="0.1" style="width:100%;margin-top:4px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label style="font-size:11px">Código *</label><input id="npId" placeholder="VALVULA" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:6px"></div><div><label style="font-size:11px">Nombre *</label><input id="npNombre" placeholder="Válvula" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:6px"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div><label style="font-size:11px">Llenas</label><input id="npLlenas" type="number" value="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:6px"></div><div><label style="font-size:11px">Vacías</label><input id="npVacias" type="number" value="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:6px"></div><div><label style="font-size:11px">Cambio</label><input id="npCambio" type="number" value="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:6px"></div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="guardarNuevoProducto()" style="flex:1;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">Crear Producto</button>
-        <button onclick="cerrarNuevoProducto()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
-      </div>
+      <div style="display:flex;gap:8px;margin-top:16px"><button onclick="guardarNuevoProducto()" style="flex:1;padding:12px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:10px">Crear</button><button onclick="cerrarNuevoProducto()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
     </div>
   </div>
 </div>
-</div>
+
+
 <div id="view-ventas" class="view-section hidden"><div class="card">Ventas</div></div>
 </div>
 </div>
 
 <script>
-const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock';
+const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock', API_STOCK='/api/stock';
 const ROCHA_CENTER=[-34.4836,-54.3334];
 const UMBRAL_ONLINE=300;
 let dashMap, gpsMap, gpsMapHist;
@@ -157,161 +160,70 @@ function mostrarSeccion(id, btn){
  document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('bg-blue-800','font-bold'); b.classList.add('hover:bg-blue-800'); });
  if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
  setTimeout(()=>{
-  if(id==='stock'){ cargarStock(); }
   if(id==='resumen' && dashMap) dashMap.invalidateSize();
   if(id==='gps'){ if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize(); cargarPuntosRuta(); }
  },100);
 }
 
 
-// ===== STOCK TURSO - DYNAMIC + BALANCE INICIAL =====
+// ===== STOCK - FIX REAL TURSO stock_deposito =====
 async function cargarStock(){
   const status=document.getElementById('stockStatus');
   const content=document.getElementById('stockContent');
-  if(status) status.textContent='Cargando Turso /api/stock...';
+  if(!status||!content) return;
+  status.textContent='Cargando /api/stock... (v2)';
   try{
-    const r=await fetch(API_STOCK);
+    const r=await fetch(API_STOCK+'?t='+Date.now(), {cache:'no-store'});
     const data=await r.json();
-    console.log('STOCK TURSO',data);
-    if(!data.ok) throw new Error(data.error||'Error');
+    console.log('STOCK DATA',data);
+    if(!data.ok) throw new Error(data.error);
     const dep=data.deposito||[];
-    const cams=data.camionetas||[];
-    const movs=data.movimientos||[];
-    const fracc=data.fraccionadas||[];
-    const productos=data.productos||[];
-    
-    if(status) status.style.display='none';
-    
-    const gas = dep.filter(d=>['11','13','43.5','45'].includes(String(d.producto_id)));
-    const otros = dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
-    
+    status.textContent=`✅ ${dep.length} productos - ${data._meta?.depositoTable||'stock_deposito'}`;
     content.innerHTML=`
-      <div style="margin-bottom:8px"><b style="font-size:13px">🔥 Gas Envasado</b><span style="font-size:11px;color:#94a3b8"> - ${gas.length} productos base</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">
-        ${gas.map(d=>`<div class="card" style="margin:0;border:2px solid ${d.producto_id==='43.5'?'#38bdf8':'#2d3748'}"><div style="font-weight:900">${d.producto_id}kg - ${d.nombre||''}</div><div style="font-size:13px;margin-top:8px;line-height:1.8">Llenas: <b style="color:#22c55e;font-size:18px">${d.llenas}</b><br>Vacías: <b style="color:#f59e0b">${d.vacias}</b><br>Cambio: <b style="color:#ef4444">${d.cambio||0}</b>${d.producto_id==='43.5'?`<div style="margin-top:8px;background:#0f172a;padding:6px;border-radius:6px;border:1px solid #38bdf8">En uso: <b style="color:#38bdf8">${d.kilos_en_uso} kg</b><div style="background:#334155;height:8px;border-radius:4px;margin-top:4px"><div style="width:${Math.max(5,(d.kilos_en_uso/43.5*100)).toFixed(0)}%;height:100%;background:#38bdf8;border-radius:4px"></div></div></div>`:''}</div><div style="margin-top:6px">${d.permite_completo?'<span style="font-size:10px;background:#22c55e22;color:#22c55e;padding:2px 6px;border-radius:4px">COMPLETO</span>':''} ${d.es_fraccionado?'<span style="font-size:10px;background:#38bdf822;color:#38bdf8;padding:2px 6px;border-radius:4px">FRACC 1-3kg</span>':''}</div></div>`).join('')}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        ${dep.map(d=>`<div class="card" style="margin:0"><div style="font-weight:900">${d.producto_id} - ${d.nombre}</div><div style="margin-top:8px">Llenas: <b style="color:#22c55e;font-size:18px">${d.llenas}</b><br>Vacías: <b style="color:#f59e0b">${d.vacias}</b><br>Cambio: <b>${d.cambio||0}</b>${d.kilos_en_uso?`<br>Kg uso: ${d.kilos_en_uso}`:''}</div></div>`).join('')}
       </div>
-
-      ${otros.length?`
-      <div style="margin-bottom:8px"><b style="font-size:13px">🧰 Otros Productos / Insumos</b><span style="font-size:11px;color:#94a3b8"> - ${otros.length} productos</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">
-        ${otros.map(d=>`<div class="card" style="margin:0;border:1px solid #334155"><div style="font-weight:900;font-size:13px">${d.producto_id} - ${d.nombre||''}</div><div style="font-size:12px;margin-top:6px">Stock: <b style="color:#22c55e">${d.llenas}</b> | Vacías: ${d.vacias||0} | Cambio: ${d.cambio||0}</div></div>`).join('')}
-      </div>`: '<div class="card" style="margin-bottom:16px"><i style="color:#64748b;font-size:12px">Sin otros productos - Usá ➕ Nuevo Producto para agregar válvulas, mangueras, reguladores, etc.</i></div>'}
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="card" style="margin:0"><h4 style="font-weight:bold">🚚 Cargar Camioneta (con hora)</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="repStock" style="flex:1"><option value="antonio">Antonio</option><option value="jose">José</option><option value="mostrador">Mostrador</option></select><select id="prodStock" style="flex:1">${dep.map(d=>`<option value="${d.producto_id}">${d.producto_id} - ${d.nombre}</option>`).join('')}</select><input id="cantStock" type="number" value="1" min="1" style="width:60px"></div><button onclick="cargarCamioneta()" style="width:100%;margin-top:8px;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">CARGAR</button><p style="font-size:10px;color:#64748b;margin-top:6px">Se guarda hora exacta para auditar</p></div>
-        <div class="card" style="margin:0"><h4 style="font-weight:bold">⚖️ Fraccionado 43.5 (1-3kg)</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="kilosStock" style="flex:1"><option value="1">1 kg</option><option value="1.5">1.5 kg</option><option value="2" selected>2 kg</option><option value="2.5">2.5 kg</option><option value="3">3 kg</option></select><input id="clienteStock" type="text" placeholder="Cliente" style="flex:1"></div><button onclick="venderFraccionado()" style="width:100%;margin-top:8px;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">VENDER kg</button></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="card" style="margin:0"><b>🚚 Camionetas</b><div style="font-size:12px;margin-top:8px;max-height:200px;overflow:auto">${cams.length?cams.map(c=>`<div style="padding:3px 0;border-bottom:1px solid #ffffff0a">${c.repartidor_id} - ${c.producto_id}: <b>${c.llenas}</b> L</div>`).join(''):'<i style="color:#64748b">Vacías</i>'}<button onclick="descargarCamioneta()" style="margin-top:8px;padding:6px 10px;background:#475569;color:white;border:none;border-radius:6px;font-size:11px">Descargar todo a depósito</button></div></div>
-        <div class="card" style="margin:0"><b>📋 Movimientos - hora para auditar</b><div style="font-size:11px;max-height:220px;overflow:auto;margin-top:8px">${movs.map(m=>`<div style="padding:3px 0;border-bottom:1px solid #ffffff0a"><span style="color:#94a3b8">${(m.fecha_hora||'').substring(11,19)}</span> - ${m.detalle||m.tipo}</div>`).join('')||'<i style="color:#64748b">Sin movimientos</i>'}</div></div>
-      </div>
-
-      <div class="card" style="margin-top:12px"><b>🏭 Proveedor - Canje y Compra Envase</b><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><select id="provTipo" style="flex:1;min-width:160px"><option value="canje_vacio">Canje Vacías → Llenas</option><option value="canje_cambio">Canje Cambio → Llenas</option><option value="compra_envase">Compra Envase Completo (aumenta total)</option></select><select id="provProd" style="flex:1">${dep.map(d=>`<option value="${d.producto_id}">${d.producto_id}</option>`).join('')}</select><input id="provCant" type="number" value="1" min="1" style="width:70px"><input id="provRemito" type="text" placeholder="Remito" style="width:100px"><button onclick="ingresoProveedor()" style="padding:8px 14px;background:#f59e0b;color:#000;font-weight:900;border:none;border-radius:8px">INGRESAR</button></div></div>
+      <div class="card" style="margin-top:12px"><b>JSON crudo para debug:</b><pre style="font-size:10px;max-height:200px;overflow:auto">${JSON.stringify(data,null,2).substring(0,2000)}</pre></div>
     `;
-  }catch(e){
-    console.error(e);
-    if(status) status.textContent='❌ '+e.message;
-    content.innerHTML=`<div class="card" style="color:#ef4444">Error: ${e.message}</div>`;
-  }
+  }catch(e){ console.error(e); status.textContent='❌ '+e.message; content.innerHTML=`<div class="card" style="color:#ef4444">Error: ${e.message}<br>Revisá /api/stock en otra pestaña - debe devolver ok:true</div>`; }
 }
+function abrirBalanceInicial(){ const m=document.getElementById('modalBalance'); m.classList.remove('hidden'); m.style.display='flex'; fetch(API_STOCK+'?t='+Date.now()).then(r=>r.json()).then(data=>{ const dep=data.deposito||[]; const form=document.getElementById('balanceForm'); form.innerHTML=dep.map(d=>`<div style="display:grid;grid-template-columns:80px 1fr 60px 60px 60px;gap:6px;align-items:center;background:#0f172a;padding:8px;border-radius:6px"><b>${d.producto_id}</b><span style="font-size:11px;color:#94a3b8">${d.nombre}</span><input data-id="${d.producto_id}" data-field="llenas" type="number" value="${d.llenas||0}" style="padding:6px;background:#1e293b;border:1px solid #475569;color:white;border-radius:4px"><input data-id="${d.producto_id}" data-field="vacias" type="number" value="${d.vacias||0}" style="padding:6px;background:#1e293b;border:1px solid #475569;color:white;border-radius:4px"><input data-id="${d.producto_id}" data-field="cambio" type="number" value="${d.cambio||0}" style="padding:6px;background:#1e293b;border:1px solid #475569;color:white;border-radius:4px"></div>`).join(''); }); }
+function cerrarBalanceInicial(){ const m=document.getElementById('modalBalance'); m.classList.add('hidden'); m.style.display='none'; }
+async function guardarBalanceInicial(){ const inputs=document.querySelectorAll('#balanceForm input[data-id]'); const map={}; inputs.forEach(inp=>{ const id=inp.dataset.id; const f=inp.dataset.field; if(!map[id]) map[id]={producto_id:id}; map[id][f]=parseFloat(inp.value)||0; }); const balances=Object.values(map).map(b=>({producto_id:b.producto_id, llenas:b.llenas||0, vacias:b.vacias||0, cambio:b.cambio||0})); const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial', balances})}); const j=await r.json(); if(j.ok){ alert('Guardado'); cerrarBalanceInicial(); cargarStock(); } else alert(j.error); }
+function abrirNuevoProducto(){ document.getElementById('modalProducto').classList.remove('hidden'); document.getElementById('modalProducto').style.display='flex'; }
+function cerrarNuevoProducto(){ document.getElementById('modalProducto').classList.add('hidden'); document.getElementById('modalProducto').style.display='none'; }
+async function guardarNuevoProducto(){ const id=document.getElementById('npId').value.trim().toUpperCase().replace(/\s+/g,'-'); const nombre=document.getElementById('npNombre').value.trim(); if(!id||!nombre){ alert('Código y nombre'); return; } const llenas=parseInt(document.getElementById('npLlenas').value)||0; const vacias=parseInt(document.getElementById('npVacias').value)||0; const cambio=parseInt(document.getElementById('npCambio').value)||0; const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'crear_producto', producto:{producto_id:id, nombre, llenas, vacias, cambio}})}); const j=await r.json(); if(j.ok){ alert('Creado'); cerrarNuevoProducto(); cargarStock(); } else alert(j.error); }
 
-function abrirBalanceInicial(){
-  document.getElementById('modalBalance').classList.remove('hidden');
-  // Cargar deposito actual para editar
-  fetch(API_STOCK).then(r=>r.json()).then(data=>{
-    const dep=data.deposito||[];
-    const form=document.getElementById('balanceForm');
-    form.innerHTML = dep.map(d=>`
-      <div style="display:grid;grid-template-columns:80px 1fr 60px 60px 60px 80px;gap:6px;align-items:center;background:#0f172a;padding:8px;border-radius:8px">
-        <b style="font-size:12px">${d.producto_id}</b>
-        <span style="font-size:11px;color:#94a3b8">${d.nombre||''}</span>
-        <input data-id="${d.producto_id}" data-field="llenas" type="number" value="${d.llenas||0}" style="width:100%">
-        <input data-id="${d.producto_id}" data-field="vacias" type="number" value="${d.vacias||0}" style="width:100%">
-        <input data-id="${d.producto_id}" data-field="cambio" type="number" value="${d.cambio||0}" style="width:100%">
-        <input data-id="${d.producto_id}" data-field="kilos" type="number" value="${d.kilos_en_uso||0}" step="0.1" placeholder="kg uso" style="width:100%">
-      </div>
-    `).join('') + '<div style="font-size:10px;color:#64748b;display:grid;grid-template-columns:80px 1fr 60px 60px 60px 80px;gap:6px"><span></span><span></span><span>Llenas</span><span>Vacías</span><span>Cambio</span><span>Kg uso (43.5)</span></div>';
-  });
-}
-function cerrarBalanceInicial(){ document.getElementById('modalBalance').classList.add('hidden'); }
-async function guardarBalanceInicial(){
-  const inputs=document.querySelectorAll('#balanceForm input[data-id]');
-  const map={};
-  inputs.forEach(inp=>{
-    const id=inp.dataset.id;
-    const field=inp.dataset.field;
-    if(!map[id]) map[id]={producto_id:id};
-    map[id][field]=parseFloat(inp.value)||0;
-  });
-  const balances=Object.values(map).map(b=>({
-    producto_id:b.producto_id,
-    llenas:b.llenas||0,
-    vacias:b.vacias||0,
-    cambio:b.cambio||0,
-    defectuosas:0,
-    kilos_en_uso:b.kilos||0,
-    nombre: b.producto_id
-  }));
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial', balances})});
-  const j=await r.json();
-  if(j.ok){ alert('✅ Balance inicial guardado'); cerrarBalanceInicial(); cargarStock(); } else alert('❌ '+j.error);
-}
 
-function abrirNuevoProducto(){ document.getElementById('modalProducto').classList.remove('hidden'); }
-function cerrarNuevoProducto(){ document.getElementById('modalProducto').classList.add('hidden'); }
-async function guardarNuevoProducto(){
-  const id=document.getElementById('npId').value.trim();
-  const nombre=document.getElementById('npNombre').value.trim();
-  const tipo=document.getElementById('npTipo').value;
-  const precio=parseFloat(document.getElementById('npPrecio').value)||0;
-  const llenas=parseInt(document.getElementById('npLlenas').value)||0;
-  const vacias=parseInt(document.getElementById('npVacias').value)||0;
-  const cambio=parseInt(document.getElementById('npCambio').value)||0;
-  const kilos=parseFloat(document.getElementById('npKilos').value)||0;
-  if(!id||!nombre){ alert('Código y nombre obligatorios'); return; }
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    accion:'crear_producto',
-    producto:{producto_id:id, nombre, tipo, precio, llenas, vacias, cambio, kilos_en_uso:kilos}
-  })});
-  const j=await r.json();
-  if(j.ok){ alert('✅ Producto creado: '+nombre); cerrarNuevoProducto(); cargarStock(); } else alert('❌ '+j.error);
+// ===== PROVEEDORES - SOLO ESTE MODULO NUEVO, NO TOCA RESTO =====
+async function cargarProveedores(){
+  const tbody=document.getElementById('tablaProveedores');
+  if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr>';
+  try{
+    const r=await fetch(`${API_ERP}?table=proveedores`);
+    const j=await r.json();
+    const data=j.data||[];
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Sin proveedores - Usá ➕ Nuevo Proveedor</td></tr>'; return; }
+    tbody.innerHTML='';
+    data.forEach(row=>{
+      const p = Array.isArray(row) ? {id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]} : row;
+      const id=p.id||''; 
+      const nombre=(p.nombre||p.empresa||'').replace(/'/g,'');
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><div style="font-weight:900">${p.nombre||p.empresa||''}</div><div style="font-size:10px;color:#94a3b8">${p.rut||''} ${p.email||''}</div></td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><span style="font-size:10px;padding:4px 8px;border-radius:6px;background:#0ea5e922;color:#38bdf8;font-weight:bold">${p.tipo||'gas'}</span></td><td style="padding:10px;border:1px solid #1f2937"><div style="font-size:12px">${p.telefono||''}</div><div style="font-size:10px;color:#94a3b8">${p.contacto||''} ${p.whatsapp?'WA:'+p.whatsapp:''}</div></td><td style="padding:10px;border:1px solid #1f2937;font-size:11px;color:#94a3b8">${p.direccion||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProveedor('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button><button onclick="eliminarProveedor('${id}','${nombre}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="padding:20px;color:#ef4444">Error: ${e.message}</td></tr>`; }
 }
-
-async function cargarCamioneta(){
-  const rep=document.getElementById('repStock').value;
-  const prod=document.getElementById('prodStock').value;
-  const cant=parseInt(document.getElementById('cantStock').value)||1;
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'carga_camioneta',repartidor_id:rep,producto_id:prod,cantidad:cant})});
-  const j=await r.json();
-  if(j.ok){ alert(`Cargado ${cant}x ${prod} a ${rep}`); cargarStock(); } else alert(j.error);
-}
-async function venderFraccionado(){
-  const kilos=parseFloat(document.getElementById('kilosStock').value);
-  const cliente=document.getElementById('clienteStock').value||'Cliente';
-  if(kilos<0.5||kilos>3){ alert('1 a 3kg'); return; }
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos,cliente_nombre:cliente,precio_kilo:0})});
-  const j=await r.json();
-  if(j.ok){ alert(`Vendido ${kilos}kg - Restante ${j.restante?.toFixed(1)}kg`); cargarStock(); } else alert(j.error);
-}
-async function descargarCamioneta(){
-  const rep=document.getElementById('repStock')?.value||'antonio';
-  if(!confirm(`Descargar ${rep}?`)) return;
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'descarga_camioneta',repartidor_id:rep})});
-  const j=await r.json();
-  if(j.ok){ alert('Descargado'); cargarStock(); } else alert(j.error);
-}
-async function ingresoProveedor(){
-  const tipo=document.getElementById('provTipo').value;
-  const prod=document.getElementById('provProd').value;
-  const cant=parseInt(document.getElementById('provCant').value)||1;
-  const remito=document.getElementById('provRemito').value||'S/N';
-  const r=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'proveedor',tipo,numero_remito:remito,producto_id:prod,cantidad:cant})});
-  const j=await r.json();
-  if(j.ok){ alert(`Proveedor ${tipo} ${cant}x ${prod}`); cargarStock(); } else alert(j.error);
-}
+function abrirNuevoProveedor(){ document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor'; document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor'; document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provTelefono').value=''; document.getElementById('formProveedor').scrollIntoView({behavior:'smooth'}); }
+function cancelarEdicionProv(){ document.getElementById('formProveedor').classList.add('hidden'); document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provRUT').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provWhatsapp').value=''; document.getElementById('provEmail').value=''; document.getElementById('provDireccion').value=''; document.getElementById('provTipo').value='gas'; document.getElementById('provContacto').value=''; document.getElementById('provNotas').value=''; }
+async function guardarProveedor(){ const id=document.getElementById('provIdEditando').value; const nombre=document.getElementById('provNombre').value.trim(); const telefono=document.getElementById('provTelefono').value.trim(); if(!nombre||!telefono){ alert('Nombre y Teléfono obligatorios'); return; } const payload={id:id||Date.now().toString(36), nombre, rut:document.getElementById('provRUT').value.trim(), telefono, whatsapp:document.getElementById('provWhatsapp').value.trim(), email:document.getElementById('provEmail').value.trim(), direccion:document.getElementById('provDireccion').value.trim(), tipo:document.getElementById('provTipo').value, contacto:document.getElementById('provContacto').value.trim(), notas:document.getElementById('provNotas').value.trim(), empresa:nombre}; await fetch(`${API_ERP}?table=proveedores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cancelarEdicionProv(); cargarProveedores(); }
+async function editarProveedor(id){ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)==id); if(!row) return; const p=Array.isArray(row)?{id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]}:row; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEditando').value=p.id||id; document.getElementById('provNombre').value=p.nombre||p.empresa||''; document.getElementById('provRUT').value=p.rut||''; document.getElementById('provTelefono').value=p.telefono||''; document.getElementById('provWhatsapp').value=p.whatsapp||''; document.getElementById('provEmail').value=p.email||''; document.getElementById('provDireccion').value=p.direccion||''; document.getElementById('provTipo').value=p.tipo||'gas'; document.getElementById('provContacto').value=p.contacto||''; document.getElementById('provNotas').value=p.notas||''; document.getElementById('tituloFormProv').textContent='✏️ Editar: '+(p.nombre||''); document.getElementById('btnGuardarProv').textContent='✏️ Actualizar'; }
+async function eliminarProveedor(id,nombre){ if(!confirm(`¿Eliminar proveedor ${nombre}?`)) return; await fetch(`${API_ERP}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }
 
 function initMaps(){
+
 
  dashMap=L.map('dashMap').setView(ROCHA_CENTER,14);
  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(dashMap);
