@@ -181,7 +181,7 @@ async function cargarStock(){
     const fracc=data.fraccionadas||[];
     const productos=data.productos||[];
     
-    if(status) status.parentElement.style.display='none';
+    if(status) status.style.display='none';
     
     const gas = dep.filter(d=>['11','13','43.5','45'].includes(String(d.producto_id)));
     const otros = dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
