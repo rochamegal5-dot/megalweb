@@ -84,54 +84,52 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <div id="view-productos" class="view-section hidden"><div class="card">Productos - implementar cargarModuloProductos()</div></div>
 <div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
 
+
 <div id="view-proveedores" class="view-section hidden">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
       <div>
-        <h3 style="font-weight:900">🏭 Proveedores - Gas y Accesorios</h3>
-        <p style="font-size:11px;color:#94a3b8;margin-top:4px">Gestión completa: ingreso, edición y eliminar. Se guarda en Turso tabla proveedores</p>
+        <h3 style="font-weight:900">🏭 Proveedores</h3>
+        <p style="font-size:11px;color:#94a3b8;margin-top:4px">Ingreso, edición y eliminar - Guarda en Turso</p>
       </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Proveedor</button>
-      </div>
+      <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Proveedor</button>
     </div>
   </div>
-
   <div class="card">
     <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
       <h4 id="tituloFormProv" style="font-weight:900;margin-bottom:12px">Nuevo Proveedor</h4>
       <input type="hidden" id="provIdEditando">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:11px;font-weight:bold">Nombre / Empresa *</label><input id="provNombre" placeholder="Ej: ANCAP, Riogas, Distribuidora Rocha" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">RUT / CI</label><input id="provRUT" placeholder="Ej: 210000000012" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px;font-weight:bold">Nombre / Empresa *</label><input id="provNombre" placeholder="ANCAP, Riogas..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">RUT</label><input id="provRUT" placeholder="RUT" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Teléfono *</label><input id="provTelefono" placeholder="Ej: 4479 1234 / 099 123 456" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">WhatsApp</label><input id="provWhatsapp" placeholder="Ej: 099 123 456" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Email</label><input id="provEmail" type="email" placeholder="proveedor@email.com" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Teléfono *</label><input id="provTelefono" placeholder="4479..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">WhatsApp</label><input id="provWhatsapp" placeholder="099..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Email</label><input id="provEmail" placeholder="email" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
       </div>
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Dirección / Depósito</label><input id="provDireccion" placeholder="Ej: Ruta 9 km 208, Rocha - Planta" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Tipo Proveedor</label><select id="provTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="gas">Gas Envasado (11/13/45)</option><option value="accesorios">Accesorios / Válvulas</option><option value="mangueras">Mangueras / Reguladores</option><option value="transporte">Transporte / Flete</option><option value="otro">Otro</option></select></div>
+        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Ruta 9 km 208..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Tipo</label><select id="provTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="gas">Gas Envasado</option><option value="accesorios">Accesorios</option><option value="mangueras">Mangueras/Reguladores</option><option value="transporte">Transporte</option><option value="otro">Otro</option></select></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Persona Contacto</label><input id="provContacto" placeholder="Ej: Juan Pérez - Encargado" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Condiciones / Notas</label><input id="provNotas" placeholder="Ej: Canje vacías, entrega martes/jueves, crédito 30 días" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Contacto</label><input id="provContacto" placeholder="Juan Pérez" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Notas</label><input id="provNotas" placeholder="Canje, entrega martes..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="btnGuardarProv" onclick="guardarProveedor()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar Proveedor</button>
         <button onclick="cancelarEdicionProv()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
       </div>
     </div>
-
     <div style="overflow:auto">
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Empresa</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Tel / Contacto</th><th style="padding:10px;border:1px solid #1f2937">Dirección</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead>
-        <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando proveedores desde Turso...</td></tr></tbody>
+        <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
+
 
 <div id="view-stock" class="view-section hidden">
   <div class="card">
@@ -211,6 +209,34 @@ function mostrarSeccion(id, btn){
   if(id==='gps'){ if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize(); cargarPuntosRuta(); }
  },100);
 }
+
+
+// ===== PROVEEDORES CRUD - NO TOCA RESTO =====
+async function cargarProveedores(){
+  const tbody=document.getElementById('tablaProveedores');
+  if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr>';
+  try{
+    const r=await fetch(`${API_ERP}?table=proveedores`);
+    const j=await r.json();
+    const data=j.data||j.rows||[];
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Sin proveedores - ➕ Nuevo Proveedor</td></tr>'; return; }
+    tbody.innerHTML='';
+    data.forEach(row=>{
+      const p = Array.isArray(row) ? {id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]} : row;
+      const id=p.id||''; const nombre=(p.nombre||p.empresa||'Sin nombre').replace(/'/g,'');
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><div style="font-weight:900">${p.nombre||p.empresa||''}</div><div style="font-size:10px;color:#94a3b8">${p.rut||''} ${p.email||''}</div></td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><span style="font-size:10px;padding:4px 8px;border-radius:6px;background:#0ea5e922;color:#38bdf8">${p.tipo||'gas'}</span></td><td style="padding:10px;border:1px solid #1f2937"><div>${p.telefono||''}</div><div style="font-size:10px;color:#94a3b8">${p.contacto||''} ${p.whatsapp||''}</div></td><td style="padding:10px;border:1px solid #1f2937;font-size:11px;color:#94a3b8">${p.direccion||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProveedor('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button><button onclick="eliminarProveedor('${id}','${nombre}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+}
+function abrirNuevoProveedor(){ document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor'; document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor'; cancelarEdicionProv(false); }
+function cancelarEdicionProv(hide=true){ document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provRUT').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provWhatsapp').value=''; document.getElementById('provEmail').value=''; document.getElementById('provDireccion').value=''; document.getElementById('provTipo').value='gas'; document.getElementById('provContacto').value=''; document.getElementById('provNotas').value=''; if(hide) document.getElementById('formProveedor').classList.add('hidden'); }
+async function guardarProveedor(){ const id=document.getElementById('provIdEditando').value; const nombre=document.getElementById('provNombre').value.trim(); const rut=document.getElementById('provRUT').value.trim(); const telefono=document.getElementById('provTelefono').value.trim(); const whatsapp=document.getElementById('provWhatsapp').value.trim(); const email=document.getElementById('provEmail').value.trim(); const direccion=document.getElementById('provDireccion').value.trim(); const tipo=document.getElementById('provTipo').value; const contacto=document.getElementById('provContacto').value.trim(); const notas=document.getElementById('provNotas').value.trim(); if(!nombre||!telefono){ alert('Nombre y Teléfono obligatorios'); return; } const payload={id: id||Date.now().toString(36), nombre, rut, telefono, whatsapp, email, direccion, tipo, contacto, notas, empresa:nombre}; const r=await fetch(`${API_ERP}?table=proveedores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); await r.json(); cancelarEdicionProv(); cargarProveedores(); }
+async function editarProveedor(id){ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); const data=j.data||[]; const row=data.find(x=> (Array.isArray(x)?x[0]:x.id)==id); if(!row) return; const p=Array.isArray(row)?{id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]}:row; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEditando').value=p.id||id; document.getElementById('provNombre').value=p.nombre||''; document.getElementById('provRUT').value=p.rut||''; document.getElementById('provTelefono').value=p.telefono||''; document.getElementById('provWhatsapp').value=p.whatsapp||''; document.getElementById('provEmail').value=p.email||''; document.getElementById('provDireccion').value=p.direccion||''; document.getElementById('provTipo').value=p.tipo||'gas'; document.getElementById('provContacto').value=p.contacto||''; document.getElementById('provNotas').value=p.notas||''; document.getElementById('tituloFormProv').textContent='✏️ Editar: '+(p.nombre||''); document.getElementById('btnGuardarProv').textContent='✏️ Actualizar'; }
+async function eliminarProveedor(id,nombre){ if(!confirm(`¿Eliminar ${nombre}?`)) return; await fetch(`${API_ERP}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }
+
 
 function initMaps(){
  dashMap=L.map('dashMap').setView(ROCHA_CENTER,14);
@@ -406,147 +432,6 @@ async function generarInforme(){
 function verIncidenteEnMapa(lat,lng){ if(gpsMapHist){ gpsMapHist.flyTo([lat,lng],17); L.popup().setLatLng([lat,lng]).setContent('<b>Incidente</b>').openOn(gpsMapHist); } }
 
 // CRUD repartidores adaptado a Turso
-
-// ===== PROVEEDORES - INGRESO EDICION ELIMINAR - TURSO =====
-async function cargarProveedores(){
-  const tbody=document.getElementById('tablaProveedores');
-  if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr>';
-  try{
-    const r=await fetch(`${API_ERP}?table=proveedores`);
-    const j=await r.json();
-    console.log('PROVEEDORES',j);
-    const data=j.data||j.rows||[];
-    if(data.length===0){
-      tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Sin proveedores aún - Usá ➕ Nuevo Proveedor</td></tr>';
-      return;
-    }
-    tbody.innerHTML='';
-    data.forEach(row=>{
-      // Normalizar si viene como array o objeto
-      const p = Array.isArray(row) ? {
-        id: row[0], nombre: row[1], rut: row[2], telefono: row[3], whatsapp: row[4], email: row[5], direccion: row[6], tipo: row[7], contacto: row[8], notas: row[9]
-      } : row;
-      const id = p.id || p.ID || '';
-      const nombre = p.nombre || p.empresa || p.name || 'Sin nombre';
-      const tipo = p.tipo || p.categoria || 'gas';
-      const tel = p.telefono || p.tel || '-';
-      const contacto = p.contacto || p.persona_contacto || '';
-      const direccion = p.direccion || p.dir || '-';
-      const whatsapp = p.whatsapp || '';
-      const email = p.email || '';
-
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><div style="font-weight:900">${nombre}</div><div style="font-size:10px;color:#94a3b8">${p.rut||''} ${email? ' - '+email : ''}</div></td>
-        <td style="padding:10px;border:1px solid #1f2937;text-align:center"><span style="font-size:10px;padding:4px 8px;border-radius:6px;background:#0ea5e922;color:#38bdf8;font-weight:bold">${tipo}</span></td>
-        <td style="padding:10px;border:1px solid #1f2937"><div style="font-size:12px">${tel}</div><div style="font-size:10px;color:#94a3b8">${contacto} ${whatsapp? ' - WA:'+whatsapp : ''}</div></td>
-        <td style="padding:10px;border:1px solid #1f2937;font-size:11px;color:#94a3b8">${direccion}</td>
-        <td style="padding:10px;border:1px solid #1f2937;text-align:center">
-          <button onclick="editarProveedor('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button>
-          <button onclick="eliminarProveedor('${id}','${nombre.replace(/'/g,"")}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){
-    console.error(e);
-    tbody.innerHTML=`<tr><td colspan="5" style="padding:20px;text-align:center;color:#ef4444">Error: ${e.message} - Revisá tabla proveedores en Turso</td></tr>`;
-  }
-}
-
-function abrirNuevoProveedor(){
-  document.getElementById('formProveedor').classList.remove('hidden');
-  document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor';
-  document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor';
-  cancelarEdicionProv(false);
-  document.getElementById('formProveedor').scrollIntoView({behavior:'smooth'});
-}
-
-function cancelarEdicionProv(hide=true){
-  document.getElementById('provIdEditando').value='';
-  document.getElementById('provNombre').value='';
-  document.getElementById('provRUT').value='';
-  document.getElementById('provTelefono').value='';
-  document.getElementById('provWhatsapp').value='';
-  document.getElementById('provEmail').value='';
-  document.getElementById('provDireccion').value='';
-  document.getElementById('provTipo').value='gas';
-  document.getElementById('provContacto').value='';
-  document.getElementById('provNotas').value='';
-  document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor';
-  document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor';
-  if(hide) document.getElementById('formProveedor').classList.add('hidden');
-}
-
-async function guardarProveedor(){
-  const id=document.getElementById('provIdEditando').value;
-  const nombre=document.getElementById('provNombre').value.trim();
-  const rut=document.getElementById('provRUT').value.trim();
-  const telefono=document.getElementById('provTelefono').value.trim();
-  const whatsapp=document.getElementById('provWhatsapp').value.trim();
-  const email=document.getElementById('provEmail').value.trim();
-  const direccion=document.getElementById('provDireccion').value.trim();
-  const tipo=document.getElementById('provTipo').value;
-  const contacto=document.getElementById('provContacto').value.trim();
-  const notas=document.getElementById('provNotas').value.trim();
-  if(!nombre){ alert('Nombre / Empresa obligatorio'); return; }
-  if(!telefono){ alert('Teléfono obligatorio'); return; }
-
-  const payload={
-    id: id || Date.now().toString(36),
-    nombre, rut, telefono, whatsapp, email, direccion, tipo, contacto, notas,
-    empresa: nombre,
-    fecha_alta: new Date().toISOString()
-  };
-
-  try{
-    const r=await fetch(`${API_ERP}?table=proveedores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-    const j=await r.json();
-    console.log('Guardar proveedor',j);
-    alert(id ? '✅ Proveedor actualizado' : '✅ Proveedor creado');
-    cancelarEdicionProv();
-    cargarProveedores();
-  }catch(e){
-    alert('❌ Error: '+e.message);
-  }
-}
-
-async function editarProveedor(id){
-  try{
-    const r=await fetch(`${API_ERP}?table=proveedores`);
-    const j=await r.json();
-    const data=j.data||[];
-    const row=data.find(x=> (Array.isArray(x)? x[0] : (x.id||''))==id);
-    if(!row){ alert('No encontrado'); return; }
-    const p = Array.isArray(row) ? {id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]} : row;
-
-    document.getElementById('formProveedor').classList.remove('hidden');
-    document.getElementById('provIdEditando').value=p.id||id;
-    document.getElementById('provNombre').value=p.nombre||p.empresa||'';
-    document.getElementById('provRUT').value=p.rut||'';
-    document.getElementById('provTelefono').value=p.telefono||'';
-    document.getElementById('provWhatsapp').value=p.whatsapp||'';
-    document.getElementById('provEmail').value=p.email||'';
-    document.getElementById('provDireccion').value=p.direccion||'';
-    document.getElementById('provTipo').value=p.tipo||'gas';
-    document.getElementById('provContacto').value=p.contacto||'';
-    document.getElementById('provNotas').value=p.notas||'';
-    document.getElementById('tituloFormProv').textContent='✏️ Editar Proveedor: '+(p.nombre||'');
-    document.getElementById('btnGuardarProv').textContent='✏️ Actualizar Proveedor';
-    document.getElementById('formProveedor').scrollIntoView({behavior:'smooth'});
-  }catch(e){ alert('Error: '+e.message); }
-}
-
-async function eliminarProveedor(id,nombre){
-  if(!confirm(`¿Eliminar proveedor ${nombre}?\nEsta acción no se puede deshacer.`)) return;
-  try{
-    await fetch(`${API_ERP}?table=proveedores&id=${id}`,{method:'DELETE'});
-    alert('🗑 Proveedor eliminado');
-    cargarProveedores();
-  }catch(e){ alert('Error: '+e.message); }
-}
-
-
-
 async function cargarRepartidores(){ /* ya cargado en initTurso */ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const data=j.data||[]; const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML=''; data.forEach(rep=>{ const row=Array.isArray(rep)?{id:rep[0], nombre:rep[1], telefono:rep[2], vehiculo:rep[3], patente:rep[4], color:rep[5]}:rep; const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:8px;border:1px solid #1f2937;text-align:center"><div style="width:20px;height:20px;border-radius:50%;background:${row.color};margin:auto"></div></td><td style="padding:8px;border:1px solid #1f2937">${row.nombre}</td><td style="padding:8px;border:1px solid #1f2937">${row.telefono||'-'}</td><td style="padding:8px;border:1px solid #1f2937">${row.vehiculo||'-'} (${row.patente||'-'})</td><td style="padding:8px;border:1px solid #1f2937;text-align:center"><button onclick="editarRepartidor('${row.id}')" style="background:#eab308;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px;margin-right:4px">✏️ Editar</button><button onclick="eliminarRepartidor('${row.id}','${row.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px">🗑 Eliminar</button></td>`; tbody.appendChild(tr); }); }
 async function guardarRepartidor(){ const id=document.getElementById('repIdEditando').value; const nombre=document.getElementById('repNombre').value.trim(); const telefono=document.getElementById('repTelefono').value.trim(); const vehiculo=document.getElementById('repVehiculo').value.trim(); const patente=document.getElementById('repPatente').value.trim(); const color=document.getElementById('repColor').value; if(!nombre){ alert('Nombre obligatorio'); return; } const payload={id:id||Date.now().toString(36), nombre, telefono, vehiculo, patente, color, device_id:parseInt(id)||7}; await fetch(`${API_ERP}?table=repartidores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); cancelarEdicionRep(); cargarRepartidores(); initTurso(); }
 async function editarRepartidor(id){ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)===id); if(!row) return; const data=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]}:row; document.getElementById('repIdEditando').value=data.id; document.getElementById('repNombre').value=data.nombre; document.getElementById('repTelefono').value=data.telefono||''; document.getElementById('repVehiculo').value=data.vehiculo||''; document.getElementById('repPatente').value=data.patente||''; document.getElementById('repColor').value=data.color||'#3b82f6'; document.getElementById('btnCancelarRep').classList.remove('hidden'); document.getElementById('btnGuardarRep').textContent='✏️ Actualizar'; }
