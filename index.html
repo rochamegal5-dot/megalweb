@@ -106,7 +106,76 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 </div>
 
 
-<div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
+
+<div id="view-clientes" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h3 style="font-weight:900">👥 Clientes</h3>
+      <p style="font-size:11px;color:#94a3b8;margin-top:4px">Ingreso, edición, eliminar + importar desde WhatsApp (vCard/CSV)</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('importWhatsApp').classList.toggle('hidden')" style="background:#25D366;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:12px">📱 Importar WhatsApp</button>
+      <button onclick="abrirNuevoCliente()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Cliente</button>
+    </div>
+  </div>
+
+  <div id="importWhatsApp" class="card hidden" style="border:2px dashed #25D366;background:#052e16">
+    <h4 style="font-weight:900;color:#25D366">📱 Importar contactos desde WhatsApp</h4>
+    <p style="font-size:11px;color:#94a3b8;margin-top:6px">En tu celular: WhatsApp > Contactos > Exportar como .vcf (vCard) o desde Google Contactos > Exportar > vCard. También podés pegar una lista tipo Nombre, Teléfono.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div>
+        <label style="font-size:11px;font-weight:bold">Archivo .vcf o .csv</label>
+        <input type="file" id="fileWhatsApp" accept=".vcf,.csv,.txt" onchange="procesarArchivoWhatsApp(this)" style="width:100%;margin-top:6px;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:white">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:bold">O pegar lista (Nombre - Teléfono por línea)</label>
+        <textarea id="txtWhatsApp" placeholder="Juan Pérez 099123456&#10;Maria Lopez 098765432&#10;Almacen Centro 44791234" style="width:100%;height:80px;margin-top:6px;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:white;font-size:12px"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="importarDesdeTexto()" style="flex:1;padding:10px;background:#25D366;color:#000;font-weight:900;border:none;border-radius:8px">📥 Importar de texto pegado</button>
+      <button onclick="document.getElementById('previewImport').innerHTML=''" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Limpiar</button>
+    </div>
+    <div id="previewImport" style="margin-top:12px;max-height:200px;overflow:auto;font-size:11px"></div>
+    <div id="importActions" class="hidden" style="margin-top:12px"><button onclick="confirmarImportacionWhatsApp()" style="width:100%;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">✅ Confirmar importar <span id="countImport">0</span> clientes a Turso</button></div>
+  </div>
+
+  <div class="card">
+    <div id="formCliente" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
+      <h4 id="tituloFormCli" style="font-weight:900;margin-bottom:12px">Nuevo Cliente</h4>
+      <input type="hidden" id="cliIdEditando">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label style="font-size:11px;font-weight:bold">Nombre / Comercio *</label><input id="cliNombre" placeholder="Juan Pérez / Almacén Centro" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px;font-weight:bold">Teléfono / WhatsApp *</label><input id="cliTelefono" placeholder="099123456" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Dirección</label><input id="cliDireccion" placeholder="Barrio, calle..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Tipo</label><select id="cliTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="particular">Particular</option><option value="comercio">Comercio</option><option value="empresa">Empresa</option><option value="mides">MIDES / Convenio</option><option value="otro">Otro</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Latitud (para GPS)</label><input id="cliLat" type="number" step="any" placeholder="-34.48..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px">Longitud</label><input id="cliLng" type="number" step="any" placeholder="-54.33..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button id="btnGuardarCli" onclick="guardarCliente()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar Cliente</button>
+        <button onclick="cancelarEdicionCli()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="buscarCliente" placeholder="🔍 Buscar por nombre o teléfono..." oninput="filtrarClientes()" style="flex:1;padding:10px;border-radius:8px;background:#0f172a;border:1px solid #334155;color:white">
+      <span id="countClientes" style="font-size:11px;color:#94a3b8;padding:10px">0 clientes</span>
+    </div>
+
+    <div style="overflow:auto">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Nombre</th><th style="padding:10px;border:1px solid #1f2937">Tel / WhatsApp</th><th style="padding:10px;border:1px solid #1f2937">Dirección / Tipo</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead>
+        <tbody id="tablaClientes"><tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Cargando clientes desde Turso...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 
 <div id="view-proveedores" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="font-weight:900">🏭 Proveedores</h3></div><button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Proveedor</button></div>
@@ -190,6 +259,7 @@ function mostrarSeccion(id, btn){
  if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
  setTimeout(()=>{
   if(id==='stock'){ cargarStock(); }
+  if(id==='clientes'){ cargarClientes(); }
   if(id==='productos'){ cargarProductosCatalogo(); }
   if(id==='proveedores'){ cargarProveedores(); }
   if(id==='resumen' && dashMap) dashMap.invalidateSize();
@@ -413,7 +483,98 @@ async function guardarProveedor(){const id=document.getElementById('provIdEditan
 async function editarProveedor(id){const r=await fetch(`${API_ERP}?table=proveedores`);const j=await r.json();const row=(j.data||[]).find(x=>String(Array.isArray(x)?x[0]:x.id)===String(id));if(!row)return;const p=Array.isArray(row)?{id:row[0],nombre:row[1],telefono:row[3]}:row;document.getElementById('formProveedor').classList.remove('hidden');document.getElementById('provIdEditando').value=p.id;document.getElementById('provNombre').value=p.nombre;document.getElementById('provTelefono').value=p.telefono||'';}
 async function eliminarProveedor(id,nombre){if(!confirm(`¿Eliminar ${nombre}?`))return;await fetch(`${API_ERP}?table=proveedores&id=${encodeURIComponent(id)}`,{method:'DELETE'});cargarProveedores();}
 
+
+// ===== CLIENTES CRUD + IMPORT WHATSAPP - SOLO ESTE MODULO =====
+let clientesCache=[], clientesImportTemp=[];
+
+async function cargarClientes(){
+  const tbody=document.getElementById('tablaClientes');
+  if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Cargando Turso...</td></tr>';
+  try{
+    const r=await fetch(`${API_ERP}?table=clientes`,{cache:'no-store'});
+    const j=await r.json();
+    clientesCache=j.data||[];
+    renderClientes(clientesCache);
+    document.getElementById('countClientes').textContent=`${clientesCache.length} clientes`;
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="padding:20px;color:#ef4444">Error: ${e.message}</td></tr>`; }
+}
+function renderClientes(lista){
+  const tbody=document.getElementById('tablaClientes');
+  if(!lista.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Sin clientes - ➕ Nuevo Cliente o 📱 Importar WhatsApp</td></tr>'; return; }
+  tbody.innerHTML='';
+  lista.forEach(row=>{
+    const c=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], direccion:row[3], tipo:row[4], lat:row[5], lng:row[6]}:row;
+    const id=String(c.id||'').replace(/'/g,''); const nombreSafe=String(c.nombre||'').replace(/'/g,'');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><div style="font-weight:900">${c.nombre||''}</div><div style="font-size:10px;color:#64748b">${c.id||''}</div></td><td style="padding:10px;border:1px solid #1f2937"><a href="https://wa.me/${(c.telefono||'').replace(/[^0-9]/g,'')}" target="_blank" style="color:#25D366;font-weight:bold">${c.telefono||''} 📱</a></td><td style="padding:10px;border:1px solid #1f2937"><div style="font-size:11px">${c.direccion||''}</div><div style="font-size:10px;color:#94a3b8">${c.tipo||'particular'} ${c.lat?`📍 ${c.lat},${c.lng}`:''}</div></td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarCliente('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button><button onclick="eliminarCliente('${id}','${nombreSafe}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function filtrarClientes(){ const q=document.getElementById('buscarCliente').value.toLowerCase(); const filtrados=clientesCache.filter(row=>{ const c=Array.isArray(row)?{nombre:row[1], telefono:row[2]}:row; return (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').includes(q); }); renderClientes(filtrados); }
+function abrirNuevoCliente(){ document.getElementById('formCliente').classList.remove('hidden'); document.getElementById('tituloFormCli').textContent='➕ Nuevo Cliente'; document.getElementById('btnGuardarCli').textContent='💾 Guardar Cliente'; document.getElementById('cliIdEditando').value=''; document.getElementById('cliNombre').value=''; document.getElementById('cliTelefono').value=''; document.getElementById('formCliente').scrollIntoView({behavior:'smooth'}); }
+function cancelarEdicionCli(){ document.getElementById('formCliente').classList.add('hidden'); document.getElementById('cliIdEditando').value=''; document.getElementById('cliNombre').value=''; document.getElementById('cliTelefono').value=''; document.getElementById('cliDireccion').value=''; document.getElementById('cliLat').value=''; document.getElementById('cliLng').value=''; }
+async function guardarCliente(){ const idEdit=document.getElementById('cliIdEditando').value.trim(); const nombre=document.getElementById('cliNombre').value.trim(); const telefono=document.getElementById('cliTelefono').value.trim(); if(!nombre||!telefono){ alert('Nombre y Teléfono obligatorios'); return; } const payload={id:idEdit||Date.now().toString(36), nombre, telefono, direccion:document.getElementById('cliDireccion').value.trim(), tipo:document.getElementById('cliTipo').value, latitud:parseFloat(document.getElementById('cliLat').value)||0, longitud:parseFloat(document.getElementById('cliLng').value)||0, lat:parseFloat(document.getElementById('cliLat').value)||0, lng:parseFloat(document.getElementById('cliLng').value)||0}; const r=await fetch(`${API_ERP}?table=clientes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); cancelarEdicionCli(); cargarClientes(); }
+async function editarCliente(id){ const r=await fetch(`${API_ERP}?table=clientes`,{cache:'no-store'}); const j=await r.json(); const row=(j.data||[]).find(x=> String(Array.isArray(x)?x[0]:x.id)===String(id)); if(!row){ alert('No se encontró '+id); return; } const c=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], direccion:row[3], tipo:row[4], lat:row[5], lng:row[6]}:row; document.getElementById('formCliente').classList.remove('hidden'); document.getElementById('cliIdEditando').value=c.id; document.getElementById('cliNombre').value=c.nombre||''; document.getElementById('cliTelefono').value=c.telefono||''; document.getElementById('cliDireccion').value=c.direccion||''; document.getElementById('cliTipo').value=c.tipo||'particular'; document.getElementById('cliLat').value=c.lat||c.latitud||''; document.getElementById('cliLng').value=c.lng||c.longitud||''; document.getElementById('tituloFormCli').textContent='✏️ Editar: '+c.nombre; document.getElementById('btnGuardarCli').textContent='✏️ Actualizar'; }
+async function eliminarCliente(id,nombre){ if(!confirm(`¿Eliminar cliente "${nombre}" (${id})?`)) return; await fetch(`${API_ERP}?table=clientes&id=${encodeURIComponent(id)}`,{method:'DELETE'}); cargarClientes(); }
+
+// IMPORT WHATSAPP
+function procesarArchivoWhatsApp(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    if(file.name.endsWith('.vcf')) parseVCF(text);
+    else parseCSVWhatsApp(text);
+  };
+  reader.readAsText(file);
+}
+function parseVCF(text){
+  const contacts=[]; const cards=text.split('END:VCARD');
+  cards.forEach(card=>{
+    const fnMatch=card.match(/FN:(.*)/); const telMatches=[...card.matchAll(/TEL[^:]*:(.*)/g)];
+    if(fnMatch && telMatches.length){ const nombre=fnMatch[1].trim(); const telefono=telMatches[0][1].replace(/[^0-9+]/g,'').trim(); if(nombre && telefono) contacts.push({nombre, telefono}); }
+  });
+  mostrarPreviewImport(contacts);
+}
+function parseCSVWhatsApp(text){
+  const contacts=[]; text.split('\n').forEach(line=>{ line=line.trim(); if(!line) return; let parts=line.split(','); if(parts.length<2) parts=line.split(';'); if(parts.length<2) parts=line.split('\t'); if(parts.length>=2){ const nombre=parts[0].trim(); const telefono=parts[1].replace(/[^0-9+]/g,'').trim(); if(nombre && telefono) contacts.push({nombre, telefono}); } });
+  mostrarPreviewImport(contacts);
+}
+function importarDesdeTexto(){
+  const txt=document.getElementById('txtWhatsApp').value;
+  const contacts=[]; txt.split('\n').forEach(line=>{
+    line=line.trim(); if(!line) return;
+    // Formato: Nombre 099123456 o Nombre, 099123456 o Nombre - 099123456
+    const match=line.match(/^(.*?)[\s,\-;]+([\+\d][\d\s]{6,})$/);
+    if(match){ const nombre=match[1].trim(); const telefono=match[2].replace(/[^0-9+]/g,'').trim(); if(nombre && telefono) contacts.push({nombre, telefono}); }
+    else { const parts=line.split(/\s{2,}/); if(parts.length>=2){ contacts.push({nombre:parts[0].trim(), telefono:parts[1].replace(/[^0-9+]/g,'').trim()}); } }
+  });
+  mostrarPreviewImport(contacts);
+}
+function mostrarPreviewImport(contacts){
+  clientesImportTemp=contacts;
+  const preview=document.getElementById('previewImport');
+  const count=document.getElementById('countImport');
+  if(!contacts.length){ preview.innerHTML='<p style="color:#ef4444">No se encontraron contactos válidos. Formato: Nombre + Teléfono</p>'; document.getElementById('importActions').classList.add('hidden'); return; }
+  preview.innerHTML=`<p style="color:#22c55e;font-weight:bold">Se encontraron ${contacts.length} contactos:</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;max-height:150px;overflow:auto">`+contacts.map(c=>`<div style="background:#0f172a;padding:6px;border-radius:6px;border:1px solid #1f2937"><b>${c.nombre}</b><br><span style="color:#25D366">${c.telefono}</span></div>`).join('')+'</div>';
+  count.textContent=contacts.length;
+  document.getElementById('importActions').classList.remove('hidden');
+}
+async function confirmarImportacionWhatsApp(){
+  if(!clientesImportTemp.length) return;
+  if(!confirm(`¿Importar ${clientesImportTemp.length} clientes desde WhatsApp a Turso?`)) return;
+  let ok=0; for(const c of clientesImportTemp){ const payload={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), nombre:c.nombre, telefono:c.telefono, direccion:'', tipo:'particular', latitud:0, longitud:0}; try{ await fetch(`${API_ERP}?table=clientes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); ok++; }catch(e){} }
+  alert(`✅ Importados ${ok}/${clientesImportTemp.length} clientes`);
+  document.getElementById('importWhatsApp').classList.add('hidden');
+  document.getElementById('previewImport').innerHTML='';
+  document.getElementById('importActions').classList.add('hidden');
+  clientesImportTemp=[];
+  cargarClientes();
+}
+
 function initMaps(){
+
 
 
  dashMap=L.map('dashMap').setView(ROCHA_CENTER,14);
