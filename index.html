@@ -81,51 +81,43 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 </div>
 
 <div id="view-repartidores" class="view-section hidden"><div class="card"><h3>Repartidores</h3><input type="hidden" id="repIdEditando"><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="repNombre" placeholder="Nombre"><input id="repTelefono" placeholder="Tel"><input id="repVehiculo" placeholder="Vehículo"><input id="repPatente" placeholder="Patente"><input id="repColor" type="color" value="#3b82f6" style="width:50px"><button id="btnGuardarRep" onclick="guardarRepartidor()" style="background:#0ea5e9;color:white;padding:8px 12px;border:none;border-radius:8px">Guardar Repartidor</button><button id="btnCancelarRep" onclick="cancelarEdicionRep()" class="hidden" style="background:#475569;color:white;padding:8px 12px;border:none;border-radius:8px">Cancelar</button></div></div><div class="card"><table style="width:100%"><tbody id="tablaRepartidores"></tbody></table></div></div>
-<div id="view-productos" class="view-section hidden"><div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="font-weight:900">📦 Productos - Catálogo</h3><p style="font-size:11px;color:#94a3b8">Sin cantidades - solo catálogo</p></div><button onclick="abrirNuevoProductoCatalogo()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Producto</button></div><div class="card"><div id="formProducto" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px"><h4 id="tituloFormProd">Nuevo Producto</h4><input type="hidden" id="prodIdEditando"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><label style="font-size:11px">Código *</label><input id="prodCodigo" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div><div><label style="font-size:11px">Nombre *</label><input id="prodNombre" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div><div><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="garrafa">Garrafa</option><option value="tubo">Tubo</option><option value="valvula">Válvula</option><option value="regulador">Regulador</option><option value="manguera">Manguera</option><option value="otro">Otro</option></select></div></div><div style="display:flex;gap:8px;margin-top:12px"><button id="btnGuardarProd" onclick="guardarProductoCatalogo()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar</button><button onclick="cancelarEdicionProd()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div></div><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937">Código/Nombre</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead><tbody id="tablaProductos"><tr><td colspan="3" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr></tbody></table></div></div>
 
-<div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
-
-<div id="view-proveedores" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-    <div>
-      <h3 style="font-weight:900">🏭 Proveedores</h3>
-      <p style="font-size:11px;color:#94a3b8;margin-top:4px">Ingreso, edición y eliminar - Tabla proveedores en Turso</p>
-    </div>
-    <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Proveedor</button>
+<div id="view-productos" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <div><h3 style="font-weight:900">📦 Productos - Catálogo</h3><p style="font-size:11px;color:#94a3b8">Solo catálogo - sin cantidades (stock en Depósito)</p></div>
+    <button onclick="abrirNuevoProductoCatalogo()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Producto</button>
   </div>
   <div class="card">
-    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
-      <h4 id="tituloFormProv" style="font-weight:900;margin-bottom:12px">Nuevo Proveedor</h4>
-      <input type="hidden" id="provIdEditando">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:11px;font-weight:bold">Nombre / Empresa *</label><input id="provNombre" placeholder="ANCAP, Riogas..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">RUT</label><input id="provRUT" placeholder="RUT" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-      </div>
+    <div id="formProducto" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
+      <h4 id="tituloFormProd">Nuevo Producto</h4>
+      <input type="hidden" id="prodIdEditando">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Teléfono *</label><input id="provTelefono" placeholder="4479..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">WhatsApp</label><input id="provWhatsapp" placeholder="099..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Tipo</label><select id="provTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="gas">Gas Envasado</option><option value="accesorios">Accesorios</option><option value="mangueras">Mangueras/Reguladores</option><option value="transporte">Transporte</option><option value="otro">Otro</option></select></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Ruta 9..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Contacto</label><input id="provContacto" placeholder="Juan Pérez" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
+        <div><label style="font-size:11px;font-weight:bold">Código / ID *</label><input id="prodCodigo" placeholder="VALVULA-13" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div>
+        <div><label style="font-size:11px;font-weight:bold">Nombre *</label><input id="prodNombre" placeholder="Válvula 13kg" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div>
+        <div><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="garrafa">Garrafa</option><option value="tubo">Tubo</option><option value="valvula">Válvula</option><option value="regulador">Regulador</option><option value="manguera">Manguera</option><option value="precinto">Precinto</option><option value="accesorio">Accesorio</option><option value="otro">Otro</option></select></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="btnGuardarProv" onclick="guardarProveedor()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar Proveedor</button>
-        <button onclick="cancelarEdicionProv()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
+        <button id="btnGuardarProd" onclick="guardarProductoCatalogo()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar</button>
+        <button onclick="cancelarEdicionProd()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
       </div>
     </div>
-    <div style="overflow:auto">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Empresa</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Tel / Contacto</th><th style="padding:10px;border:1px solid #1f2937">Dirección</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead>
-        <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr></tbody>
-      </table>
-    </div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Código</th><th style="padding:10px;border:1px solid #1f2937;text-align:left">Nombre</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead><tbody id="tablaProductos"><tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Cargando Turso...</td></tr></tbody></table>
   </div>
 </div>
 
 
-  <div id="view-stock" class="view-section hidden">
+<div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
+
+<div id="view-proveedores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="font-weight:900">🏭 Proveedores</h3></div><button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Proveedor</button></div>
+  <div class="card">
+    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px"><h4 id="tituloFormProv">Nuevo Proveedor</h4><input type="hidden" id="provIdEditando"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label style="font-size:11px">Nombre *</label><input id="provNombre" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div><div><label style="font-size:11px">Tel *</label><input id="provTelefono" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div></div><div style="display:flex;gap:8px;margin-top:12px"><button id="btnGuardarProv" onclick="guardarProveedor()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar</button><button onclick="cancelarEdicionProv()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div></div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937">Empresa</th><th style="padding:10px;border:1px solid #1f2937">Tel</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead><tbody id="tablaProveedores"><tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
+
+
+<div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <h3 style="font-weight:900">📦 Stock TURSO - Depósito + Productos</h3>
     <div style="display:flex;gap:8px">
@@ -354,41 +346,74 @@ async function ingresoProveedor(){
 }
 
 
-// ===== PROVEEDORES CRUD - SOLO ESTE MODULO =====
-async function cargarProveedores(){
-  const tbody=document.getElementById('tablaProveedores');
+async function cargarProductosCatalogo(){
+  const tbody=document.getElementById('tablaProductos');
   if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando Turso...</td></tr>';
+  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Cargando Turso...</td></tr>';
   try{
-    const r=await fetch(`${API_ERP}?table=proveedores`);
+    const r=await fetch(`${API_ERP}?table=productos`,{cache:'no-store'});
     const j=await r.json();
     const data=j.data||[];
-    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Sin proveedores - ➕ Nuevo Proveedor</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:#64748b">Sin productos - ➕ Nuevo Producto</td></tr>'; return; }
     tbody.innerHTML='';
     data.forEach(row=>{
-      const p = Array.isArray(row) ? {id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8]} : row;
-      const id=p.id||''; const nombre=(p.nombre||'').replace(/'/g,'');
+      const p = Array.isArray(row) ? {id:row[0], nombre:row[1], tipo:row[2]} : row;
+      const id = String(p.id||'').replace(/'/g,'');
+      const nombreSafe = String(p.nombre||'').replace(/'/g,'');
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><b>${p.nombre||p.empresa||''}</b><div style="font-size:10px;color:#94a3b8">${p.rut||''}</div></td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><span style="font-size:10px;padding:4px 8px;border-radius:6px;background:#0ea5e922;color:#38bdf8">${p.tipo||'gas'}</span></td><td style="padding:10px;border:1px solid #1f2937"><div>${p.telefono||''}</div><div style="font-size:10px;color:#94a3b8">${p.contacto||''} ${p.whatsapp||''}</div></td><td style="padding:10px;border:1px solid #1f2937;font-size:11px;color:#94a3b8">${p.direccion||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProveedor('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button><button onclick="eliminarProveedor('${id}','${nombre}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button></td>`;
+      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937;font-weight:900">${p.id}</td><td style="padding:10px;border:1px solid #1f2937">${p.nombre}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${p.tipo||'otro'}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProductoCatalogo('${id}')" style="background:#eab308;color:#000;padding:6px 12px;border:none;border-radius:6px;font-size:12px;font-weight:900;margin-right:6px">✏️ Editar</button><button onclick="eliminarProductoCatalogo('${id}','${nombreSafe}')" style="background:#dc2626;color:white;padding:6px 12px;border:none;border-radius:6px;font-size:12px;font-weight:900">🗑 Eliminar</button></td>`;
       tbody.appendChild(tr);
     });
-  }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="padding:20px;color:#ef4444">Error: ${e.message}</td></tr>`; }
 }
-function abrirNuevoProveedor(){ document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor'; document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor'; document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provTelefono').value=''; }
-function cancelarEdicionProv(){ document.getElementById('formProveedor').classList.add('hidden'); document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provRUT').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provWhatsapp').value=''; document.getElementById('provDireccion').value=''; document.getElementById('provContacto').value=''; }
-async function guardarProveedor(){ const id=document.getElementById('provIdEditando').value; const nombre=document.getElementById('provNombre').value.trim(); const telefono=document.getElementById('provTelefono').value.trim(); if(!nombre||!telefono){ alert('Nombre y Teléfono obligatorios'); return; } const payload={id:id||Date.now().toString(36), nombre, rut:document.getElementById('provRUT').value.trim(), telefono, whatsapp:document.getElementById('provWhatsapp').value.trim(), direccion:document.getElementById('provDireccion').value.trim(), tipo:document.getElementById('provTipo').value, contacto:document.getElementById('provContacto').value.trim(), empresa:nombre}; await fetch(`${API_ERP}?table=proveedores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cancelarEdicionProv(); cargarProveedores(); }
-async function editarProveedor(id){ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)==id); if(!row) return; const p=Array.isArray(row)?{id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], direccion:row[6], tipo:row[7], contacto:row[8]}:row; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEditando').value=p.id||id; document.getElementById('provNombre').value=p.nombre||''; document.getElementById('provRUT').value=p.rut||''; document.getElementById('provTelefono').value=p.telefono||''; document.getElementById('provWhatsapp').value=p.whatsapp||''; document.getElementById('provDireccion').value=p.direccion||''; document.getElementById('provTipo').value=p.tipo||'gas'; document.getElementById('provContacto').value=p.contacto||''; document.getElementById('tituloFormProv').textContent='✏️ Editar: '+(p.nombre||''); document.getElementById('btnGuardarProv').textContent='✏️ Actualizar'; }
-async function eliminarProveedor(id,nombre){ if(!confirm(`¿Eliminar ${nombre}?`)) return; await fetch(`${API_ERP}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }
+function abrirNuevoProductoCatalogo(){ document.getElementById('formProducto').classList.remove('hidden'); document.getElementById('tituloFormProd').textContent='➕ Nuevo Producto'; document.getElementById('btnGuardarProd').textContent='💾 Guardar'; document.getElementById('prodIdEditando').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; document.getElementById('formProducto').scrollIntoView({behavior:'smooth'}); }
+function cancelarEdicionProd(){ document.getElementById('formProducto').classList.add('hidden'); document.getElementById('prodIdEditando').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; }
+async function guardarProductoCatalogo(){
+  const idEdit=document.getElementById('prodIdEditando').value.trim();
+  const codigo=document.getElementById('prodCodigo').value.trim().toUpperCase().replace(/\s+/g,'-');
+  const nombre=document.getElementById('prodNombre').value.trim();
+  if(!codigo||!nombre){ alert('Código y Nombre obligatorios'); return; }
+  const payload={id:idEdit||codigo, nombre, tipo:document.getElementById('prodTipo').value, costo:0, precio_venta:0, permite_completo:0, es_fraccionado:0};
+  console.log('Guardando producto',payload);
+  const r=await fetch(`${API_ERP}?table=productos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const j=await r.json();
+  console.log('Respuesta',j);
+  cancelarEdicionProd();
+  cargarProductosCatalogo();
+}
+async function editarProductoCatalogo(id){
+  console.log('Editar',id);
+  const r=await fetch(`${API_ERP}?table=productos`,{cache:'no-store'});
+  const j=await r.json();
+  const row=(j.data||[]).find(x=> String(Array.isArray(x)?x[0]:x.id)===String(id));
+  if(!row){ alert('No se encontró '+id); return; }
+  const p=Array.isArray(row)?{id:row[0], nombre:row[1], tipo:row[2]}:row;
+  document.getElementById('formProducto').classList.remove('hidden');
+  document.getElementById('prodIdEditando').value=p.id;
+  document.getElementById('prodCodigo').value=p.id;
+  document.getElementById('prodNombre').value=p.nombre||'';
+  document.getElementById('prodTipo').value=p.tipo||'otro';
+  document.getElementById('tituloFormProd').textContent='✏️ Editar: '+p.nombre;
+  document.getElementById('btnGuardarProd').textContent='✏️ Actualizar';
+  document.getElementById('formProducto').scrollIntoView({behavior:'smooth'});
+}
+async function eliminarProductoCatalogo(id,nombre){
+  if(!confirm(`¿Eliminar producto "${nombre}" (${id})?\nEsto NO borra stock, solo catálogo.`)) return;
+  console.log('Eliminar',id);
+  const r=await fetch(`${API_ERP}?table=productos&id=${encodeURIComponent(id)}`,{method:'DELETE'});
+  const j=await r.json().catch(()=>({}));
+  console.log('Delete resp',j);
+  cargarProductosCatalogo();
+}
+// PROVEEDORES CRUD
+async function cargarProveedores(){const tb=document.getElementById('tablaProveedores');if(!tb)return;tb.innerHTML='<tr><td colspan=3 style="padding:20px;text-align:center">Cargando...</td></tr>';try{const r=await fetch(`${API_ERP}?table=proveedores`,{cache:'no-store'});const j=await r.json();const data=j.data||[];if(!data.length){tb.innerHTML='<tr><td colspan=3 style="padding:20px;text-align:center">Sin proveedores</td></tr>';return;}tb.innerHTML='';data.forEach(row=>{const p=Array.isArray(row)?{id:row[0],nombre:row[1],telefono:row[3]}:row;const tr=document.createElement('tr');tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><b>${p.nombre||''}</b></td><td style="padding:10px;border:1px solid #1f2937">${p.telefono||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProveedor('${p.id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px">✏️ Editar</button> <button onclick="eliminarProveedor('${p.id}','${(p.nombre||'').replace(/'/g,'')}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px">🗑 Eliminar</button></td>`;tb.appendChild(tr);});}catch(e){tb.innerHTML=`<tr><td colspan=3 style="color:#ef4444">${e.message}</td></tr>`;}}
+function abrirNuevoProveedor(){document.getElementById('formProveedor').classList.remove('hidden');document.getElementById('provIdEditando').value='';document.getElementById('provNombre').value='';document.getElementById('provTelefono').value='';}
+function cancelarEdicionProv(){document.getElementById('formProveedor').classList.add('hidden');document.getElementById('provIdEditando').value='';document.getElementById('provNombre').value='';document.getElementById('provTelefono').value='';}
+async function guardarProveedor(){const id=document.getElementById('provIdEditando').value;const nombre=document.getElementById('provNombre').value.trim();const tel=document.getElementById('provTelefono').value.trim();if(!nombre||!tel){alert('Nombre y Tel');return;}const payload={id:id||Date.now().toString(36),nombre,telefono:tel,empresa:nombre};await fetch(`${API_ERP}?table=proveedores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});cancelarEdicionProv();cargarProveedores();}
+async function editarProveedor(id){const r=await fetch(`${API_ERP}?table=proveedores`);const j=await r.json();const row=(j.data||[]).find(x=>String(Array.isArray(x)?x[0]:x.id)===String(id));if(!row)return;const p=Array.isArray(row)?{id:row[0],nombre:row[1],telefono:row[3]}:row;document.getElementById('formProveedor').classList.remove('hidden');document.getElementById('provIdEditando').value=p.id;document.getElementById('provNombre').value=p.nombre;document.getElementById('provTelefono').value=p.telefono||'';}
+async function eliminarProveedor(id,nombre){if(!confirm(`¿Eliminar ${nombre}?`))return;await fetch(`${API_ERP}?table=proveedores&id=${encodeURIComponent(id)}`,{method:'DELETE'});cargarProveedores();}
 
-
-async function cargarProductosCatalogo(){const tb=document.getElementById('tablaProductos');if(!tb)return;tb.innerHTML='<tr><td colspan=3 style="padding:20px;text-align:center">Cargando...</td></tr>';try{const r=await fetch(`${API_ERP}?table=productos`);const j=await r.json();const d=j.data||[];if(!d.length){tb.innerHTML='<tr><td colspan=3 style="padding:20px;text-align:center">Sin productos</td></tr>';return;}tb.innerHTML='';d.forEach(row=>{const p=Array.isArray(row)?{id:row[0],nombre:row[1],tipo:row[2]}:row;const tr=document.createElement('tr');tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><b>${p.id}</b> - ${p.nombre}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${p.tipo||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProductoCatalogo('${p.id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px">✏️</button> <button onclick="eliminarProductoCatalogo('${p.id}','${(p.nombre||'').replace(/'/g,'')}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px">🗑</button></td>`;tb.appendChild(tr);});}catch(e){tb.innerHTML=`<tr><td colspan=3 style="color:#ef4444">${e.message}</td></tr>`;}}
-function abrirNuevoProductoCatalogo(){document.getElementById('formProducto').classList.remove('hidden');document.getElementById('prodIdEditando').value='';document.getElementById('prodCodigo').value='';document.getElementById('prodNombre').value='';}
-function cancelarEdicionProd(){document.getElementById('formProducto').classList.add('hidden');document.getElementById('prodIdEditando').value='';document.getElementById('prodCodigo').value='';document.getElementById('prodNombre').value='';}
-async function guardarProductoCatalogo(){const idE=document.getElementById('prodIdEditando').value;const codigo=document.getElementById('prodCodigo').value.trim().toUpperCase().replace(/\s+/g,'-');const nombre=document.getElementById('prodNombre').value.trim();if(!codigo||!nombre){alert('Código y Nombre');return;}const payload={id:idE||codigo,nombre,tipo:document.getElementById('prodTipo').value,permite_completo:0,es_fraccionado:0};await fetch(`${API_ERP}?table=productos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});cancelarEdicionProd();cargarProductosCatalogo();}
-async function editarProductoCatalogo(id){const r=await fetch(`${API_ERP}?table=productos`);const j=await r.json();const row=(j.data||[]).find(x=>(Array.isArray(x)?x[0]:x.id)==id);if(!row)return;const p=Array.isArray(row)?{id:row[0],nombre:row[1],tipo:row[2]}:row;document.getElementById('formProducto').classList.remove('hidden');document.getElementById('prodIdEditando').value=p.id;document.getElementById('prodCodigo').value=p.id;document.getElementById('prodNombre').value=p.nombre;document.getElementById('prodTipo').value=p.tipo||'otro';}
-async function eliminarProductoCatalogo(id,nombre){if(!confirm(`¿Eliminar ${nombre}?`))return;await fetch(`${API_ERP}?table=productos&id=${id}`,{method:'DELETE'});cargarProductosCatalogo();}
 function initMaps(){
-
 
 
  dashMap=L.map('dashMap').setView(ROCHA_CENTER,14);
