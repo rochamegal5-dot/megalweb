@@ -27,6 +27,9 @@ window.actualizarUbicacion = actualizarUbicacion
 window.initMap = initMap
 window.cargarYMostrarRepartidores = cargarYMostrarRepartidores
 window.centrarEnRepartidor = centrarEnRepartidor
+import { initStock } from './modules/stock.js'
+window.initStock = initStock
+
 
 console.log('✅ MegalWeb V2.1 CACHE BUST', new Date().toISOString())
 console.log('✅ actualizarUbicacion:', typeof window.actualizarUbicacion)
