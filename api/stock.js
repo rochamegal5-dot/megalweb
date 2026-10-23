@@ -1,444 +1,168 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Megal ERP - Final Turso con tus funciones</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
-body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
-.erp-sidebar{width:260px;background:#111827;border-right:1px solid #1f2937;padding:18px;display:flex;flex-direction:column;gap:8px;overflow:auto}
-.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#1f2937;color:#94a3b8;font-size:13px}
-.tab.active{background:#0ea5e9;color:white}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.gps-tabs{background:#1e293b;padding:8px 16px;display:flex;gap:10px;border-bottom:1px solid #334155}
-.gps-tab{padding:8px 14px;border-radius:8px;cursor:pointer;background:#0f172a;color:#94a3b8;font-size:13px;border:1px solid #1f2937}
-.gps-tab.active{color:#38bdf8;border-color:#0ea5e9}
-.content{flex:1;overflow:auto;padding:16px;background:#0f172a}
-.card{background:#1e293b;border-radius:12px;padding:16px;border:1px solid #2d3748;margin-bottom:16px}
-#gpsMap,#gpsMapHist,#dashMap{height:100%;width:100%;border-radius:8px}
-.gps-pulse{position:absolute;border-radius:50%;animation:pulse 2s infinite;opacity:0.6}
-.gps-marker{position:absolute;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)}
-@keyframes pulse{0%{transform:scale(1);opacity:0.6}100%{transform:scale(2.5);opacity:0}}
-.ref-label{background:#1e40af;color:white;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:bold;box-shadow:0 3px 8px rgba(0,0,0,0.5);white-space:nowrap}
-.hidden{display:none!important}
-.view-section{display:block}
-</style>
-</head>
-<body>
-<div class="erp-sidebar" id="mainSidebar">
-<h1 style="color:#38bdf8;margin-bottom:12px">🔥 Megal ERP</h1>
-<button class="tab nav-btn active" onclick="mostrarSeccion('resumen',this)">📊 Resumen</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('gps',this)">📍 GPS en Vivo</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('repartidores',this)">🛵 Repartidores</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('productos',this)">📦 Productos</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('clientes',this)">👥 Clientes</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('proveedores',this)">🏭 Proveedores</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('stock',this)">📦 Stock</button>
-<button class="tab nav-btn" onclick="mostrarSeccion('ventas',this)">💰 Ventas</button>
-<div id="headerStatus" style="margin-top:auto;font-size:11px;color:#64748b">Conectando...</div>
-</div>
 
-<div class="main" id="mainHeader">
-<div id="view-resumen" class="view-section">
-<div class="card"><h3>Resumen - Rocha</h3><div id="dashMap" style="height:300px"></div></div>
-</div>
+// /api/stock.js - ADAPTADO A TU TURSO REAL: stock_deposito, productos(id), stock_camioneta, movimientos_stock
+import { createClient } from '@libsql/client';
+const client = createClient({ url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN });
 
-<div id="view-gps" class="view-section hidden">
-<div class="gps-tabs">
-<button id="tabGPSVivo" class="gps-tab active" onclick="mostrarTabGPS('vivo')">📍 En Vivo (Turso)</button>
-<button id="tabGPSHist" class="gps-tab" onclick="mostrarTabGPS('historial')">📊 Historial</button>
-<button id="btnVolverERP" class="hidden" onclick="volverAERP()" style="margin-left:auto;background:#0ea5e9;color:white;padding:6px 12px;border-radius:20px;border:none">↩️ Volver al ERP</button>
-</div>
-
-<div id="gpsVivo">
-<div style="display:grid;grid-template-columns:1fr 340px;gap:16px;height:calc(100vh - 100px)">
-<div class="card" style="position:relative;padding:8px">
-<div id="gpsMap" style="height:100%;min-height:550px"></div>
-<div style="position:absolute;top:16px;right:16px;z-index:500;background:#1e293b;border:1px solid #334155;padding:10px 16px;border-radius:10px;text-align:center"><p style="font-size:10px;color:#94a3b8;font-weight:bold">VELOCIDAD</p><p id="gpsSpeed" style="font-size:28px;font-weight:900;color:#38bdf8">0</p><p style="font-size:10px;color:#94a3b8">km/h</p></div>
-</div>
-<div style="display:flex;flex-direction:column;gap:12px;overflow:auto">
-<div class="card"><h3 style="font-size:13px;font-weight:bold;margin-bottom:8px">🚚 Vehículos (Turso)</h3><select id="selRepartidor" onchange="centrarEnRepartidor(this.value)" style="width:100%"><option value="">-- Todos --</option></select><div id="listaEstadosRep" style="margin-top:12px;max-height:200px;overflow:auto"></div></div>
-<div class="card"><h3 style="font-size:13px;font-weight:bold">📌 Agregar Punto</h3><p style="font-size:10px;color:#64748b;margin-bottom:8px">Hacé clic en el mapa para obtener coordenadas.</p><div><label style="font-size:11px">Nombre *</label><input type="text" id="mkNombre" placeholder="Ej: Cliente Mides" style="width:100%;margin-top:4px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div><label style="font-size:11px">Latitud</label><input type="number" id="mkLat" step="any" readonly style="width:100%;background:#111827"></div><div><label style="font-size:11px">Longitud</label><input type="number" id="mkLng" step="any" readonly style="width:100%;background:#111827"></div></div><button onclick="guardarMarcador()" style="background:#16a34a;color:white;width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;font-weight:bold">Guardar Punto</button></div>
-<div class="card" style="max-height:160px;overflow:auto"><h3 style="font-size:12px;font-weight:bold;margin-bottom:8px">📍 Puntos de Referencia</h3><div id="listaMarcadores"></div></div>
-<div class="card" style="max-height:220px;overflow:auto"><h3 style="font-size:12px;font-weight:bold;margin-bottom:8px">📋 Registro en Vivo</h3><table style="width:100%;font-size:11px"><thead><tr style="background:#0f172a"><th style="padding:4px;border:1px solid #1f2937">Hora</th><th style="padding:4px;border:1px solid #1f2937">Repartidor</th><th style="padding:4px;border:1px solid #1f2937">Velocidad</th></tr></thead><tbody id="tablaVivoGPS"></tbody></table></div>
-</div>
-</div>
-</div>
-
-<div id="gpsHistorial" class="hidden">
-<div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><select id="histRepartidorId"><option value="">-- Seleccione Repartidor --</option></select><input type="date" id="histFecha"><button onclick="generarInforme()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">📊 Generar Informe</button></div>
-<div id="gpsMapHist" style="height:400px;margin-bottom:16px" class="card"></div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-<div class="card" style="text-align:center;background:#2a1215;border-color:#7f1d1d"><p style="font-size:11px;color:#fca5a5;font-weight:bold">Exceso de Velocidad (>45 km/h)</p><p id="statExceso" style="font-size:28px;font-weight:900;color:#ef4444">0</p></div>
-<div class="card" style="text-align:center;background:#2a1a0e;border-color:#7c2d12"><p style="font-size:11px;color:#fed7aa;font-weight:bold">Detenciones > 3 min</p><p id="statDetenciones" style="font-size:28px;font-weight:900;color:#f97316">0</p></div>
-<div class="card" style="text-align:center;background:#0c1a2e;border-color:#1e3a8a"><p style="font-size:11px;color:#93c5fd;font-weight:bold">Distancia Total</p><p id="statDistancia" style="font-size:28px;font-weight:900;color:#3b82f6">0 km</p></div>
-</div>
-<div class="card"><h3 style="font-weight:bold;margin-bottom:8px">📋 Línea de Tiempo - <span id="histNombreRep" style="color:#38bdf8"></span></h3><p style="font-size:11px;color:#64748b;margin-bottom:8px">Se muestra la posición cada 5 minutos y los incidentes.</p><div style="max-height:450px;overflow:auto;border:1px solid #1f2937;border-radius:8px"><table style="width:100%;font-size:12px"><thead style="position:sticky;top:0;background:#0f172a;z-index:10"><tr><th style="padding:8px;border:1px solid #1f2937">Hora</th><th style="padding:8px;border:1px solid #1f2937">Evento</th><th style="padding:8px;border:1px solid #1f2937">Detalle / Velocidad</th><th style="padding:8px;border:1px solid #1f2937">Venta</th></tr></thead><tbody id="tablaIncidentesGPS"><tr><td colspan="4" style="padding:16px;text-align:center;color:#475569">Seleccione un repartidor y genere el informe.</td></tr></tbody></table></div></div>
-</div>
-</div>
-
-<div id="view-repartidores" class="view-section hidden"><div class="card"><h3>Repartidores</h3><input type="hidden" id="repIdEditando"><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="repNombre" placeholder="Nombre"><input id="repTelefono" placeholder="Tel"><input id="repVehiculo" placeholder="Vehículo"><input id="repPatente" placeholder="Patente"><input id="repColor" type="color" value="#3b82f6" style="width:50px"><button id="btnGuardarRep" onclick="guardarRepartidor()" style="background:#0ea5e9;color:white;padding:8px 12px;border:none;border-radius:8px">Guardar Repartidor</button><button id="btnCancelarRep" onclick="cancelarEdicionRep()" class="hidden" style="background:#475569;color:white;padding:8px 12px;border:none;border-radius:8px">Cancelar</button></div></div><div class="card"><table style="width:100%"><tbody id="tablaRepartidores"></tbody></table></div></div>
-<div id="view-productos" class="view-section hidden"><div class="card">Productos - implementar cargarModuloProductos()</div></div>
-<div id="view-clientes" class="view-section hidden"><div class="card">Clientes</div></div>
-
-
-<div id="view-proveedores" class="view-section hidden">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-      <div>
-        <h3 style="font-weight:900">🏭 Proveedores</h3>
-        <p style="font-size:11px;color:#94a3b8;margin-top:4px">Ingreso, edición y eliminar - Guarda en Turso</p>
-      </div>
-      <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900;font-size:13px">➕ Nuevo Proveedor</button>
-    </div>
-  </div>
-  <div class="card">
-    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
-      <h4 id="tituloFormProv" style="font-weight:900;margin-bottom:12px">Nuevo Proveedor</h4>
-      <input type="hidden" id="provIdEditando">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:11px;font-weight:bold">Nombre / Empresa *</label><input id="provNombre" placeholder="ANCAP, Riogas..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">RUT</label><input id="provRUT" placeholder="RUT" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Teléfono *</label><input id="provTelefono" placeholder="4479..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">WhatsApp</label><input id="provWhatsapp" placeholder="099..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Email</label><input id="provEmail" placeholder="email" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Ruta 9 km 208..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Tipo</label><select id="provTipo" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"><option value="gas">Gas Envasado</option><option value="accesorios">Accesorios</option><option value="mangueras">Mangueras/Reguladores</option><option value="transporte">Transporte</option><option value="otro">Otro</option></select></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Contacto</label><input id="provContacto" placeholder="Juan Pérez" style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-        <div><label style="font-size:11px">Notas</label><input id="provNotas" placeholder="Canje, entrega martes..." style="width:100%;margin-top:4px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:white"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="btnGuardarProv" onclick="guardarProveedor()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 Guardar Proveedor</button>
-        <button onclick="cancelarEdicionProv()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button>
-      </div>
-    </div>
-    <div style="overflow:auto">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937;text-align:left">Empresa</th><th style="padding:10px;border:1px solid #1f2937">Tipo</th><th style="padding:10px;border:1px solid #1f2937">Tel / Contacto</th><th style="padding:10px;border:1px solid #1f2937">Dirección</th><th style="padding:10px;border:1px solid #1f2937">Acciones</th></tr></thead>
-        <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-
-<div id="view-stock" class="view-section hidden">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3>📦 Stock TURSO - Depósito + Productos</h3><div style="display:flex;gap:6px"><button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">📝 Balance Inicial</button><button onclick="abrirNuevoProducto()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">➕ Nuevo Producto</button></div></div>
-      <div style="display:flex;gap:6px">
-        <button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">📝 Balance Inicial</button>
-        <button onclick="abrirNuevoProducto()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">➕ Nuevo Producto</button>
-      </div>
-    </div>
-    <div id="stockStatus" style="font-size:12px;color:#94a3b8;margin-top:8px">Cargando /api/stock...</div>
-  </div>
-  <div id="stockContent"></div>
-
-  <!-- Modal Balance Inicial -->
-  <div id="modalBalance" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div class="card" style="width:100%;max-width:650px;max-height:90vh;overflow:auto">
-      <h3 style="font-weight:900;margin-bottom:12px">📝 Balance Inicial - Stock real hoy</h3>
-      <p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Cargá lo que tenés HOY en depósito. Esto sobreescribe el stock actual. Ideal para arranque.</p>
-      <div id="balanceForm" style="display:grid;gap:10px"></div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="guardarBalanceInicial()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">💾 Guardar Balance Inicial</button>
-        <button onclick="cerrarBalanceInicial()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Nuevo Producto -->
-  <div id="modalProducto" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-    <div class="card" style="width:100%;max-width:450px">
-      <h3 style="font-weight:900;margin-bottom:12px">➕ Nuevo Producto / Insumo</h3>
-      <p style="font-size:11px;color:#94a3b8;margin-bottom:12px">Para todo lo que comercializa Megal hoy o a futuro: válvulas, reguladores, mangueras, precintos, etc.</p>
-      <div style="display:grid;gap:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Código *</label><input id="npId" placeholder="Ej: VALVULA-13" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Nombre *</label><input id="npNombre" placeholder="Ej: Válvula 13kg" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Tipo</label><select id="npTipo" style="width:100%;margin-top:4px"><option value="envase">Envase Gas (11/13/45)</option><option value="fraccionado">Fraccionado (43.5)</option><option value="insumo">Insumo / Accesorio</option><option value="otro">Otro</option></select></div>
-          <div><label style="font-size:11px">Precio ref</label><input id="npPrecio" type="number" placeholder="0" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div><label style="font-size:11px">Llenas</label><input id="npLlenas" type="number" value="0" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Vacías</label><input id="npVacias" type="number" value="0" style="width:100%;margin-top:4px"></div>
-          <div><label style="font-size:11px">Cambio/Defect</label><input id="npCambio" type="number" value="0" style="width:100%;margin-top:4px"></div>
-        </div>
-        <div><label style="font-size:11px">Si es 43.5 - Kg en uso</label><input id="npKilos" type="number" value="0" step="0.1" style="width:100%;margin-top:4px"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="guardarNuevoProducto()" style="flex:1;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">Crear Producto</button>
-        <button onclick="cerrarNuevoProducto()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-
-<div id="view-ventas" class="view-section hidden"><div class="card">Ventas</div></div>
-</div>
-</div>
-
-<script>
-const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock';
-const ROCHA_CENTER=[-34.4836,-54.3334];
-const UMBRAL_ONLINE=300;
-let dashMap, gpsMap, gpsMapHist;
-let repartidores=new Map(), markers=new Map(), trails=new Map(), trailData=new Map(), lastUpdate=new Map();
-let puntosRutaLayer=null, histMarkers=null, clickMarker=null;
-
-function mostrarSeccion(id, btn){
- document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
- const el=document.getElementById(`view-${id}`); if(el) el.classList.remove('hidden');
- document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('bg-blue-800','font-bold'); b.classList.add('hover:bg-blue-800'); });
- if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
- setTimeout(()=>{
-  if(id==='resumen' && dashMap) dashMap.invalidateSize();
-  if(id==='gps'){ if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize(); cargarPuntosRuta(); }
- },100);
+async function getTables(){
+  const r = await client.execute("SELECT name FROM sqlite_master WHERE type='table'");
+  return r.rows.map(x=>x.name);
 }
 
-
-// ===== PROVEEDORES CRUD - NO TOCA RESTO =====
-async function cargarProveedores(){
-  const tbody=document.getElementById('tablaProveedores');
-  if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Cargando...</td></tr>';
+async function getColumns(table){
   try{
-    const r=await fetch(`${API_ERP}?table=proveedores`);
-    const j=await r.json();
-    const data=j.data||j.rows||[];
-    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:#64748b">Sin proveedores - ➕ Nuevo Proveedor</td></tr>'; return; }
-    tbody.innerHTML='';
-    data.forEach(row=>{
-      const p = Array.isArray(row) ? {id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]} : row;
-      const id=p.id||''; const nombre=(p.nombre||p.empresa||'Sin nombre').replace(/'/g,'');
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="padding:10px;border:1px solid #1f2937"><div style="font-weight:900">${p.nombre||p.empresa||''}</div><div style="font-size:10px;color:#94a3b8">${p.rut||''} ${p.email||''}</div></td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><span style="font-size:10px;padding:4px 8px;border-radius:6px;background:#0ea5e922;color:#38bdf8">${p.tipo||'gas'}</span></td><td style="padding:10px;border:1px solid #1f2937"><div>${p.telefono||''}</div><div style="font-size:10px;color:#94a3b8">${p.contacto||''} ${p.whatsapp||''}</div></td><td style="padding:10px;border:1px solid #1f2937;font-size:11px;color:#94a3b8">${p.direccion||''}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center"><button onclick="editarProveedor('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900;margin-right:4px">✏️ Editar</button><button onclick="eliminarProveedor('${id}','${nombre}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;font-weight:900">🗑 Eliminar</button></td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
-}
-function abrirNuevoProveedor(){ document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('tituloFormProv').textContent='➕ Nuevo Proveedor'; document.getElementById('btnGuardarProv').textContent='💾 Guardar Proveedor'; cancelarEdicionProv(false); }
-function cancelarEdicionProv(hide=true){ document.getElementById('provIdEditando').value=''; document.getElementById('provNombre').value=''; document.getElementById('provRUT').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provWhatsapp').value=''; document.getElementById('provEmail').value=''; document.getElementById('provDireccion').value=''; document.getElementById('provTipo').value='gas'; document.getElementById('provContacto').value=''; document.getElementById('provNotas').value=''; if(hide) document.getElementById('formProveedor').classList.add('hidden'); }
-async function guardarProveedor(){ const id=document.getElementById('provIdEditando').value; const nombre=document.getElementById('provNombre').value.trim(); const rut=document.getElementById('provRUT').value.trim(); const telefono=document.getElementById('provTelefono').value.trim(); const whatsapp=document.getElementById('provWhatsapp').value.trim(); const email=document.getElementById('provEmail').value.trim(); const direccion=document.getElementById('provDireccion').value.trim(); const tipo=document.getElementById('provTipo').value; const contacto=document.getElementById('provContacto').value.trim(); const notas=document.getElementById('provNotas').value.trim(); if(!nombre||!telefono){ alert('Nombre y Teléfono obligatorios'); return; } const payload={id: id||Date.now().toString(36), nombre, rut, telefono, whatsapp, email, direccion, tipo, contacto, notas, empresa:nombre}; const r=await fetch(`${API_ERP}?table=proveedores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); await r.json(); cancelarEdicionProv(); cargarProveedores(); }
-async function editarProveedor(id){ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); const data=j.data||[]; const row=data.find(x=> (Array.isArray(x)?x[0]:x.id)==id); if(!row) return; const p=Array.isArray(row)?{id:row[0], nombre:row[1], rut:row[2], telefono:row[3], whatsapp:row[4], email:row[5], direccion:row[6], tipo:row[7], contacto:row[8], notas:row[9]}:row; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEditando').value=p.id||id; document.getElementById('provNombre').value=p.nombre||''; document.getElementById('provRUT').value=p.rut||''; document.getElementById('provTelefono').value=p.telefono||''; document.getElementById('provWhatsapp').value=p.whatsapp||''; document.getElementById('provEmail').value=p.email||''; document.getElementById('provDireccion').value=p.direccion||''; document.getElementById('provTipo').value=p.tipo||'gas'; document.getElementById('provContacto').value=p.contacto||''; document.getElementById('provNotas').value=p.notas||''; document.getElementById('tituloFormProv').textContent='✏️ Editar: '+(p.nombre||''); document.getElementById('btnGuardarProv').textContent='✏️ Actualizar'; }
-async function eliminarProveedor(id,nombre){ if(!confirm(`¿Eliminar ${nombre}?`)) return; await fetch(`${API_ERP}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }
-
-
-function initMaps(){
- dashMap=L.map('dashMap').setView(ROCHA_CENTER,14);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(dashMap);
- const today=new Date(); document.getElementById('histFecha').value=today.toISOString().slice(0,10);
- gpsMap=L.map('gpsMap').setView(ROCHA_CENTER,14);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gpsMap);
- gpsMap.on('click', function(e){
-  document.getElementById('mkLat').value=e.latlng.lat.toFixed(6);
-  document.getElementById('mkLng').value=e.latlng.lng.toFixed(6);
-  if(document.getElementById('mkNombre').value.trim()===''){
-   document.getElementById('mkNombre').focus();
-   document.getElementById('mkNombre').placeholder="¡Ingresá el nombre para este punto!";
-  }
-  if(clickMarker) gpsMap.removeLayer(clickMarker);
-  clickMarker=L.marker(e.latlng,{draggable:true}).addTo(gpsMap);
-  clickMarker.on('dragend', ev=>{ const ll=ev.target.getLatLng(); document.getElementById('mkLat').value=ll.lat.toFixed(6); document.getElementById('mkLng').value=ll.lng.toFixed(6); });
- });
- gpsMapHist=L.map('gpsMapHist').setView(ROCHA_CENTER,14);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gpsMapHist);
+    const r = await client.execute(`PRAGMA table_info(${table})`);
+    return r.rows.map(x=>x.name);
+  }catch{ return []; }
 }
 
-async function initTurso(){
- try{
-  // Cargar repartidores desde Turso
-  const r=await fetch(`${API_ERP}?table=repartidores`);
-  const j=await r.json();
-  const reps=(j.data||[]).map(row=> Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]||'#3b82f6', device_id:row[6]||7}:{id:row.id, nombre:row.nombre, telefono:row.telefono, vehiculo:row.vehiculo, patente:row.patente, color:row.color||'#3b82f6', device_id:row.device_id||7});
+export default async function handler(req,res){
+  res.setHeader('Access-Control-Allow-Origin','*');
+  res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers','Content-Type');
+  if(req.method==='OPTIONS') return res.status(200).end();
   
-  const selectRep=document.getElementById('selRepartidor');
-  const selectHist=document.getElementById('histRepartidorId');
-  // Si está vacío, crear por defecto para que funcione como tu sistema
-  let listaReps=reps;
-  if(listaReps.length===0){
-   listaReps=[{id:'7', nombre:'Antonio', color:'#ef4444', device_id:7},{id:'8', nombre:'Jose', color:'#8b5cf6', device_id:8}];
-  }
-  
-  listaReps.forEach(r=>{
-   repartidores.set(String(r.device_id), {...r, id:String(r.device_id), latitud:ROCHA_CENTER[0], longitud:ROCHA_CENTER[1], velocidad:0, en_movimiento:false});
-   trailData.set(String(r.device_id),[]);
-   const opt=document.createElement('option'); opt.value=String(r.device_id); opt.textContent=r.nombre; selectRep.appendChild(opt);
-   const optHist=document.createElement('option'); optHist.value=String(r.device_id); optHist.textContent=r.nombre; selectHist.appendChild(optHist);
-  });
+  try{
+    const tables = await getTables();
+    const depositoTable = tables.includes('stock_deposito') ? 'stock_deposito' : (tables.includes('deposito') ? 'deposito' : 'stock_deposito');
+    const camionetaTable = tables.includes('stock_camioneta') ? 'stock_camioneta' : (tables.includes('camionetas') ? 'camionetas' : 'stock_camioneta');
+    const movimientosTable = tables.includes('movimientos_stock') ? 'movimientos_stock' : (tables.includes('movimientos') ? 'movimientos' : 'movimientos_stock');
+    const fraccTable = tables.includes('ventas_fraccionadas') ? 'ventas_fraccionadas' : 'ventas_fraccionadas';
+    const productosTable = tables.includes('productos') ? 'productos' : 'productos';
 
-  // Cargar última ubicación desde Turso gps_locations
-  const gpsResp=await fetch(`${API_GPS}?all=1`);
-  const gpsRaw=await gpsResp.json();
-  const gpsRows=Array.isArray(gpsRaw)?gpsRaw:(gpsRaw.data||[]);
-  const byDevice={};
-  gpsRows.forEach(row=>{
-   const d=Array.isArray(row)?{device_id:row[0], lat:row[1], lng:row[2], velocidad:row[3]||0, recorded_at:row[4]}:{device_id:row.device_id, lat:row.lat, lng:row.lng, velocidad:row.velocidad||0, recorded_at:row.recorded_at};
-   if(!byDevice[d.device_id]) byDevice[d.device_id]=[];
-   byDevice[d.device_id].push(d);
-  });
-  
-  Object.keys(byDevice).forEach(devId=>{
-   const ubs=byDevice[devId].slice(0,100);
-   if(ubs.length>0){
-    const repData=repartidores.get(String(devId));
-    if(repData){
-     repData.latitud=ubs[0].lat; repData.longitud=ubs[0].lng; repData.velocidad=ubs[0].velocidad; repData.en_movimiento=ubs[0].velocidad>2;
-     repData.lastTimestamp=new Date(ubs[0].recorded_at); lastUpdate.set(String(devId), new Date(ubs[0].recorded_at));
-     trailData.set(String(devId), ubs.reverse().map(u=>[u.lat,u.lng]));
+    const prodCols = await getColumns(productosTable);
+    const prodIdCol = prodCols.includes('producto_id') ? 'producto_id' : (prodCols.includes('id') ? 'id' : 'producto_id');
+    const depCols = await getColumns(depositoTable);
+    const depProdCol = depCols.includes('producto_id') ? 'producto_id' : (depCols.includes('id') ? 'id' : (depCols.includes('producto') ? 'producto' : 'producto_id'));
+
+    if(req.method==='GET'){
+      let productos = {rows:[]}, deposito = {rows:[]}, camionetas = {rows:[]}, movimientos = {rows:[]}, fracc = {rows:[]};
+      try{ productos = await client.execute(`SELECT * FROM ${productosTable}`); }catch(e){}
+      try{ deposito = await client.execute(`SELECT * FROM ${depositoTable}`); }catch(e){ deposito={rows:[]}; }
+      try{ camionetas = await client.execute(`SELECT * FROM ${camionetaTable}`); }catch(e){}
+      try{ movimientos = await client.execute(`SELECT * FROM ${movimientosTable} ORDER BY fecha_hora DESC LIMIT 60`); }catch(e){ try{ movimientos = await client.execute(`SELECT * FROM ${movimientosTable} ORDER BY id DESC LIMIT 60`); }catch(e2){} }
+      try{ fracc = await client.execute(`SELECT * FROM ${fraccTable} ORDER BY fecha_hora DESC LIMIT 20`); }catch(e){}
+
+      // Normalizar deposito a formato {producto_id, llenas, vacias, cambio, kilos_en_uso, nombre}
+      const prodMap = {};
+      productos.rows.forEach(p=>{ const pid = String(p[prodIdCol]||'').trim(); if(pid) prodMap[pid]=p; });
+
+      const depositoNorm = deposito.rows.map(d=>{
+        const pid = String(d[depProdCol] || d.producto_id || d.id || '').trim();
+        const p = prodMap[pid] || {};
+        return {
+          producto_id: pid,
+          nombre: d.nombre || p.nombre || p.name || pid,
+          llenas: d.llenas ?? d.stock_llenas ?? d.cantidad_llenas ?? d.llen ?? 0,
+          vacias: d.vacias ?? d.stock_vacias ?? d.vac ?? 0,
+          cambio: d.cambio ?? d.cambio_env ?? 0,
+          defectuosas: d.defectuosas ?? 0,
+          kilos_en_uso: d.kilos_en_uso ?? d.kilos ?? d.kg_en_uso ?? 0,
+          permite_completo: p.permite_completo ?? (pid==='11'||pid==='13'?1:0),
+          es_fraccionado: p.es_fraccionado ?? (pid==='43.5'?1:0),
+          _raw: d
+        };
+      }).filter(d=>d.producto_id);
+
+      return res.json({ ok:true, productos: productos.rows, deposito: depositoNorm, camionetas: camionetas.rows, movimientos: movimientos.rows, fraccionadas: fracc.rows, _meta:{depositoTable, camionetaTable, movimientosTable, prodIdCol, depProdCol} });
     }
-   }
-  });
 
-  renderizarMapas();
-  cargarRepartidores();
-  cargarPuntosRuta();
-  actualizarUI();
-  document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></div> Conectado a Turso megal-erp';
-  
-  // Polling cada 7s para simular realtime
-  setInterval(async ()=>{
-   const rr=await fetch(`${API_GPS}?all=1`); const raw=await rr.json(); const rows=Array.isArray(raw)?raw:(raw.data||[]);
-   rows.slice(0,5).forEach(row=>{
-    const d=Array.isArray(row)?{device_id:row[0], lat:row[1], lng:row[2], velocidad:row[3]||0, recorded_at:row[4]}:{device_id:row.device_id, lat:row.lat, lng:row.lng, velocidad:row.velocidad||0, recorded_at:row.recorded_at};
-    manejarNuevaUbicacion({repartidor_id:String(d.device_id), latitud:d.lat, longitud:d.lng, velocidad:d.velocidad, en_movimiento:d.velocidad>2, timestamp:d.recorded_at});
-   });
-  },7000);
+    if(req.method==='POST'){
+      const body = typeof req.body==='string' ? JSON.parse(req.body) : req.body;
+      const { accion } = body;
+      const now = new Date().toISOString();
 
- }catch(e){ console.error(e); document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block"></div> Error'; }
+      if(accion==='balance_inicial'){
+        const { balances } = body;
+        for(const b of balances){
+          // Upsert en stock_deposito
+          try{
+            // Intentar UPDATE
+            const upd = await client.execute({ sql: `UPDATE ${depositoTable} SET llenas=?, vacias=?, cambio=?, kilos_en_uso=? WHERE ${depProdCol}=?`, args: [b.llenas||0, b.vacias||0, b.cambio||0, b.kilos_en_uso||0, b.producto_id] });
+          }catch(e){}
+          // Intentar INSERT OR REPLACE
+          try{
+            await client.execute({ sql: `INSERT OR REPLACE INTO ${depositoTable} (${depProdCol}, llenas, vacias, cambio, kilos_en_uso) VALUES (?, ?, ?, ?, ?)`, args: [b.producto_id, b.llenas||0, b.vacias||0, b.cambio||0, b.kilos_en_uso||0] });
+          }catch(e){
+            try{ await client.execute({ sql: `INSERT INTO ${depositoTable} (${depProdCol}, llenas, vacias, cambio) VALUES (?, ?, ?, ?)`, args: [b.producto_id, b.llenas||0, b.vacias||0, b.cambio||0] }); }catch(e2){}
+          }
+        }
+        try{ await client.execute({ sql: `INSERT INTO ${movimientosTable} (id, tipo, detalle, fecha_hora) VALUES (?, ?, ?, ?)`, args: [Date.now().toString(36), 'balance_inicial', `Balance: ${balances.map(b=>`${b.producto_id}:${b.llenas}L`).join(', ')}`, now] }); }catch(e){}
+        return res.json({ok:true});
+      }
+
+      if(accion==='crear_producto'){
+        const { producto } = body;
+        const { producto_id, nombre, precio, llenas, vacias, cambio, kilos_en_uso } = producto;
+        try{
+          await client.execute({ sql: `INSERT OR REPLACE INTO ${productosTable} (${prodIdCol}, nombre, precio) VALUES (?, ?, ?)`, args: [producto_id, nombre, precio||0] });
+        }catch(e){
+          try{ await client.execute({ sql: `INSERT INTO ${productosTable} (${prodIdCol}, nombre) VALUES (?, ?)`, args: [producto_id, nombre] }); }catch(e2){}
+        }
+        try{
+          await client.execute({ sql: `INSERT OR REPLACE INTO ${depositoTable} (${depProdCol}, llenas, vacias, cambio, kilos_en_uso) VALUES (?, ?, ?, ?, ?)`, args: [producto_id, llenas||0, vacias||0, cambio||0, kilos_en_uso||0] });
+        }catch(e){}
+        try{ await client.execute({ sql: `INSERT INTO ${movimientosTable} (id, tipo, detalle, fecha_hora, producto_id) VALUES (?, ?, ?, ?, ?)`, args: [Date.now().toString(36), 'nuevo_producto', `Nuevo ${producto_id} - ${nombre}`, now, producto_id] }); }catch(e){}
+        return res.json({ok:true});
+      }
+
+      if(accion==='carga_camioneta'){
+        const { repartidor_id, producto_id, cantidad } = body;
+        try{
+          await client.execute({ sql: `UPDATE ${depositoTable} SET llenas = llenas - ? WHERE ${depProdCol}=?`, args: [cantidad, producto_id] });
+        }catch(e){ return res.json({ok:false, error:'Sin stock o tabla: '+e.message}); }
+        try{
+          await client.execute({ sql: `INSERT INTO ${camionetaTable} (repartidor_id, producto_id, llenas) VALUES (?, ?, ?) ON CONFLICT(repartidor_id, producto_id) DO UPDATE SET llenas = llenas + ?`, args: [repartidor_id, producto_id, cantidad, cantidad] });
+        }catch(e){
+          try{
+            const ex = await client.execute({ sql: `SELECT * FROM ${camionetaTable} WHERE repartidor_id=? AND producto_id=?`, args: [repartidor_id, producto_id] });
+            if(ex.rows.length){ await client.execute({ sql: `UPDATE ${camionetaTable} SET llenas = llenas + ? WHERE repartidor_id=? AND producto_id=?`, args: [cantidad, repartidor_id, producto_id] }); }
+            else { await client.execute({ sql: `INSERT INTO ${camionetaTable} (repartidor_id, producto_id, llenas) VALUES (?, ?, ?)`, args: [repartidor_id, producto_id, cantidad] }); }
+          }catch(e2){ return res.json({ok:false, error:e2.message}); }
+        }
+        try{ await client.execute({ sql: `INSERT INTO ${movimientosTable} (id, tipo, detalle, fecha_hora, producto_id, cantidad, repartidor_id) VALUES (?, ?, ?, ?, ?, ?, ?)`, args: [Date.now().toString(36), 'carga', `Carga ${cantidad}x ${producto_id} a ${repartidor_id}`, now, producto_id, cantidad, repartidor_id] }); }catch(e){}
+        return res.json({ok:true});
+      }
+
+      if(accion==='venta_fraccionada'){
+        const { kilos, cliente_nombre } = body;
+        try{
+          const depRow = await client.execute({ sql: `SELECT * FROM ${depositoTable} WHERE ${depProdCol}=?`, args: ['43.5'] });
+          const actual = depRow.rows[0]?.kilos_en_uso ?? 43.5;
+          const restante = actual - kilos;
+          if(restante < 0.5){ await client.execute({ sql: `UPDATE ${depositoTable} SET kilos_en_uso=0, llenas=llenas-1, vacias=vacias+1 WHERE ${depProdCol}=?`, args: ['43.5'] }); }
+          else { await client.execute({ sql: `UPDATE ${depositoTable} SET kilos_en_uso=? WHERE ${depProdCol}=?`, args: [restante, '43.5'] }); }
+          try{ await client.execute({ sql: `INSERT INTO ${fraccTable} (id, kilos, cliente_nombre, fecha_hora) VALUES (?, ?, ?, ?)`, args: [Date.now().toString(36), kilos, cliente_nombre, now] }); }catch(e){}
+          try{ await client.execute({ sql: `INSERT INTO ${movimientosTable} (id, tipo, detalle, fecha_hora) VALUES (?, ?, ?, ?)`, args: [Date.now().toString(36), 'fraccionada', `${kilos}kg a ${cliente_nombre}`, now] }); }catch(e){}
+          return res.json({ok:true, restante});
+        }catch(e){ return res.json({ok:false, error:e.message}); }
+      }
+
+      if(accion==='descarga_camioneta'){
+        const { repartidor_id } = body;
+        try{
+          const cams = await client.execute({ sql: `SELECT * FROM ${camionetaTable} WHERE repartidor_id=?`, args: [repartidor_id] });
+          for(const c of cams.rows){ await client.execute({ sql: `UPDATE ${depositoTable} SET llenas = llenas + ? WHERE ${depProdCol}=?`, args: [c.llenas, c.producto_id] }); }
+          await client.execute({ sql: `DELETE FROM ${camionetaTable} WHERE repartidor_id=?`, args: [repartidor_id] });
+          return res.json({ok:true});
+        }catch(e){ return res.json({ok:false, error:e.message}); }
+      }
+
+      if(accion==='proveedor'){
+        const { tipo, producto_id, cantidad, numero_remito } = body;
+        const cant = parseInt(cantidad)||1;
+        try{
+          if(tipo==='canje_vacio'){ await client.execute({ sql: `UPDATE ${depositoTable} SET vacias = vacias - ?, llenas = llenas + ? WHERE ${depProdCol}=?`, args: [cant, cant, producto_id] }); }
+          else if(tipo==='canje_cambio'){ await client.execute({ sql: `UPDATE ${depositoTable} SET cambio = cambio - ?, llenas = llenas + ? WHERE ${depProdCol}=?`, args: [cant, cant, producto_id] }); }
+          else if(tipo==='compra_envase'){ await client.execute({ sql: `UPDATE ${depositoTable} SET llenas = llenas + ? WHERE ${depProdCol}=?`, args: [cant, producto_id] }); }
+          try{ await client.execute({ sql: `INSERT INTO ${movimientosTable} (id, tipo, detalle, fecha_hora, remito_entrada) VALUES (?, ?, ?, ?, ?)`, args: [Date.now().toString(36), 'proveedor', `${tipo} ${cant}x ${producto_id}`, now, numero_remito] }); }catch(e){}
+          return res.json({ok:true});
+        }catch(e){ return res.json({ok:false, error:e.message}); }
+      }
+
+      return res.json({ok:false, error:'Accion no conocida: '+accion});
+    }
+  }catch(e){
+    return res.status(500).json({ok:false, error:e.message, stack:e.stack});
+  }
 }
 
-function manejarNuevaUbicacion(data){
- const id=String(data.repartidor_id); const rep=repartidores.get(id); if(!rep) return;
- rep.latitud=data.latitud; rep.longitud=data.longitud; rep.velocidad=data.velocidad; rep.en_movimiento=data.en_movimiento; rep.lastTimestamp=new Date(data.timestamp); lastUpdate.set(id, new Date());
- const trail=trailData.get(id)||[]; trail.push([data.latitud,data.longitud]); if(trail.length>100) trail.shift(); trailData.set(id,trail);
- actualizarMarcador(id); actualizarUI(); agregarLogVivo(rep.nombre, (rep.velocidad).toFixed(0));
- const selectedRepId=document.getElementById('selRepartidor').value;
- if(id===selectedRepId){ gpsMap.panTo([data.latitud,data.longitud],{animate:true,duration:0.5}); }
-}
-
-function crearIcono(color, esDash=false){
- const size=esDash?12:18;
- return L.divIcon({className:'', html:`<div style="position:relative;width:${size}px;height:${size}px"><div class="gps-pulse" style="background:${color};width:${size}px;height:${size}px"></div><div class="gps-marker" style="background:${color};width:${size}px;height:${size}px"></div></div>`, iconSize:[size,size], iconAnchor:[size/2,size/2]});
-}
-
-function renderizarMapas(){
- repartidores.forEach((rep,id)=>{
-  const marker=L.marker([rep.latitud,rep.longitud],{icon:crearIcono(rep.color)}).addTo(gpsMap);
-  marker.bindPopup(`<b>${rep.nombre}</b><br>Velocidad: ${rep.velocidad} km/h`); markers.set(id,marker);
-  L.marker([rep.latitud,rep.longitud],{icon:crearIcono(rep.color,true)}).addTo(dashMap).bindPopup(`<b>${rep.nombre}</b>`);
- });
- if(repartidores.size>0){ const group=L.featureGroup(Array.from(markers.values())); try{gpsMap.fitBounds(group.getBounds().pad(0.2));}catch(e){gpsMap.setView(ROCHA_CENTER,14);} dashMap.setView(ROCHA_CENTER,14); }
-}
-
-function actualizarMarcador(id){
- const rep=repartidores.get(id); const marker=markers.get(id); if(!rep||!marker) return;
- marker.setLatLng([rep.latitud,rep.longitud]);
- marker.setPopupContent(`<b>${rep.nombre}</b><br>Velocidad: ${rep.velocidad} km/h`);
-}
-
-function centrarEnRepartidor(id){
- if(!id){ gpsMap.setView(ROCHA_CENTER,14); return; }
- const rep=repartidores.get(id);
- if(rep){ gpsMap.flyTo([rep.latitud,rep.longitud],16); markers.get(id)?.openPopup(); document.getElementById('gpsSpeed').textContent=rep.velocidad; }
-}
-
-function mostrarTabGPS(tab){
- document.getElementById('gpsVivo').classList.toggle('hidden', tab!=='vivo');
- document.getElementById('gpsHistorial').classList.toggle('hidden', tab!=='historial');
- document.getElementById('tabGPSVivo').className=tab==='vivo'?'gps-tab active':'gps-tab';
- document.getElementById('tabGPSHist').className=tab==='historial'?'gps-tab active':'gps-tab';
- setTimeout(()=>{ if(tab==='vivo'&&gpsMap) gpsMap.invalidateSize(); if(tab==='historial'&&gpsMapHist) gpsMapHist.invalidateSize(); },200);
-}
-
-function actualizarUI(){
- let html='';
- repartidores.forEach((rep,id)=>{
-  const online=estaOnline(id); const vel=rep.velocidad; const tiempo=rep.lastTimestamp?tiempoAtras(rep.lastTimestamp):'Sin datos';
-  html+=`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;border:1px solid ${online?'#166534':'#1f2937'};background:${online?'#052e16':'#0f172a'};cursor:pointer" onclick="centrarEnRepartidor('${id}')"><div style="width:10px;height:10px;border-radius:50%;background:${rep.color}"></div><div style="flex:1"><p style="font-size:12px;font-weight:bold">${rep.nombre}</p><p style="font-size:10px;color:#94a3b8">${vel} km/h - ${tiempo}</p></div><div style="width:8px;height:8px;border-radius:50%;background:${online?'#22c55e':'#475569'}"></div></div>`;
- });
- document.getElementById('listaEstadosRep').innerHTML=html;
-}
-
-function agregarLogVivo(nombre, velocidad){
- const tbody=document.getElementById('tablaVivoGPS'); const hora=new Date().toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
- const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:4px;border:1px solid #1f2937">${hora}</td><td style="padding:4px;border:1px solid #1f2937">${nombre}</td><td style="padding:4px;border:1px solid #1f2937;text-align:center;font-weight:bold">${velocidad}</td>`; tbody.prepend(tr); if(tbody.children.length>20) tbody.lastChild.remove();
-}
-function estaOnline(id){ const last=lastUpdate.get(id); return last? (Date.now()-last.getTime())/1000 < UMBRAL_ONLINE : false; }
-function tiempoAtras(date){ const s=Math.floor((Date.now()-date.getTime())/1000); if(s<5) return 'Ahora'; if(s<60) return `Hace ${s}s`; const m=Math.floor(s/60); if(m<60) return `Hace ${m}m`; return `Hace ${Math.floor(m/60)}h`; }
-
-async function cargarPuntosRuta(){
- if(!gpsMap) return;
- if(!puntosRutaLayer){ puntosRutaLayer=L.layerGroup().addTo(gpsMap); } else { puntosRutaLayer.clearLayers(); }
- const r=await fetch(`${API_ERP}?table=puntos_referencia`); const j=await r.json(); const data=j.data||[];
- const lista=document.getElementById('listaMarcadores'); lista.innerHTML='';
- data.forEach(punto=>{
-  const lat=punto.latitud||punto.lat||(Array.isArray(punto)?punto[2]:0); const lng=punto.longitud||punto.lng||(Array.isArray(punto)?punto[3]:0); const nombre=punto.nombre||(Array.isArray(punto)?punto[1]:'Punto');
-  L.marker([lat,lng],{icon:L.divIcon({className:'', html:`<div class="ref-label">📍 ${nombre}</div>`, iconSize:[100,30], iconAnchor:[15,30]})}).addTo(puntosRutaLayer);
-  const div=document.createElement('div'); div.style.cssText='display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;border:1px solid #1f2937;font-size:11px'; div.innerHTML=`<span>${nombre}</span><button onclick="eliminarMarcador('${punto.id||punto[0]}')" style="color:#ef4444;font-weight:bold;background:none;border:none;cursor:pointer">X</button>`; lista.appendChild(div);
- });
-}
-
-async function guardarMarcador(){
- const nombre=document.getElementById('mkNombre').value.trim(); const lat=parseFloat(document.getElementById('mkLat').value); const lng=parseFloat(document.getElementById('mkLng').value);
- if(!nombre||isNaN(lat)||isNaN(lng)){ alert('Completá el nombre y hacé clic en el mapa'); return; }
- await fetch(`${API_ERP}?table=puntos_referencia`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:Date.now().toString(36), nombre, latitud:lat, longitud:lng, lat, lng})});
- document.getElementById('mkNombre').value=''; document.getElementById('mkLat').value=''; document.getElementById('mkLng').value=''; if(clickMarker){ gpsMap.removeLayer(clickMarker); clickMarker=null; }
- cargarPuntosRuta();
-}
-
-async function eliminarMarcador(id){ if(confirm('¿Eliminar punto?')){ await fetch(`${API_ERP}?table=puntos_referencia&id=${id}`,{method:'DELETE'}); cargarPuntosRuta(); } }
-
-function abrirRastreoPantallaCompleta(){ const sidebar=document.getElementById('mainSidebar'); const header=document.getElementById('mainHeader'); if(sidebar) sidebar.style.display='none'; mostrarSeccion('gps'); setTimeout(()=>{ if(gpsMap) gpsMap.invalidateSize(); },300); }
-function volverAERP(){ const sidebar=document.getElementById('mainSidebar'); if(sidebar) sidebar.style.display='flex'; mostrarSeccion('resumen'); }
-
-async function generarInforme(){
- try{
-  const repId=document.getElementById('histRepartidorId').value; const fecha=document.getElementById('histFecha').value;
-  if(!repId||!fecha){ alert('Seleccioná repartidor y fecha'); return; }
-  const rep=repartidores.get(repId); document.getElementById('histNombreRep').textContent=rep?rep.nombre:'';
-  const r=await fetch(`${API_GPS}?all=1&device_id=${repId}`); const raw=await r.json(); let data=(Array.isArray(raw)?raw:(raw.data||[])).map(row=> Array.isArray(row)?{latitud:row[1], longitud:row[2], velocidad:row[3]||0, timestamp:row[4]}:{latitud:row.lat, longitud:row.lng, velocidad:row.velocidad||0, timestamp:row.recorded_at}).filter(g=>g.latitud&&g.longitud);
-  data=data.filter(d=> new Date(d.timestamp).toISOString().slice(0,10)===fecha);
-  if(data.length===0){ alert('No hay datos para esa fecha'); return; }
-  const {data:puntosRuta}=(await (await fetch(`${API_ERP}?table=puntos_referencia`)).json());
-  if(histMarkers) gpsMapHist.removeLayer(histMarkers); histMarkers=L.layerGroup().addTo(gpsMapHist);
-  let bounds=[]; const tbody=document.getElementById('tablaIncidentesGPS'); tbody.innerHTML=''; let excesos=0, detenciones=0, dist=0, incidents=[]; let last=null, stopStart=null, stopIdx=-1, visited={};
-  data.forEach((p,i)=>{
-   const speed=p.velocidad; if(speed>45){ excesos++; incidents.push({time:new Date(p.timestamp), type:'Exceso Velocidad', detail:speed+' km/h', lat:p.latitud, lng:p.longitud}); L.circleMarker([p.latitud,p.longitud],{radius:6,color:'#dc2626',fillColor:'#fca5a5',fillOpacity:1}).addTo(histMarkers); bounds.push([p.latitud,p.longitud]); }
-   if(puntosRuta){ puntosRuta.forEach(wp=>{ const d=gpsMapHist.distance(L.latLng(p.latitud,p.longitud), L.latLng(wp.latitud||wp.lat||wp[2], wp.longitud||wp.lng||wp[3])); if(d<=50&&!visited[wp.id||wp[0]]){ visited[wp.id||wp[0]]=true; incidents.push({time:new Date(p.timestamp), type:'Punto Ruta', detail:'Ingresó a: '+(wp.nombre||wp[1]), lat:wp.latitud||wp.lat||wp[2], lng:wp.longitud||wp.lng||wp[3]}); } else if(d>50) visited[wp.id||wp[0]]=false; }); }
-   const stopped=speed<0.5; if(stopped){ if(!stopStart){ stopStart=new Date(p.timestamp); stopIdx=i; } } else { if(stopStart){ const mins=(new Date(p.timestamp)-stopStart)/60000; if(mins>=3){ detenciones++; const sl=data[stopIdx]; incidents.push({time:stopStart, type:'Detencion Prolongada', detail:'Detenido '+mins.toFixed(1)+' min', lat:sl.latitud, lng:sl.longitud}); L.circleMarker([sl.latitud,sl.longitud],{radius:8,color:'#ea580c',fillColor:'#fed7aa',fillOpacity:1}).addTo(histMarkers); bounds.push([sl.latitud,sl.longitud]); } stopStart=null; } }
-   if(last){ const d=gpsMapHist.distance(L.latLng(last.latitud,last.longitud), L.latLng(p.latitud,p.longitud)); if(speed>0) dist+=d; } last=p;
-  });
-  incidents.sort((a,b)=>a.time-b.time);
-  tbody.innerHTML=incidents.map(inc=>`<tr><td style="padding:6px;border:1px solid #1f2937">${inc.time.toLocaleTimeString('es-UY')}</td><td style="padding:6px;border:1px solid #1f2937">${inc.type}</td><td style="padding:6px;border:1px solid #1f2937">${inc.detail} <a href="#" onclick="verIncidenteEnMapa(${inc.lat},${inc.lng});return false" style="color:#38bdf8">📍 Ver</a></td><td style="padding:6px;border:1px solid #1f2937;text-align:center;color:#475569">Pendiente</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#475569">Sin eventos</td></tr>';
-  document.getElementById('statExceso').textContent=excesos; document.getElementById('statDetenciones').textContent=detenciones; document.getElementById('statDistancia').textContent=(dist/1000).toFixed(1)+' km';
-  if(bounds.length>0) gpsMapHist.fitBounds(L.latLngBounds(bounds).pad(0.2));
- }catch(e){ console.error(e); alert('Error: '+e.message); }
-}
-function verIncidenteEnMapa(lat,lng){ if(gpsMapHist){ gpsMapHist.flyTo([lat,lng],17); L.popup().setLatLng([lat,lng]).setContent('<b>Incidente</b>').openOn(gpsMapHist); } }
-
-// CRUD repartidores adaptado a Turso
-async function cargarRepartidores(){ /* ya cargado en initTurso */ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const data=j.data||[]; const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML=''; data.forEach(rep=>{ const row=Array.isArray(rep)?{id:rep[0], nombre:rep[1], telefono:rep[2], vehiculo:rep[3], patente:rep[4], color:rep[5]}:rep; const tr=document.createElement('tr'); tr.innerHTML=`<td style="padding:8px;border:1px solid #1f2937;text-align:center"><div style="width:20px;height:20px;border-radius:50%;background:${row.color};margin:auto"></div></td><td style="padding:8px;border:1px solid #1f2937">${row.nombre}</td><td style="padding:8px;border:1px solid #1f2937">${row.telefono||'-'}</td><td style="padding:8px;border:1px solid #1f2937">${row.vehiculo||'-'} (${row.patente||'-'})</td><td style="padding:8px;border:1px solid #1f2937;text-align:center"><button onclick="editarRepartidor('${row.id}')" style="background:#eab308;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px;margin-right:4px">✏️ Editar</button><button onclick="eliminarRepartidor('${row.id}','${row.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px;font-size:11px">🗑 Eliminar</button></td>`; tbody.appendChild(tr); }); }
-async function guardarRepartidor(){ const id=document.getElementById('repIdEditando').value; const nombre=document.getElementById('repNombre').value.trim(); const telefono=document.getElementById('repTelefono').value.trim(); const vehiculo=document.getElementById('repVehiculo').value.trim(); const patente=document.getElementById('repPatente').value.trim(); const color=document.getElementById('repColor').value; if(!nombre){ alert('Nombre obligatorio'); return; } const payload={id:id||Date.now().toString(36), nombre, telefono, vehiculo, patente, color, device_id:parseInt(id)||7}; await fetch(`${API_ERP}?table=repartidores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); cancelarEdicionRep(); cargarRepartidores(); initTurso(); }
-async function editarRepartidor(id){ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); const row=(j.data||[]).find(x=> (Array.isArray(x)?x[0]:x.id)===id); if(!row) return; const data=Array.isArray(row)?{id:row[0], nombre:row[1], telefono:row[2], vehiculo:row[3], patente:row[4], color:row[5]}:row; document.getElementById('repIdEditando').value=data.id; document.getElementById('repNombre').value=data.nombre; document.getElementById('repTelefono').value=data.telefono||''; document.getElementById('repVehiculo').value=data.vehiculo||''; document.getElementById('repPatente').value=data.patente||''; document.getElementById('repColor').value=data.color||'#3b82f6'; document.getElementById('btnCancelarRep').classList.remove('hidden'); document.getElementById('btnGuardarRep').textContent='✏️ Actualizar'; }
-function cancelarEdicionRep(){ document.getElementById('repIdEditando').value=''; document.getElementById('repNombre').value=''; document.getElementById('repTelefono').value=''; document.getElementById('repVehiculo').value=''; document.getElementById('repPatente').value=''; document.getElementById('repColor').value='#3b82f6'; document.getElementById('btnCancelarRep').classList.add('hidden'); document.getElementById('btnGuardarRep').textContent='Guardar Repartidor'; }
-async function eliminarRepartidor(id,nombre){ if(confirm(`¿Eliminar a ${nombre}?`)){ await fetch(`${API_ERP}?table=repartidores&id=${id}`,{method:'DELETE'}); cargarRepartidores(); initTurso(); } }
-
-document.addEventListener('DOMContentLoaded',()=>{ initMaps(); initTurso(); });
-</script>
-</body>
-</html>
