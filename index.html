@@ -935,7 +935,6 @@ function toggleCierreTipo(){ const tipo=document.getElementById('cierreTipo')?.v
 async function ejecutarCierre(){ const tipo=document.getElementById('cierreTipo')?.value||'mostrador'; const rep=document.getElementById('cierreRepartidor')?.value||''; if(!confirm(`Confirmar cierre ${tipo} ${rep}?`)) return; try{ await fetch(`${API_ERP}?table=ventas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'cierre_caja', tipo, repartidor_id:rep, fecha_hora:new Date().toISOString()})}); alert(`✅ Cierre ${tipo} OK`); cerrarCierre(); cargarCaja(); cargarVentasHoy(); cargarInformeCamioneta(); }catch(e){ alert('Error '+e.message); } }
 
 const _oldMostrarSeccionVentas = window.mostrarSeccion;
-const _oldMostrarSeccionVentas = window.mostrarSeccion;
 window.mostrarSeccion = function(id, btn){
  if(typeof _oldMostrarSeccionVentas === 'function'){ _oldMostrarSeccionVentas(id, btn); } else { document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden')); const el=document.getElementById(`view-${id}`); if(el) el.classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('bg-blue-800','font-bold'); }); if(btn){ btn.classList.add('bg-blue-800','font-bold'); } }
  if(id==='ventas'){ setTimeout(()=>{ cargarCaja(); cargarVentasHoy(); cargarInformeCamioneta(); cargarRepartidoresEnVentas(); actualizarReglaFlete(); calcularTotalMostrador(); },150); }
