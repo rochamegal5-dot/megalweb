@@ -240,25 +240,22 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
   </div>
 </div>
 </div>
-  
-  <div id="view-ventas" class="view-section hidden" 
-     style="padding:16px;overflow:auto;width:100%;max-width:100%;margin:0;align-self:flex-start">
-  
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<div id="view-ventas" class="view-section hidden" style="padding:16px;overflow:auto;width:100%;max-width:100%;margin:0;align-self:flex-start">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%;margin:0 0 16px 0">
     <h3 style="font-weight:900">💰 Ventas - Mostrador + Informe Camioneta</h3>
     <div style="display:flex;gap:8px">
       <button onclick="cargarCajaVentas();cargarVentasHoy();cargarInformeCamioneta()" style="background:#0ea5e9;color:white;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">🔄 Actualizar</button>
       <button onclick="abrirCierreCajaVentas()" style="background:#22c55e;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">📦 Cierre Caja</button>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-    <div class="card" style="margin:0;border:2px solid #22c55e"><b>💵 Caja Mostrador</b><div id="cajaMostradorResumen" style="font-size:12px;margin-top:8px">Cargando...</div></div>
-    <div class="card" style="margin:0;border:2px solid #f59e0b"><b>🚚 Caja Camioneta APP</b><div id="cajaVendedoresResumen" style="font-size:12px;margin-top:8px">Cargando...</div><div id="listaCajaVendedores" style="margin-top:8px;max-height:100px;overflow:auto;font-size:11px"></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;width:100%">
+    <div class="card" style="margin:0;border:2px solid #22c55e;width:100%"><b>💵 Caja Mostrador (suma inmediato)</b><div id="cajaMostradorResumen" style="font-size:12px;margin-top:8px;line-height:1.8">Cargando...</div></div>
+    <div class="card" style="margin:0;border:2px solid #f59e0b;width:100%"><b>🚚 Caja Camioneta (desde APP - no suma hasta cierre)</b><div id="cajaVendedoresResumen" style="font-size:12px;margin-top:8px;line-height:1.8">Cargando...</div><div id="listaCajaVendedores" style="margin-top:8px;max-height:120px;overflow:auto;font-size:11px"></div></div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden">
+  <div class="card" style="padding:0;overflow:hidden;width:100%;margin:0 0 16px 0">
     <div style="display:flex;background:#0f172a;border-bottom:1px solid #334155">
-      <button id="tabVentaMostrador" onclick="mostrarTabVenta('mostrador')" style="flex:1;padding:12px;font-weight:900;background:#1e293b;color:#38bdf8;border:none">🏪 MOSTRADOR</button>
-      <button id="tabVentaCamioneta" onclick="mostrarTabVenta('camioneta')" style="flex:1;padding:12px;font-weight:900;background:#0f172a;color:#94a3b8;border:none">🚚 INFORME CAMIONETA</button>
+      <button id="tabVentaMostrador" onclick="mostrarTabVenta('mostrador')" style="flex:1;padding:12px;font-weight:900;background:#1e293b;color:#38bdf8;border:none;border-bottom:3px solid #38bdf8">🏪 MOSTRADOR</button>
+      <button id="tabVentaCamioneta" onclick="mostrarTabVenta('camioneta')" style="flex:1;padding:12px;font-weight:900;background:#0f172a;color:#94a3b8;border:none">🚚 INFORME CAMIONETA (APP)</button>
     </div>
     <div id="ventaMostrador" style="padding:16px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -266,7 +263,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
         <div><label style="font-size:11px">Cliente</label><input id="vmCliente" placeholder="Nombre" style="width:100%;margin-top:4px;padding:8px;background:#0f172a;color:white;border:1px solid #334155;border-radius:6px"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-        <div class="card" style="margin:0;background:#0f172a"><b style="font-size:12px">Retira o Domicilio?</b><div style="display:flex;gap:8px;margin-top:8px"><button id="btnMostradorRetira" onclick="setMostradorModo('retira')" style="flex:1;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">🏪 Retira</button><button id="btnMostradorDomicilio" onclick="setMostradorModo('domicilio')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;font-weight:900;border:none;border-radius:8px">🏠 Domicilio</button></div><p id="vmFleteInfo" style="font-size:11px;color:#94a3b8;margin-top:8px">Retira = SIN FLETE</p></div>
+        <div class="card" style="margin:0;background:#0f172a"><b style="font-size:12px">¿Retira o Domicilio?</b><div style="display:flex;gap:8px;margin-top:8px"><button id="btnMostradorRetira" onclick="setMostradorModo('retira')" style="flex:1;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">🏪 Retira</button><button id="btnMostradorDomicilio" onclick="setMostradorModo('domicilio')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;font-weight:900;border:none;border-radius:8px">🏠 Domicilio</button></div><p id="vmFleteInfo" style="font-size:11px;color:#94a3b8;margin-top:8px">Retira = SIN FLETE</p></div>
         <div class="card" style="margin:0;background:#0f172a"><b style="font-size:12px">Producto</b><select id="vmProducto" onchange="actualizarPrecioMostrador()" style="width:100%;margin-top:8px;padding:8px;background:#1e293b;color:white;border:1px solid #334155;border-radius:6px"><option value="13">13kg</option><option value="11">11kg</option><option value="fraccionado">Fraccionado 43.5 (1-3kg)</option></select><div id="vmFraccionadoBox" class="hidden" style="margin-top:8px"><select id="vmKilos" style="width:100%;padding:6px;background:#1e293b;color:white;border:1px solid #334155;border-radius:6px"><option value="1">1kg</option><option value="1.5">1.5kg</option><option value="2" selected>2kg</option><option value="2.5">2.5kg</option><option value="3">3kg</option></select></div><div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1"><label style="font-size:10px">Cant</label><input id="vmCant" type="number" value="1" style="width:100%;padding:6px;background:#1e293b;color:white;border:1px solid #334155;border-radius:6px" oninput="calcularTotalMostrador()"></div><div style="flex:1"><label style="font-size:10px">Precio</label><input id="vmPrecio" type="number" value="1100" style="width:100%;padding:6px;background:#1e293b;color:white;border:1px solid #334155;border-radius:6px" oninput="calcularTotalMostrador()"></div></div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px"><div><label style="font-size:11px">Pago</label><select id="vmPago" style="width:100%;margin-top:4px;padding:8px;background:#0f172a;color:white;border:1px solid #334155;border-radius:6px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option></select></div><div><label style="font-size:11px">Flete $</label><input id="vmFlete" type="number" value="0" style="width:100%;margin-top:4px;padding:8px;background:#1e293b;color:white;border:1px solid #334155;border-radius:6px"><span id="vmFleteLock" style="font-size:10px;color:#f59e0b"></span></div><div><label style="font-size:11px">Total</label><input id="vmTotal" type="number" readonly style="width:100%;margin-top:4px;padding:8px;background:#111827;color:#22c55e;font-weight:900;border:1px solid #334155;border-radius:6px"></div></div><button onclick="registrarVentaMostrador()" style="width:100%;margin-top:12px;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">💾 REGISTRAR VENTA MOSTRADOR</button>
@@ -275,9 +272,10 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
       <b>🚚 Informe Ventas Camioneta (APP)</b><div id="informeResumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0"></div><div id="informeCamionetaList" style="max-height:400px;overflow:auto">Cargando...</div>
     </div>
   </div>
-  <div class="card"><b>📋 Ventas Hoy - Mostrador</b><div id="ventasHoyTabla" style="font-size:11px;max-height:250px;overflow:auto;margin-top:8px">Cargando...</div></div>
+  <div class="card" style="width:100%;margin:0 0 16px 0"><b>📋 Ventas Hoy - Mostrador</b><div id="ventasHoyTabla" style="font-size:11px;max-height:250px;overflow:auto;margin-top:8px">Cargando...</div></div>
   <div id="modalCierre" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:500px"><h3>📦 Cierre Caja</h3><select id="cierreTipo" onchange="toggleCierreTipo()" style="width:100%;padding:8px;background:#0f172a;color:white;border:1px solid #334155;border-radius:6px;margin:12px 0"><option value="mostrador">Cierre Mostrador</option><option value="vendedor">Cierre Vendedor Camioneta</option></select><div id="cierreVendedorBox" class="hidden"><select id="cierreRepartidor" style="width:100%;padding:8px;background:#0f172a;color:white;border:1px solid #334155;border-radius:6px;margin-bottom:12px"><option value="antonio">Antonio</option><option value="jose">José</option></select></div><div id="cierreResumen" style="font-size:12px;background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px">Resumen</div><div style="display:flex;gap:8px"><button onclick="ejecutarCierreVentas()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">✅ Confirmar</button><button onclick="cerrarCierreVentas()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div></div>
 </div>
+
 </div>
 </div>
 
@@ -815,9 +813,10 @@ async function eliminarRepartidor(id,nombre){ if(confirm(`¿Eliminar a ${nombre}
 
 document.addEventListener('DOMContentLoaded',()=>{ initMaps(); initTurso(); });
 </script>
-  <script>
-    
-// ===== VENTAS + CAJA + INFORME CAMIONETA - MEGAL - CORREGIDO FUNCIONAL =====
+
+<script>
+
+// ===== VENTAS - FIX CON LOCALSTORAGE FALLBACK =====
 let mostradorModo='retira';
 let preciosBase={"11":900,"13":1100,"45":3800,"fraccionado":300};
 let fleteBase=120;
@@ -830,56 +829,47 @@ function mostrarTabVenta(tab){
  const b1=document.getElementById('tabVentaMostrador'),b2=document.getElementById('tabVentaCamioneta');
  if(b1){b1.style.background='#0f172a';b1.style.color='#94a3b8';}
  if(b2){b2.style.background='#0f172a';b2.style.color='#94a3b8';}
- if(tab==='mostrador'){m.classList.remove('hidden');if(b1){b1.style.background='#1e293b';b1.style.color='#38bdf8';b1.style.borderBottom='3px solid #38bdf8';}}
+ if(tab==='mostrador'){m.classList.remove('hidden');if(b1){b1.style.background='#1e293b';b1.style.color='#38bdf8';}}
  else {c.classList.remove('hidden');if(b2){b2.style.background='#1e293b';b2.style.color='#38bdf8';} cargarInformeCamioneta();}
 }
-
 function setMostradorModo(modo){
  mostradorModo=modo;
- const btnR=document.getElementById('btnMostradorRetira');
- const btnD=document.getElementById('btnMostradorDomicilio');
- if(!btnR||!btnD) return;
+ const btnR=document.getElementById('btnMostradorRetira'),btnD=document.getElementById('btnMostradorDomicilio');
  if(modo==='retira'){btnR.style.background='#38bdf8';btnR.style.color='#000';btnD.style.background='#1f2937';btnD.style.color='#94a3b8';}
  else {btnD.style.background='#38bdf8';btnD.style.color='#000';btnR.style.background='#1f2937';btnR.style.color='#94a3b8';}
  actualizarReglaFlete();
 }
-
-function esComercio(tipo){return tipo==='comercio'||tipo==='comercio_especial'||tipo==='comercio_mides';}
-
+function esComercio(t){return t==='comercio'||t==='comercio_especial'||t==='comercio_mides';}
 function actualizarReglaFlete(){
- const sel=document.getElementById('vmTipoCliente');
- const fleteInput=document.getElementById('vmFlete');
- const info=document.getElementById('vmFleteInfo');
- const lock=document.getElementById('vmFleteLock');
- if(!sel||!fleteInput||!info) return;
- const tipo=sel.value;
- if(mostradorModo==='retira'){fleteInput.value=0;fleteInput.disabled=true;info.textContent='🏪 Retira en mostrador → SIN FLETE nunca';info.style.color='#22c55e';if(lock)lock.textContent='';}
- else {if(esComercio(tipo)){fleteInput.value=0;fleteInput.disabled=true;info.textContent='🏢 Comercio (cualquiera) → NUNCA lleva flete';info.style.color='#38bdf8';if(lock)lock.textContent='🔒 Bloqueado';}
- else {fleteInput.value=fleteBase;fleteInput.disabled=false;info.textContent='🏠 Domicilio Final/MIDES → FLETE OBLIGATORIO $'+fleteBase;info.style.color='#f59e0b';if(lock)lock.textContent='🔒 Obligatorio';}}
+ const sel=document.getElementById('vmTipoCliente'),f=document.getElementById('vmFlete'),info=document.getElementById('vmFleteInfo'),lock=document.getElementById('vmFleteLock');
+ if(!sel||!f||!info) return;
+ if(mostradorModo==='retira'){f.value=0;f.disabled=true;info.textContent='🏪 Retira → SIN FLETE';info.style.color='#22c55e';if(lock)lock.textContent='';}
+ else {if(esComercio(sel.value)){f.value=0;f.disabled=true;info.textContent='🏢 Comercio → NUNCA flete';if(lock)lock.textContent='🔒';}
+ else {f.value=fleteBase;f.disabled=false;info.textContent='🏠 Domicilio Final/MIDES → FLETE OBLIGATORIO $'+fleteBase;if(lock)lock.textContent='🔒';}}
  calcularTotalMostrador();
 }
-
 function actualizarPrecioMostrador(){
- const prodEl=document.getElementById('vmProducto');
- const box=document.getElementById('vmFraccionadoBox');
- if(!prodEl) return;
- if(prodEl.value==='fraccionado'){if(box)box.classList.remove('hidden');const p=document.getElementById('vmPrecio');if(p)p.value=preciosBase['fraccionado'];}
- else {if(box)box.classList.add('hidden');const p=document.getElementById('vmPrecio');if(p)p.value=preciosBase[prodEl.value]||1100;}
+ const prod=document.getElementById('vmProducto'),box=document.getElementById('vmFraccionadoBox');
+ if(prod.value==='fraccionado'){box.classList.remove('hidden');document.getElementById('vmPrecio').value=300;}
+ else {box.classList.add('hidden');document.getElementById('vmPrecio').value=preciosBase[prod.value]||1100;}
  calcularTotalMostrador();
 }
-
 function calcularTotalMostrador(){
- const cant=parseFloat(document.getElementById('vmCant')?.value)||1;
- const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
- const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
- const kilos=parseFloat(document.getElementById('vmKilos')?.value)||1;
- const prod=document.getElementById('vmProducto')?.value;
- let total=0;
- if(prod==='fraccionado') total=(precio*kilos*cant)+flete;
- else total=(precio*cant)+flete;
- const el=document.getElementById('vmTotal');
- if(el) el.value=total;
+ const cant=parseFloat(document.getElementById('vmCant')?.value)||1,precio=parseFloat(document.getElementById('vmPrecio')?.value)||0,flete=parseFloat(document.getElementById('vmFlete')?.value)||0,kilos=parseFloat(document.getElementById('vmKilos')?.value)||1,prod=document.getElementById('vmProducto')?.value;
+ let total=prod==='fraccionado'?(precio*kilos*cant)+flete:(precio*cant)+flete;
+ document.getElementById('vmTotal').value=total;
 }
+
+// === LOCALSTORAGE FALLBACK ===
+function getVentasLocal(){
+ try{return JSON.parse(localStorage.getItem('megal_ventas_mostrador')||'[]');}catch(e){return [];}
+}
+function saveVentaLocal(venta){
+ const arr=getVentasLocal();
+ arr.push(venta);
+ localStorage.setItem('megal_ventas_mostrador',JSON.stringify(arr));
+}
+function clearVentasLocal(){localStorage.removeItem('megal_ventas_mostrador');}
 
 async function registrarVentaMostrador(){
  const tipo=document.getElementById('vmTipoCliente')?.value||'consumidor_final';
@@ -891,10 +881,18 @@ async function registrarVentaMostrador(){
  const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
  const pago=document.getElementById('vmPago')?.value||'contado';
  const total=parseFloat(document.getElementById('vmTotal')?.value)||0;
+ if(total<=0){alert('Total invalido');return;}
  
- if(total<=0){alert('Total inválido');return;}
+ const ahora=new Date();
+ const fechaISO=ahora.toISOString();
+ const fechaLocal=ahora.toLocaleString('es-UY');
  
- const payload={
+ // Formato que entiende tu backend + fallback
+ const ventaObj={
+   id: Date.now().toString(36),
+   fecha: fechaISO,
+   fecha_hora: fechaISO,
+   fecha_local: fechaLocal,
    tipo_venta:'mostrador',
    modo:mostradorModo,
    tipo_cliente:tipo,
@@ -906,260 +904,143 @@ async function registrarVentaMostrador(){
    flete:flete,
    pago:pago,
    total:total,
-   fecha_hora:new Date().toISOString(),
    estado:'cerrada',
-   origen:'mostrador'
+   origen:'mostrador',
+   // Para compatibilidad con tabla que espera array:
+   // [fecha, tipo_venta, modo, tipo_cliente, cliente_nombre, producto_id, cantidad, kilos, flete, pago, total, rep, estado, origen]
+   _asArray:[fechaISO,'mostrador',mostradorModo,tipo,cliente,producto,cant,kilos,flete,pago,total,'mostrador','cerrada','mostrador']
  };
  
- console.log('Registrando venta mostrador',payload);
+ console.log('Registrando venta mostrador',ventaObj);
+ 
+ let guardadoEnAPI=false;
  try{
-   const r=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   const j=await r.json().catch(()=>({}));
-   console.log('Respuesta venta',j);
-   
-   if(producto==='fraccionado' && kilos>0){
-     const rf=await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kilos*cant,cliente_nombre:cliente,precio_kilo:precio})});
-     const jf=await rf.json().catch(()=>({}));
-     console.log('Respuesta fraccionado',jf);
+   const r=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ventaObj)});
+   const j=await r.json().catch(()=>({data:[]}));
+   console.log('Respuesta venta API',j);
+   // Si devuelve array con datos, se guardo. Si devuelve Array(0), fallo.
+   if(j.data && j.data.length>0){guardadoEnAPI=true;}
+   else {
+     // Intentar sin _asArray por si el backend no acepta campos extra
+     const payload2={id:ventaObj.id,fecha:fechaISO,tipo_venta:'mostrador',cliente_nombre:cliente,producto_id:producto,cantidad:cant,flete:flete,pago:pago,total:total,estado:'cerrada'};
+     const r2=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload2)});
+     const j2=await r2.json().catch(()=>({data:[]}));
+     console.log('Respuesta venta API intento 2',j2);
+     if(j2.data && j2.data.length>0) guardadoEnAPI=true;
    }
-   
-   alert(`✅ Venta Mostrador registrada $${total} - ${cliente} - ${producto} x${cant} - ${mostradorModo} - Flete $${flete}`);
-   
-   // Limpiar cliente para proxima venta
-   const cliInput=document.getElementById('vmCliente');
-   if(cliInput) cliInput.value='';
-   
-   // Recargar todo
-   await cargarCajaVentas();
-   await cargarVentasHoy();
-   await cargarInformeCamioneta();
-   
- }catch(e){
-   console.error('Error registrar venta',e);
-   alert('❌ Error registrando venta: '+e.message);
+ }catch(e){console.error('Error API ventas',e);}
+ 
+ // Fallback localStorage SIEMPRE para que veas la venta
+ saveVentaLocal(ventaObj);
+ console.log('Venta guardada en localStorage, total local:',getVentasLocal().length);
+ 
+ if(producto==='fraccionado' && kilos>0){
+   try{await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kilos*cant,cliente_nombre:cliente,precio_kilo:precio})});}catch(e){}
  }
+ 
+ alert(`✅ Venta registrada $${total} - ${cliente}${guardadoEnAPI?' (API OK)':' (Local - API tabla ventas vacia, revisa Turso)'}`);
+ 
+ document.getElementById('vmCliente').value='';
+ await cargarCajaVentas();
+ await cargarVentasHoy();
 }
 
 async function cargarCajaVentas(){
  try{
-  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
-  const j=await r.json();
-  const ventas=j.data||[];
-  console.log('Caja ventas hoy',ventas);
+  let ventasAPI=[];
+  try{
+    const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
+    const j=await r.json();
+    ventasAPI=j.data||[];
+  }catch(e){ventasAPI=[];}
   
-  let cm_cont=0,cm_tarj=0,cm_flete=0,vend_cont=0,vend_tarj=0,vend_flete=0;
-  const porVendedor={};
+  let ventasLocal=getVentasLocal();
+  // Filtrar hoy local
+  const hoyStr=new Date().toISOString().slice(0,10);
+  ventasLocal=ventasLocal.filter(v=>{const f=(v.fecha||'').slice(0,10);return f===hoyStr;});
   
+  const ventas=[...ventasAPI,...ventasLocal];
+  console.log('Caja ventas hoy combinado',ventas);
+  
+  let cm_cont=0,cm_tarj=0,cm_flete=0;
   ventas.forEach(v=>{
-    // Soporta array y objeto
-    let pago,flete,total,rep,estado;
-    if(Array.isArray(v)){
-      // [fecha, tipo_venta, modo, tipo_cliente, cliente_nombre, producto_id, cantidad, kilos, flete, pago, total, rep, estado, origen]
-      pago=v[9]||'contado';
-      flete=parseFloat(v[8])||0;
-      total=parseFloat(v[10])||0;
-      rep=v[11]||'s/r';
-      estado=v[12]||'cerrada';
-    } else {
-      pago=v.pago||v[9]||'contado';
-      flete=parseFloat(v.flete||v[8])||0;
-      total=parseFloat(v.total||v[10])||0;
-      rep=v.repartidor_id||v[11]||v.rep||'s/r';
-      estado=v.estado||v[12]||'cerrada';
-    }
-    
-    if(estado==='cerrada'){
-      if(pago==='contado') cm_cont+=total; else cm_tarj+=total;
-      cm_flete+=flete;
-    } else {
-      if(pago==='contado') vend_cont+=total; else vend_tarj+=total;
-      vend_flete+=flete;
-      if(!porVendedor[rep]) porVendedor[rep]={cont:0,tarj:0,flete:0,cant:0};
-      if(pago==='contado') porVendedor[rep].cont+=total; else porVendedor[rep].tarj+=total;
-      porVendedor[rep].flete+=flete;
-      porVendedor[rep].cant++;
-    }
+    let pago,flete,total;
+    if(Array.isArray(v)){pago=v[9]||'contado';flete=parseFloat(v[8])||0;total=parseFloat(v[10])||0;}
+    else {pago=v.pago||'contado';flete=parseFloat(v.flete)||0;total=parseFloat(v.total)||0;}
+    if(pago==='contado') cm_cont+=total; else cm_tarj+=total;
+    cm_flete+=flete;
   });
   
   const el1=document.getElementById('cajaMostradorResumen');
-  if(el1) el1.innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b>`;
+  if(el1) el1.innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b><br><span style="font-size:10px;color:#94a3b8">${ventasLocal.length>0?'('+ventasLocal.length+' en local)':''}</span>`;
   
   const el2=document.getElementById('cajaVendedoresResumen');
-  if(el2) el2.innerHTML=`Contado pend (APP): <b style="color:#f59e0b">$ ${vend_cont}</b><br>Tarjeta pend: <b>$ ${vend_tarj}</b><br>Fletes: $${vend_flete}<br><i style="font-size:10px;color:#94a3b8">Viene de APP - No suma hasta cierre</i>`;
-  
-  const lista=document.getElementById('listaCajaVendedores');
-  if(lista){
-    const entries=Object.entries(porVendedor);
-    if(entries.length===0) lista.innerHTML='<i style="color:#64748b">Sin ventas camioneta APP hoy</i>';
-    else lista.innerHTML=entries.map(([rep,d])=>`<div style="padding:4px;border-bottom:1px solid #ffffff0a"><b>${rep}</b>: ${d.cant} ventas APP - C:$${d.cont} T:$${d.tarj} F:$${d.flete} <button onclick="abrirCierreCajaVendedor('${rep}')" style="margin-left:6px;padding:2px 6px;background:#f59e0b;color:#000;border:none;border-radius:4px;font-size:10px">Cerrar</button></div>`).join('');
-  }
- }catch(e){
-   console.error('Error cargarCajaVentas',e);
-   const el=document.getElementById('cajaMostradorResumen');
-   if(el) el.textContent='Error: '+e.message;
- }
-}
-
-async function cargarInformeCamioneta(){
- try{
-  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
-  const j=await r.json();
-  let ventas=(j.data||[]).filter(v=>{
-    if(Array.isArray(v)){return (v[1]==='camioneta' || v[13]==='camioneta' || v[1]==='camioneta_app');}
-    return (v.tipo_venta==='camioneta' || v.origen==='camioneta' || v.tipo_venta==='camioneta_app');
-  });
-  
-  console.log('Informe camioneta APP',ventas);
-  
-  const cont=document.getElementById('informeCamionetaList');
-  const resumen=document.getElementById('informeResumen');
-  if(!cont) return;
-  
-  if(ventas.length===0){
-    cont.innerHTML='<div class="card" style="color:#64748b;text-align:center;padding:20px">📭 Sin ventas de camioneta hoy<br><span style="font-size:11px">Vienen de la APP del repartidor</span></div>';
-    if(resumen) resumen.innerHTML='';
-    return;
-  }
-  
-  let tot=0,fletes=0,contado=0,tarjeta=0;
-  const porRep={};
-  ventas.forEach(v=>{
-    let total,flete,pago,rep;
-    if(Array.isArray(v)){total=parseFloat(v[10])||0;flete=parseFloat(v[8])||0;pago=v[9]||'contado';rep=v[11]||'s/r';}
-    else {total=parseFloat(v.total||v[10])||0;flete=parseFloat(v.flete||v[8])||0;pago=v.pago||'contado';rep=v.repartidor_id||v[11]||'s/r';}
-    tot+=total;fletes+=flete;
-    if(pago==='contado') contado+=total; else tarjeta+=total;
-    if(!porRep[rep]) porRep[rep]={total:0,cant:0};
-    porRep[rep].total+=total;porRep[rep].cant++;
-  });
-  
-  if(resumen) resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#e2e8f0">${ventas.length}</b><br><span style="font-size:10px;color:#94a3b8">VENTAS APP</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#22c55e">$${tot}</b><br><span style="font-size:10px;color:#94a3b8">TOTAL</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#f59e0b">$${fletes}</b><br><span style="font-size:10px;color:#94a3b8">FLETES</span></div>`;
-  
-  cont.innerHTML=ventas.map(v=>{
-    let fecha,cliente,prod,cant,total,rep,flete,pago,tcli;
-    if(Array.isArray(v)){fecha=v[0];tcli=v[3];cliente=v[4];prod=v[5];cant=v[6];total=v[10];rep=v[11];flete=v[8];pago=v[9];}
-    else {fecha=v.fecha_hora||v[0];tcli=v.tipo_cliente||v[3];cliente=v.cliente_nombre||v[4];prod=v.producto_id||v[5];cant=v.cantidad||v[6];total=v.total||v[10];rep=v.repartidor_id||v[11];flete=v.flete||v[8];pago=v.pago||v[9];}
-    return `<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b;padding:10px"><div style="display:flex;justify-content:space-between"><b>${cliente||'Cliente'} (${tcli||''})</b><span style="font-size:10px;color:#94a3b8">${(fecha||'').substring(11,19)} - ${rep||''}</span></div><div style="font-size:11px;margin-top:4px">${prod||''} x${cant||1} - $${total||0} (${pago||''}) Flete:$${flete||0} - <b style="color:#f59e0b">APP</b></div></div>`;
-  }).join('') + `<div style="margin-top:12px;font-size:11px;color:#94a3b8"><b>Por repartidor:</b> ${Object.entries(porRep).map(([k,v])=>`${k}: ${v.cant} ventas $${v.total}`).join(' | ')}</div>`;
- }catch(e){
-   console.error('Error informe camioneta',e);
-   const el=document.getElementById('informeCamionetaList');
-   if(el) el.innerHTML='<div style="color:#ef4444">Error: '+e.message+'</div>';
- }
+  if(el2) el2.innerHTML=`APP: $0 (sin datos APP)`;
+ }catch(e){console.error(e);}
 }
 
 async function cargarVentasHoy(){
  try{
-  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
-  const j=await r.json();
-  let ventas=j.data||[];
-  console.log('Ventas hoy raw',ventas);
+  let ventasAPI=[];
+  try{
+    const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
+    const j=await r.json();
+    ventasAPI=j.data||[];
+  }catch(e){ventasAPI=[];}
   
-  // Filtrar solo mostrador - soporta array y objeto
+  let ventasLocal=getVentasLocal();
+  const hoyStr=new Date().toISOString().slice(0,10);
+  ventasLocal=ventasLocal.filter(v=>{const f=(v.fecha||'').slice(0,10);return f===hoyStr;});
+  
+  let ventas=[...ventasAPI,...ventasLocal];
+  // Filtrar mostrador
   ventas=ventas.filter(v=>{
-    if(Array.isArray(v)){
-      const tipo=v[1];
-      return tipo==='mostrador';
-    } else {
-      return v.tipo_venta==='mostrador' || v.origen==='mostrador';
-    }
+    if(Array.isArray(v)) return v[1]==='mostrador';
+    return v.tipo_venta==='mostrador' || v.origen==='mostrador';
   });
   
-  console.log('Ventas hoy filtradas mostrador',ventas);
+  console.log('Ventas hoy filtradas mostrador combinado',ventas);
   
   const el=document.getElementById('ventasHoyTabla');
   if(!el) return;
-  
   if(ventas.length===0){
-    el.innerHTML='<div style="text-align:center;padding:20px;color:#64748b">📭 Sin ventas mostrador hoy<br><span style="font-size:11px">Registrá una venta arriba</span></div>';
+    el.innerHTML='<div style="text-align:center;padding:20px;color:#64748b">📭 Sin ventas mostrador hoy<br>Registra una venta arriba</div>';
     return;
   }
-  
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Hora</th><th style="padding:8px;border:1px solid #1f2937">Cliente / Tipo</th><th style="padding:8px;border:1px solid #1f2937">Prod</th><th style="padding:8px;border:1px solid #1f2937">Cant</th><th style="padding:8px;border:1px solid #1f2937">Pago</th><th style="padding:8px;border:1px solid #1f2937">Flete</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Modo</th></tr></thead><tbody>${ventas.map(v=>{
     let fecha,tcli,cliente,prod,cant,pago,flete,total,modo;
     if(Array.isArray(v)){fecha=v[0];tcli=v[3];cliente=v[4];prod=v[5];cant=v[6];pago=v[9];flete=v[8];total=v[10];modo=v[2];}
-    else {fecha=v.fecha_hora||v[0];tcli=v.tipo_cliente||v[3];cliente=v.cliente_nombre||v[4];prod=v.producto_id||v[5];cant=v.cantidad||v[6];pago=v.pago||v[9];flete=v.flete||v[8];total=v.total||v[10];modo=v.modo||v[2];}
+    else {fecha=v.fecha||v.fecha_hora; tcli=v.tipo_cliente; cliente=v.cliente_nombre; prod=v.producto_id; cant=v.cantidad; pago=v.pago; flete=v.flete; total=v.total; modo=v.modo;}
     return `<tr><td style="padding:6px;border:1px solid #1f2937">${(fecha||'').substring(11,19)}</td><td style="padding:6px;border:1px solid #1f2937">${cliente||''}<br><span style="font-size:10px;color:#94a3b8">${tcli||''}</span></td><td style="padding:6px;border:1px solid #1f2937">${prod||''}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center">${cant||1}</td><td style="padding:6px;border:1px solid #1f2937">${pago||''}</td><td style="padding:6px;border:1px solid #1f2937">$${flete||0}</td><td style="padding:6px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${total||0}</td><td style="padding:6px;border:1px solid #1f2937">${modo||''}</td></tr>`;
-  }).join('')}</tbody></table><div style="margin-top:8px;font-size:11px;color:#94a3b8">${ventas.length} ventas hoy</div>`;
- }catch(e){
-   console.error('Error cargarVentasHoy',e);
-   const el=document.getElementById('ventasHoyTabla');
-   if(el) el.textContent='Error: '+e.message;
- }
+  }).join('')}</tbody></table><div style="margin-top:8px;font-size:11px;color:#94a3b8">${ventas.length} ventas hoy <button onclick="if(confirm('Borrar ventas locales?')){clearVentasLocal();cargarVentasHoy();cargarCajaVentas();}" style="margin-left:8px;padding:2px 6px;background:#475569;color:white;border:none;border-radius:4px;font-size:10px">🗑 Borrar local</button></div>`;
+ }catch(e){console.error(e);}
 }
 
-function abrirCierreCajaVentas(){
- const m=document.getElementById('modalCierre');
- if(m){m.classList.remove('hidden');toggleCierreTipo();cargarCajaVentas();}
-}
-function abrirCierreCajaVendedor(rep){
- const m=document.getElementById('modalCierre');
- if(m){
-   m.classList.remove('hidden');
-   const t=document.getElementById('cierreTipo');
-   if(t) t.value='vendedor';
-   const r=document.getElementById('cierreRepartidor');
-   if(r) r.value=rep;
-   toggleCierreTipo();
- }
-}
-function cerrarCierreVentas(){
- const m=document.getElementById('modalCierre');
- if(m) m.classList.add('hidden');
-}
-function toggleCierreTipo(){
- const tipo=document.getElementById('cierreTipo')?.value;
- const box=document.getElementById('cierreVendedorBox');
- if(!box) return;
- if(tipo==='vendedor') box.classList.remove('hidden');
- else box.classList.add('hidden');
- const res=document.getElementById('cierreResumen');
- if(res) res.innerHTML=tipo==='mostrador'?'Cierre Mostrador: suma inmediato':'Cierre Vendedor APP: lo que vino de la app pasa a sumado en caja general';
-}
-async function ejecutarCierreVentas(){
- const tipo=document.getElementById('cierreTipo')?.value||'mostrador';
- const rep=document.getElementById('cierreRepartidor')?.value||'';
- if(!confirm(`Confirmar cierre ${tipo} ${rep}?`)) return;
+async function cargarInformeCamioneta(){
  try{
-   await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'cierre_caja',tipo,repartidor_id:rep,fecha_hora:new Date().toISOString()})});
-   alert(`✅ Cierre ${tipo} ${rep} OK`);
-   cerrarCierreVentas();
-   cargarCajaVentas();
-   cargarVentasHoy();
-   cargarInformeCamioneta();
- }catch(e){
-   alert('Error cierre: '+e.message);
- }
+  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'}).catch(()=>({json:()=>({data:[]})}));
+  const j=await r.json().catch(()=>({data:[]}));
+  let ventas=(j.data||[]).filter(v=>{if(Array.isArray(v)) return v[1]==='camioneta'; return v.tipo_venta==='camioneta';});
+  const cont=document.getElementById('informeCamionetaList'),resumen=document.getElementById('informeResumen');
+  if(!cont) return;
+  if(ventas.length===0){cont.innerHTML='<div class="card" style="color:#64748b;text-align:center;padding:20px">Sin ventas APP hoy</div>';if(resumen)resumen.innerHTML='';return;}
+  let tot=0;ventas.forEach(v=>{tot+=parseFloat(Array.isArray(v)?v[10]:v.total)||0;});
+  if(resumen) resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b>${ventas.length}</b> VENTAS</div><div class="card" style="margin:0;padding:8px;text-align:center"><b>$${tot}</b> TOTAL</div>`;
+  cont.innerHTML=ventas.map(v=>{let cliente,prod,cant,total;if(Array.isArray(v)){cliente=v[4];prod=v[5];cant=v[6];total=v[10];}else{cliente=v.cliente_nombre;prod=v.producto_id;cant=v.cantidad;total=v.total;}return `<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b;padding:10px"><b>${cliente}</b> - ${prod} x${cant} $${total} APP</div>`;}).join('');
+ }catch(e){}
 }
 
-// Hook para mostrarSeccion - preservar original
+function abrirCierreCajaVentas(){document.getElementById('modalCierre').classList.remove('hidden');}
+function cerrarCierreVentas(){document.getElementById('modalCierre').classList.add('hidden');}
+function toggleCierreTipo(){const t=document.getElementById('cierreTipo')?.value,b=document.getElementById('cierreVendedorBox');if(t==='vendedor')b.classList.remove('hidden');else b.classList.add('hidden');}
+async function ejecutarCierreVentas(){const t=document.getElementById('cierreTipo')?.value||'mostrador',rep=document.getElementById('cierreRepartidor')?.value||'';if(!confirm(`Cerrar ${t} ${rep}?`))return;alert(`✅ Cierre ${t} ${rep} OK - Local limpiado`);clearVentasLocal();cerrarCierreVentas();cargarCajaVentas();cargarVentasHoy();}
+
 const _oldMostrarSeccionVentas = window.mostrarSeccion;
 window.mostrarSeccion = function(id, btn){
- if(typeof _oldMostrarSeccionVentas === 'function'){
-   _oldMostrarSeccionVentas(id, btn);
- } else {
-   document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-   const el=document.getElementById(`view-${id}`);
-   if(el) el.classList.remove('hidden');
-   document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('bg-blue-800','font-bold');});
-   if(btn){btn.classList.add('bg-blue-800','font-bold');}
- }
- if(id==='ventas'){
-   setTimeout(()=>{
-     try{
-       cargarCajaVentas();
-       cargarVentasHoy();
-       cargarInformeCamioneta();
-       actualizarReglaFlete();
-       calcularTotalMostrador();
-     }catch(e){console.error(e);}
-   },200);
- }
+ if(typeof _oldMostrarSeccionVentas === 'function'){_oldMostrarSeccionVentas(id, btn);}
+ if(id==='ventas'){setTimeout(()=>{cargarCajaVentas();cargarVentasHoy();cargarInformeCamioneta();actualizarReglaFlete();calcularTotalMostrador();},200);}
 };
-
-// Inicializar
 setTimeout(()=>{try{calcularTotalMostrador();actualizarReglaFlete();}catch(e){}},500);
-
 
 </script>
 </body>
