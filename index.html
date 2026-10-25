@@ -812,5 +812,98 @@ async function eliminarRepartidor(id,nombre){ if(confirm(`¿Eliminar a ${nombre}
 
 document.addEventListener('DOMContentLoaded',()=>{ initMaps(); initTurso(); });
 </script>
+  <script>
+// ===== VENTAS + CAJA + INFORME CAMIONETA - MEGAL =====
+let mostradorModo='retira';
+let preciosBase={"11":900,"13":1100,"45":3800,"fraccionado":300};
+let fleteBase=120;
+
+function mostrarTabVenta(tab){
+ document.getElementById('ventaMostrador').classList.add('hidden');
+ document.getElementById('ventaCamioneta').classList.add('hidden');
+ const b1=document.getElementById('tabVentaMostrador'),b2=document.getElementById('tabVentaCamioneta');
+ b1.style.background='#0f172a';b2.style.background='#0f172a';
+ if(tab==='mostrador'){document.getElementById('ventaMostrador').classList.remove('hidden');b1.style.background='#1e293b';}
+ else {document.getElementById('ventaCamioneta').classList.remove('hidden');b2.style.background='#1e293b';cargarInformeCamioneta();}
+}
+function setMostradorModo(modo){
+ mostradorModo=modo;
+ const btnR=document.getElementById('btnMostradorRetira'), btnD=document.getElementById('btnMostradorDomicilio');
+ if(modo==='retira'){btnR.style.background='#38bdf8';btnD.style.background='#1f2937';}
+ else {btnD.style.background='#38bdf8';btnR.style.background='#1f2937';}
+ actualizarReglaFlete();
+}
+function esComercio(tipo){return tipo==='comercio'||tipo==='comercio_especial'||tipo==='comercio_mides';}
+function actualizarReglaFlete(){
+ const tipo=document.getElementById('vmTipoCliente').value;
+ const fleteInput=document.getElementById('vmFlete'), info=document.getElementById('vmFleteInfo'), lock=document.getElementById('vmFleteLock');
+ if(mostradorModo==='retira'){fleteInput.value=0;fleteInput.disabled=true;info.textContent='🏪 Retira en mostrador → SIN FLETE nunca';lock.textContent='';}
+ else {if(esComercio(tipo)){fleteInput.value=0;fleteInput.disabled=true;info.textContent='🏢 Comercio (cualquiera) → NUNCA lleva flete';lock.textContent='🔒 Bloqueado';}
+ else {fleteInput.value=fleteBase;fleteInput.disabled=false;info.textContent='🏠 Domicilio Final/MIDES → FLETE OBLIGATORIO';lock.textContent='🔒 Obligatorio';}}
+ calcularTotalMostrador();
+}
+function actualizarPrecioMostrador(){
+ const prod=document.getElementById('vmProducto').value, box=document.getElementById('vmFraccionadoBox');
+ if(prod==='fraccionado'){box.classList.remove('hidden');document.getElementById('vmPrecio').value=preciosBase['fraccionado'];}
+ else {box.classList.add('hidden');document.getElementById('vmPrecio').value=preciosBase[prod]||0;}
+ calcularTotalMostrador();
+}
+function calcularTotalMostrador(){
+ const cant=parseFloat(document.getElementById('vmCant')?.value)||1;
+ const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
+ const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
+ const kilos=parseFloat(document.getElementById('vmKilos')?.value)||1;
+ const prod=document.getElementById('vmProducto')?.value;
+ let total=prod==='fraccionado'?(precio*kilos*cant)+flete:(precio*cant)+flete;
+ document.getElementById('vmTotal').value=total;
+}
+async function registrarVentaMostrador(){
+ const tipo=document.getElementById('vmTipoCliente')?.value||'consumidor_final';
+ const cliente=document.getElementById('vmCliente')?.value.trim()||'Consumidor Final';
+ const producto=document.getElementById('vmProducto')?.value||'13';
+ const kilos=parseFloat(document.getElementById('vmKilos')?.value)||0;
+ const cant=parseInt(document.getElementById('vmCant')?.value)||1;
+ const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
+ const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
+ const pago=document.getElementById('vmPago')?.value||'contado';
+ const total=parseFloat(document.getElementById('vmTotal')?.value)||0;
+ const payload={tipo_venta:'mostrador',modo:mostradorModo,tipo_cliente:tipo,cliente_nombre:cliente,producto_id:producto,kilos:producto==='fraccionado'?kilos:0,cantidad:cant,precio_unitario:precio,flete,pago,total,fecha_hora:new Date().toISOString(),estado:'cerrada',origen:'mostrador'};
+ await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ if(producto==='fraccionado'){await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kilos*cant,cliente_nombre:cliente,precio_kilo:precio})});}
+ alert(`✅ Venta Mostrador $${total} - ${mostradorModo} - ${tipo}`);cargarCajaVentas();cargarVentasHoy();
+}
+async function cargarCajaVentas(){
+ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`);const j=await r.json();const ventas=j.data||[];
+ let cm_cont=0,cm_tarj=0,cm_flete=0,vend_cont=0,vend_tarj=0,vend_flete=0;const porVendedor={};
+ ventas.forEach(v=>{const row=Array.isArray(v)?{tipo:v[1],pago:v[9],flete:v[8],total:v[10],rep:v[11],estado:v[12]}:v;const est=row.estado||'cerrada';const pago=row.pago||'contado';const f=parseFloat(row.flete)||0;const tot=parseFloat(row.total)||0;const rep=row.rep||row.repartidor_id||'s/r';if(est==='cerrada'){if(pago==='contado')cm_cont+=tot;else cm_tarj+=tot;cm_flete+=f;}else{if(pago==='contado')vend_cont+=tot;else vend_tarj+=tot;vend_flete+=f;if(!porVendedor[rep])porVendedor[rep]={cont:0,tarj:0,flete:0,cant:0};if(pago==='contado')porVendedor[rep].cont+=tot;else porVendedor[rep].tarj+=tot;porVendedor[rep].flete+=f;porVendedor[rep].cant++;}});
+ document.getElementById('cajaMostradorResumen').innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b>`;
+ document.getElementById('cajaVendedoresResumen').innerHTML=`Contado pend (APP): <b style="color:#f59e0b">$ ${vend_cont}</b><br>Tarjeta pend: <b>$ ${vend_tarj}</b><br>Fletes: $${vend_flete}<br><i style="color:#94a3b8">APP - No suma hasta cierre</i>`;
+ document.getElementById('listaCajaVendedores').innerHTML=Object.entries(porVendedor).map(([rep,d])=>`<div><b>${rep}</b>: ${d.cant} ventas APP <button onclick="abrirCierreCajaVendedor('${rep}')" style="margin-left:6px;padding:2px 6px;background:#f59e0b;color:#000;border:none;border-radius:4px;font-size:10px">Cerrar</button></div>`).join('')||'<i>Sin ventas camioneta APP</i>';
+}
+async function cargarInformeCamioneta(){
+ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`);const j=await r.json();let ventas=(j.data||[]).filter(v=>{const tipo=Array.isArray(v)?v[1]:v.tipo_venta;return tipo==='camioneta';});
+ const cont=document.getElementById('informeCamionetaList'),resumen=document.getElementById('informeResumen');
+ if(ventas.length===0){cont.innerHTML='<div class="card" style="color:#64748b">Sin ventas APP hoy</div>';if(resumen)resumen.innerHTML='';return;}
+ let tot=0,fletes=0;ventas.forEach(v=>{const row=Array.isArray(v)?{total:v[10],flete:v[8]}:v;tot+=parseFloat(row.total)||0;fletes+=parseFloat(row.flete)||0;});
+ if(resumen)resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b>${ventas.length}</b><br>VENTAS APP</div><div class="card" style="margin:0;padding:8px;text-align:center"><b>$${tot}</b><br>TOTAL</div><div class="card" style="margin:0;padding:8px;text-align:center"><b>$${fletes}</b><br>FLETES</div>`;
+ cont.innerHTML=ventas.map(v=>{const row=Array.isArray(v)?{fecha:v[0],tcli:v[3],cliente:v[4],prod:v[5],cant:v[6],total:v[10],rep:v[11],flete:v[8],pago:v[9]}:v;return `<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b"><b>${row.cliente}</b> - ${row.prod} x${row.cant} $${row.total} (${row.pago}) Flete $${row.flete} - ${row.rep} APP</div>`;}).join('');
+}
+async function cargarVentasHoy(){
+ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`);const j=await r.json();let ventas=(j.data||[]).filter(v=>{const tipo=Array.isArray(v)?v[1]:v.tipo_venta;return tipo==='mostrador';});
+ document.getElementById('ventasHoyTabla').innerHTML=ventas.length?`<table style="width:100%"><tr><th>Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>${ventas.map(v=>{const row=Array.isArray(v)?{fecha:v[0],cliente:v[4],prod:v[5],total:v[10]}:v;return `<tr><td>${(row.fecha||'').substring(11,19)}</td><td>${row.cliente}</td><td>${row.prod}</td><td>$${row.total}</td></tr>`;}).join('')}</table>`:'Sin ventas mostrador hoy';
+}
+function abrirCierreCajaVentas(){document.getElementById('modalCierre').classList.remove('hidden');}
+function cerrarCierreVentas(){document.getElementById('modalCierre').classList.add('hidden');}
+function toggleCierreTipo(){const tipo=document.getElementById('cierreTipo')?.value;const box=document.getElementById('cierreVendedorBox');if(tipo==='vendedor')box.classList.remove('hidden');else box.classList.add('hidden');}
+async function ejecutarCierreVentas(){const tipo=document.getElementById('cierreTipo')?.value||'mostrador';const rep=document.getElementById('cierreRepartidor')?.value||'';if(!confirm(`Cerrar ${tipo} ${rep}?`))return;await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'cierre_caja',tipo,repartidor_id:rep,fecha_hora:new Date().toISOString()})});alert(`✅ Cierre ${tipo} OK`);cerrarCierreVentas();cargarCajaVentas();}
+function abrirCierreCajaVendedor(rep){document.getElementById('modalCierre').classList.remove('hidden');document.getElementById('cierreTipo').value='vendedor';document.getElementById('cierreRepartidor').value=rep;}
+
+const _oldMostrarSeccionVentas = window.mostrarSeccion;
+window.mostrarSeccion = function(id, btn){
+ if(typeof _oldMostrarSeccionVentas === 'function'){_oldMostrarSeccionVentas(id, btn);}
+ if(id==='ventas'){setTimeout(()=>{cargarCajaVentas();cargarVentasHoy();cargarInformeCamioneta();actualizarReglaFlete();calcularTotalMostrador();},150);}
+};
+setTimeout(()=>{try{calcularTotalMostrador();actualizarReglaFlete();}catch(e){}},500);
+</script>
 </body>
 </html>
