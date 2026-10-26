@@ -816,20 +816,112 @@ document.addEventListener('DOMContentLoaded',()=>{ initMaps(); initTurso(); });
 
 <script>
 
-// ===== VENTAS - FIX CON LOCALSTORAGE FALLBACK =====
+
+
+  
+// ===== VENTAS DINAMICO - PRODUCTOS Y FLETE DESDE TURSO =====
 let mostradorModo='retira';
 let preciosBase={"11":900,"13":1100,"45":3800,"fraccionado":300};
-let fleteBase=120;
+let fleteBase=parseInt(localStorage.getItem('megal_flete_base')||'120');
+let productosCache=[];
+
+async function cargarProductosEnVentas(){
+ try{
+   // 1. Productos catalogo desde ERP
+   let prodsERP=[];
+   try{
+     const r=await fetch(`${API_ERP}?table=productos`,{cache:'no-store'});
+     const j=await r.json();
+     prodsERP=j.data||[];
+   }catch(e){console.log('No productos ERP',e); prodsERP=[];}
+   
+   // 2. Deposito desde STOCK (tiene precios reales y stock)
+   let deposito=[];
+   try{
+     const r=await fetch(API_STOCK,{cache:'no-store'});
+     const j=await r.json();
+     deposito=j.deposito||[];
+   }catch(e){console.log('No stock',e); deposito=[];}
+   
+   console.log('Productos ERP',prodsERP,'Deposito',deposito);
+   
+   const select=document.getElementById('vmProducto');
+   if(!select) return;
+   
+   select.innerHTML='';
+   productosCache=[];
+   
+   // Si hay productos en ERP, usarlos
+   if(prodsERP.length>0){
+     prodsERP.forEach(row=>{
+       const p=Array.isArray(row)?{id:row[0],nombre:row[1],tipo:row[2]}:row;
+       const opt=document.createElement('option');
+       opt.value=p.id;
+       opt.textContent=`${p.id} - ${p.nombre}`;
+       select.appendChild(opt);
+       productosCache.push(p);
+       // Precio base si viene del deposito
+       const dep=deposito.find(d=>String(d.producto_id)===String(p.id));
+       if(dep && dep.precio) preciosBase[p.id]=parseFloat(dep.precio);
+     });
+   }
+   
+   // Si no hay en ERP, usar deposito
+   if(productosCache.length===0 && deposito.length>0){
+     deposito.forEach(d=>{
+       const opt=document.createElement('option');
+       const id=d.producto_id;
+       const nombre=d.nombre||id;
+       opt.value=id;
+       opt.textContent=`${id} - ${nombre} (${d.llenas} llenas)`;
+       select.appendChild(opt);
+       productosCache.push({id:id,nombre:nombre,tipo:d.tipo||'envase'});
+       if(d.precio) preciosBase[id]=parseFloat(d.precio);
+       else {
+         // Precios por defecto segun id
+         if(id==='11') preciosBase[id]=900;
+         else if(id==='13') preciosBase[id]=1100;
+         else if(id==='45') preciosBase[id]=3800;
+         else if(id==='43.5') preciosBase[id]=300;
+       }
+     });
+   }
+   
+   // Si sigue vacio, poner por defecto para no romper
+   if(productosCache.length===0){
+     const defaults=[
+       {id:'13',nombre:'Garrafa 13kg'},
+       {id:'11',nombre:'Garrafa 11kg'},
+       {id:'45',nombre:'Tubo 45kg'},
+       {id:'fraccionado',nombre:'Fraccionado 43.5 (1-3kg)'},
+       {id:'43.5',nombre:'Tubo 43.5kg'}
+     ];
+     defaults.forEach(p=>{
+       const opt=document.createElement('option');
+       opt.value=p.id;
+       opt.textContent=`${p.id} - ${p.nombre}`;
+       select.appendChild(opt);
+     });
+     console.warn('Productos vacio en Turso - usando defaults. Carga productos en modulo Productos');
+     const status=document.getElementById('vmFleteInfo');
+     if(status) status.innerHTML+='<br><span style="color:#f59e0b">⚠️ Productos vacio - cargalos en Modulo Productos o Stock. Usando precios por defecto.</span>';
+   }
+   
+   // Actualizar precio del primero
+   actualizarPrecioMostrador();
+   console.log('preciosBase actualizados',preciosBase);
+   
+ }catch(e){console.error('Error cargarProductosEnVentas',e);}
+}
 
 function mostrarTabVenta(tab){
- const m=document.getElementById('ventaMostrador');
- const c=document.getElementById('ventaCamioneta');
+ const m=document.getElementById('ventaMostrador'),c=document.getElementById('ventaCamioneta');
  if(!m||!c) return;
  m.classList.add('hidden');c.classList.add('hidden');
  const b1=document.getElementById('tabVentaMostrador'),b2=document.getElementById('tabVentaCamioneta');
  if(b1){b1.style.background='#0f172a';b1.style.color='#94a3b8';}
  if(b2){b2.style.background='#0f172a';b2.style.color='#94a3b8';}
- if(tab==='mostrador'){m.classList.remove('hidden');if(b1){b1.style.background='#1e293b';b1.style.color='#38bdf8';}}
+ if(tab==='mostrador'){m.classList.remove('hidden');if(b1){b1.style.background='#1e293b';b1.style.color='#38bdf8';} cargarProductosEnVentas();}
  else {c.classList.remove('hidden');if(b2){b2.style.background='#1e293b';b2.style.color='#38bdf8';} cargarInformeCamioneta();}
 }
 function setMostradorModo(modo){
@@ -843,33 +935,40 @@ function esComercio(t){return t==='comercio'||t==='comercio_especial'||t==='come
 function actualizarReglaFlete(){
  const sel=document.getElementById('vmTipoCliente'),f=document.getElementById('vmFlete'),info=document.getElementById('vmFleteInfo'),lock=document.getElementById('vmFleteLock');
  if(!sel||!f||!info) return;
- if(mostradorModo==='retira'){f.value=0;f.disabled=true;info.textContent='🏪 Retira → SIN FLETE';info.style.color='#22c55e';if(lock)lock.textContent='';}
- else {if(esComercio(sel.value)){f.value=0;f.disabled=true;info.textContent='🏢 Comercio → NUNCA flete';if(lock)lock.textContent='🔒';}
- else {f.value=fleteBase;f.disabled=false;info.textContent='🏠 Domicilio Final/MIDES → FLETE OBLIGATORIO $'+fleteBase;if(lock)lock.textContent='🔒';}}
+ const tipo=sel.value;
+ // Flete configurable desde input + localStorage
+ const fleteInputVal=parseInt(f.value)||fleteBase;
+ if(mostradorModo==='retira'){f.value=0;f.disabled=true;info.textContent='🏪 Retira en mostrador → SIN FLETE nunca';info.style.color='#22c55e';if(lock)lock.textContent='';}
+ else {if(esComercio(tipo)){f.value=0;f.disabled=true;info.textContent='🏢 Comercio (cualquiera) → NUNCA lleva flete';info.style.color='#38bdf8';if(lock)lock.textContent='🔒 Bloqueado';}
+ else {f.value=fleteBase;f.disabled=false;info.textContent='🏠 Domicilio Final/MIDES → FLETE OBLIGATORIO $'+fleteBase+' (editable abajo)';info.style.color='#f59e0b';if(lock)lock.innerHTML='🔒 <button onclick="editarFleteBase()" style="margin-left:6px;padding:2px 6px;background:#1f2937;color:#f59e0b;border:1px solid #334155;border-radius:4px;font-size:10px">Cambiar flete</button>';}}
  calcularTotalMostrador();
 }
+function editarFleteBase(){
+ const nuevo=prompt('Nuevo valor flete base $ (para domicilios particulares):',fleteBase);
+ if(nuevo!==null){const v=parseInt(nuevo);if(!isNaN(v)&&v>=0){fleteBase=v;localStorage.setItem('megal_flete_base',String(v));alert('✅ Flete base actualizado a $'+v);actualizarReglaFlete();}}
+}
 function actualizarPrecioMostrador(){
- const prod=document.getElementById('vmProducto'),box=document.getElementById('vmFraccionadoBox');
- if(prod.value==='fraccionado'){box.classList.remove('hidden');document.getElementById('vmPrecio').value=300;}
- else {box.classList.add('hidden');document.getElementById('vmPrecio').value=preciosBase[prod.value]||1100;}
+ const prodEl=document.getElementById('vmProducto'),box=document.getElementById('vmFraccionadoBox'),precioEl=document.getElementById('vmPrecio');
+ if(!prodEl||!precioEl) return;
+ const id=prodEl.value;
+ if(id==='fraccionado' || id==='43.5'){
+   if(box)box.classList.remove('hidden');
+   precioEl.value=preciosBase['fraccionado']||preciosBase['43.5']||300;
+ } else {
+   if(box)box.classList.add('hidden');
+   precioEl.value=preciosBase[id]||1100;
+ }
  calcularTotalMostrador();
 }
 function calcularTotalMostrador(){
  const cant=parseFloat(document.getElementById('vmCant')?.value)||1,precio=parseFloat(document.getElementById('vmPrecio')?.value)||0,flete=parseFloat(document.getElementById('vmFlete')?.value)||0,kilos=parseFloat(document.getElementById('vmKilos')?.value)||1,prod=document.getElementById('vmProducto')?.value;
- let total=prod==='fraccionado'?(precio*kilos*cant)+flete:(precio*cant)+flete;
+ let total=prod==='fraccionado'||prod==='43.5'?(precio*kilos*cant)+flete:(precio*cant)+flete;
  document.getElementById('vmTotal').value=total;
 }
 
-// === LOCALSTORAGE FALLBACK ===
-function getVentasLocal(){
- try{return JSON.parse(localStorage.getItem('megal_ventas_mostrador')||'[]');}catch(e){return [];}
-}
-function saveVentaLocal(venta){
- const arr=getVentasLocal();
- arr.push(venta);
- localStorage.setItem('megal_ventas_mostrador',JSON.stringify(arr));
-}
-function clearVentasLocal(){localStorage.removeItem('megal_ventas_mostrador');}
+// LOCALSTORAGE FALLBACK
+function getVentasLocal(){try{return JSON.parse(localStorage.getItem('megal_ventas_mostrador')||'[]');}catch(e){return [];}}
+function saveVentaLocal(v){const arr=getVentasLocal();arr.push(v);localStorage.setItem('megal_ventas_mostrador',JSON.stringify(arr));}
 
 async function registrarVentaMostrador(){
  const tipo=document.getElementById('vmTipoCliente')?.value||'consumidor_final';
@@ -882,165 +981,59 @@ async function registrarVentaMostrador(){
  const pago=document.getElementById('vmPago')?.value||'contado';
  const total=parseFloat(document.getElementById('vmTotal')?.value)||0;
  if(total<=0){alert('Total invalido');return;}
- 
- const ahora=new Date();
- const fechaISO=ahora.toISOString();
- const fechaLocal=ahora.toLocaleString('es-UY');
- 
- // Formato que entiende tu backend + fallback
+ const ahora=new Date(),fechaISO=ahora.toISOString();
  const ventaObj={
-   id: Date.now().toString(36),
-   fecha: fechaISO,
-   fecha_hora: fechaISO,
-   fecha_local: fechaLocal,
-   tipo_venta:'mostrador',
-   modo:mostradorModo,
-   tipo_cliente:tipo,
-   cliente_nombre:cliente,
-   producto_id:producto,
-   kilos:producto==='fraccionado'?kilos:0,
-   cantidad:cant,
-   precio_unitario:precio,
-   flete:flete,
-   pago:pago,
-   total:total,
-   estado:'cerrada',
-   origen:'mostrador',
-   // Para compatibilidad con tabla que espera array:
-   // [fecha, tipo_venta, modo, tipo_cliente, cliente_nombre, producto_id, cantidad, kilos, flete, pago, total, rep, estado, origen]
-   _asArray:[fechaISO,'mostrador',mostradorModo,tipo,cliente,producto,cant,kilos,flete,pago,total,'mostrador','cerrada','mostrador']
+   id:Date.now().toString(36),fecha:fechaISO,fecha_hora:fechaISO,tipo_venta:'mostrador',modo:mostradorModo,tipo_cliente:tipo,cliente_nombre:cliente,producto_id:producto,kilos:producto==='fraccionado'||producto==='43.5'?kilos:0,cantidad:cant,precio_unitario:precio,flete:flete,pago:pago,total:total,estado:'cerrada',origen:'mostrador'
  };
- 
- console.log('Registrando venta mostrador',ventaObj);
- 
- let guardadoEnAPI=false;
+ console.log('Registrando venta',ventaObj);
+ let okAPI=false;
  try{
    const r=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ventaObj)});
    const j=await r.json().catch(()=>({data:[]}));
-   console.log('Respuesta venta API',j);
-   // Si devuelve array con datos, se guardo. Si devuelve Array(0), fallo.
-   if(j.data && j.data.length>0){guardadoEnAPI=true;}
-   else {
-     // Intentar sin _asArray por si el backend no acepta campos extra
-     const payload2={id:ventaObj.id,fecha:fechaISO,tipo_venta:'mostrador',cliente_nombre:cliente,producto_id:producto,cantidad:cant,flete:flete,pago:pago,total:total,estado:'cerrada'};
-     const r2=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload2)});
-     const j2=await r2.json().catch(()=>({data:[]}));
-     console.log('Respuesta venta API intento 2',j2);
-     if(j2.data && j2.data.length>0) guardadoEnAPI=true;
-   }
- }catch(e){console.error('Error API ventas',e);}
- 
- // Fallback localStorage SIEMPRE para que veas la venta
+   console.log('Resp venta',j);
+   if(j.data&&j.data.length>0) okAPI=true;
+ }catch(e){console.error(e);}
  saveVentaLocal(ventaObj);
- console.log('Venta guardada en localStorage, total local:',getVentasLocal().length);
- 
- if(producto==='fraccionado' && kilos>0){
+ if(producto==='fraccionado'||producto==='43.5'){
    try{await fetch(API_STOCK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kilos*cant,cliente_nombre:cliente,precio_kilo:precio})});}catch(e){}
  }
- 
- alert(`✅ Venta registrada $${total} - ${cliente}${guardadoEnAPI?' (API OK)':' (Local - API tabla ventas vacia, revisa Turso)'}`);
- 
+ alert(`✅ Venta $${total} - ${cliente} - ${producto} x${cant}${okAPI?' (API OK)':' (Local)'}`);
  document.getElementById('vmCliente').value='';
- await cargarCajaVentas();
- await cargarVentasHoy();
+ cargarCajaVentas();cargarVentasHoy();
 }
-
 async function cargarCajaVentas(){
- try{
-  let ventasAPI=[];
-  try{
-    const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
-    const j=await r.json();
-    ventasAPI=j.data||[];
-  }catch(e){ventasAPI=[];}
-  
-  let ventasLocal=getVentasLocal();
-  // Filtrar hoy local
-  const hoyStr=new Date().toISOString().slice(0,10);
-  ventasLocal=ventasLocal.filter(v=>{const f=(v.fecha||'').slice(0,10);return f===hoyStr;});
-  
-  const ventas=[...ventasAPI,...ventasLocal];
-  console.log('Caja ventas hoy combinado',ventas);
-  
-  let cm_cont=0,cm_tarj=0,cm_flete=0;
-  ventas.forEach(v=>{
-    let pago,flete,total;
-    if(Array.isArray(v)){pago=v[9]||'contado';flete=parseFloat(v[8])||0;total=parseFloat(v[10])||0;}
-    else {pago=v.pago||'contado';flete=parseFloat(v.flete)||0;total=parseFloat(v.total)||0;}
-    if(pago==='contado') cm_cont+=total; else cm_tarj+=total;
-    cm_flete+=flete;
-  });
-  
-  const el1=document.getElementById('cajaMostradorResumen');
-  if(el1) el1.innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b><br><span style="font-size:10px;color:#94a3b8">${ventasLocal.length>0?'('+ventasLocal.length+' en local)':''}</span>`;
-  
-  const el2=document.getElementById('cajaVendedoresResumen');
-  if(el2) el2.innerHTML=`APP: $0 (sin datos APP)`;
- }catch(e){console.error(e);}
+ let ventasAPI=[];try{const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});const j=await r.json();ventasAPI=j.data||[];}catch(e){ventasAPI=[];}
+ let ventasLocal=getVentasLocal();const hoyStr=new Date().toISOString().slice(0,10);ventasLocal=ventasLocal.filter(v=>(v.fecha||'').slice(0,10)===hoyStr);
+ const ventas=[...ventasAPI,...ventasLocal];
+ let cm_cont=0,cm_tarj=0,cm_flete=0;
+ ventas.forEach(v=>{let pago,flete,total;if(Array.isArray(v)){pago=v[9]||'contado';flete=parseFloat(v[8])||0;total=parseFloat(v[10])||0;}else{pago=v.pago||'contado';flete=parseFloat(v.flete)||0;total=parseFloat(v.total)||0;}if(pago==='contado')cm_cont+=total;else cm_tarj+=total;cm_flete+=flete;});
+ const el1=document.getElementById('cajaMostradorResumen');if(el1)el1.innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b>`;
 }
-
 async function cargarVentasHoy(){
- try{
-  let ventasAPI=[];
-  try{
-    const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});
-    const j=await r.json();
-    ventasAPI=j.data||[];
-  }catch(e){ventasAPI=[];}
-  
-  let ventasLocal=getVentasLocal();
-  const hoyStr=new Date().toISOString().slice(0,10);
-  ventasLocal=ventasLocal.filter(v=>{const f=(v.fecha||'').slice(0,10);return f===hoyStr;});
-  
-  let ventas=[...ventasAPI,...ventasLocal];
-  // Filtrar mostrador
-  ventas=ventas.filter(v=>{
-    if(Array.isArray(v)) return v[1]==='mostrador';
-    return v.tipo_venta==='mostrador' || v.origen==='mostrador';
-  });
-  
-  console.log('Ventas hoy filtradas mostrador combinado',ventas);
-  
-  const el=document.getElementById('ventasHoyTabla');
-  if(!el) return;
-  if(ventas.length===0){
-    el.innerHTML='<div style="text-align:center;padding:20px;color:#64748b">📭 Sin ventas mostrador hoy<br>Registra una venta arriba</div>';
-    return;
-  }
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Hora</th><th style="padding:8px;border:1px solid #1f2937">Cliente / Tipo</th><th style="padding:8px;border:1px solid #1f2937">Prod</th><th style="padding:8px;border:1px solid #1f2937">Cant</th><th style="padding:8px;border:1px solid #1f2937">Pago</th><th style="padding:8px;border:1px solid #1f2937">Flete</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Modo</th></tr></thead><tbody>${ventas.map(v=>{
-    let fecha,tcli,cliente,prod,cant,pago,flete,total,modo;
-    if(Array.isArray(v)){fecha=v[0];tcli=v[3];cliente=v[4];prod=v[5];cant=v[6];pago=v[9];flete=v[8];total=v[10];modo=v[2];}
-    else {fecha=v.fecha||v.fecha_hora; tcli=v.tipo_cliente; cliente=v.cliente_nombre; prod=v.producto_id; cant=v.cantidad; pago=v.pago; flete=v.flete; total=v.total; modo=v.modo;}
-    return `<tr><td style="padding:6px;border:1px solid #1f2937">${(fecha||'').substring(11,19)}</td><td style="padding:6px;border:1px solid #1f2937">${cliente||''}<br><span style="font-size:10px;color:#94a3b8">${tcli||''}</span></td><td style="padding:6px;border:1px solid #1f2937">${prod||''}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center">${cant||1}</td><td style="padding:6px;border:1px solid #1f2937">${pago||''}</td><td style="padding:6px;border:1px solid #1f2937">$${flete||0}</td><td style="padding:6px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${total||0}</td><td style="padding:6px;border:1px solid #1f2937">${modo||''}</td></tr>`;
-  }).join('')}</tbody></table><div style="margin-top:8px;font-size:11px;color:#94a3b8">${ventas.length} ventas hoy <button onclick="if(confirm('Borrar ventas locales?')){clearVentasLocal();cargarVentasHoy();cargarCajaVentas();}" style="margin-left:8px;padding:2px 6px;background:#475569;color:white;border:none;border-radius:4px;font-size:10px">🗑 Borrar local</button></div>`;
- }catch(e){console.error(e);}
+ let ventasAPI=[];try{const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'});const j=await r.json();ventasAPI=j.data||[];}catch(e){ventasAPI=[];}
+ let ventasLocal=getVentasLocal();const hoyStr=new Date().toISOString().slice(0,10);ventasLocal=ventasLocal.filter(v=>(v.fecha||'').slice(0,10)===hoyStr);
+ let ventas=[...ventasAPI,...ventasLocal];ventas=ventas.filter(v=>{if(Array.isArray(v))return v[1]==='mostrador';return v.tipo_venta==='mostrador';});
+ const el=document.getElementById('ventasHoyTabla');if(!el)return;
+ if(ventas.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:#64748b">Sin ventas mostrador hoy</div>';return;}
+ el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Hora</th><th style="padding:8px;border:1px solid #1f2937">Cliente</th><th style="padding:8px;border:1px solid #1f2937">Prod</th><th style="padding:8px;border:1px solid #1f2937">Cant</th><th style="padding:8px;border:1px solid #1f2937">Pago</th><th style="padding:8px;border:1px solid #1f2937">Flete</th><th style="padding:8px;border:1px solid #1f2937">Total</th></tr></thead><tbody>${ventas.map(v=>{let fecha,cliente,prod,cant,pago,flete,total;if(Array.isArray(v)){fecha=v[0];cliente=v[4];prod=v[5];cant=v[6];pago=v[9];flete=v[8];total=v[10];}else{fecha=v.fecha;cliente=v.cliente_nombre;prod=v.producto_id;cant=v.cantidad;pago=v.pago;flete=v.flete;total=v.total;}return `<tr><td style="padding:6px;border:1px solid #1f2937">${(fecha||'').substring(11,19)}</td><td style="padding:6px;border:1px solid #1f2937">${cliente||''}</td><td style="padding:6px;border:1px solid #1f2937">${prod||''}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center">${cant||1}</td><td style="padding:6px;border:1px solid #1f2937">${pago||''}</td><td style="padding:6px;border:1px solid #1f2937">$${flete||0}</td><td style="padding:6px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${total||0}</td></tr>`;}).join('')}</tbody></table>`;
 }
-
 async function cargarInformeCamioneta(){
- try{
-  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'}).catch(()=>({json:()=>({data:[]})}));
-  const j=await r.json().catch(()=>({data:[]}));
-  let ventas=(j.data||[]).filter(v=>{if(Array.isArray(v)) return v[1]==='camioneta'; return v.tipo_venta==='camioneta';});
-  const cont=document.getElementById('informeCamionetaList'),resumen=document.getElementById('informeResumen');
-  if(!cont) return;
-  if(ventas.length===0){cont.innerHTML='<div class="card" style="color:#64748b;text-align:center;padding:20px">Sin ventas APP hoy</div>';if(resumen)resumen.innerHTML='';return;}
-  let tot=0;ventas.forEach(v=>{tot+=parseFloat(Array.isArray(v)?v[10]:v.total)||0;});
-  if(resumen) resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b>${ventas.length}</b> VENTAS</div><div class="card" style="margin:0;padding:8px;text-align:center"><b>$${tot}</b> TOTAL</div>`;
-  cont.innerHTML=ventas.map(v=>{let cliente,prod,cant,total;if(Array.isArray(v)){cliente=v[4];prod=v[5];cant=v[6];total=v[10];}else{cliente=v.cliente_nombre;prod=v.producto_id;cant=v.cantidad;total=v.total;}return `<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b;padding:10px"><b>${cliente}</b> - ${prod} x${cant} $${total} APP</div>`;}).join('');
- }catch(e){}
+ try{const r=await fetch(`${API_ERP}?table=ventas&hoy=1`,{cache:'no-store'}).catch(()=>({json:()=>({data:[]})}));const j=await r.json().catch(()=>({data:[]}));let ventas=(j.data||[]).filter(v=>{if(Array.isArray(v))return v[1]==='camioneta';return v.tipo_venta==='camioneta';});const cont=document.getElementById('informeCamionetaList');if(!cont)return;if(ventas.length===0){cont.innerHTML='<div class="card" style="color:#64748b;text-align:center;padding:20px">Sin ventas APP hoy</div>';return;}cont.innerHTML=ventas.map(v=>{let cliente,prod,cant,total;if(Array.isArray(v)){cliente=v[4];prod=v[5];cant=v[6];total=v[10];}else{cliente=v.cliente_nombre;prod=v.producto_id;cant=v.cantidad;total=v.total;}return `<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b;padding:10px"><b>${cliente}</b> - ${prod} x${cant} $${total} APP</div>`;}).join('');}catch(e){}
 }
-
 function abrirCierreCajaVentas(){document.getElementById('modalCierre').classList.remove('hidden');}
 function cerrarCierreVentas(){document.getElementById('modalCierre').classList.add('hidden');}
-function toggleCierreTipo(){const t=document.getElementById('cierreTipo')?.value,b=document.getElementById('cierreVendedorBox');if(t==='vendedor')b.classList.remove('hidden');else b.classList.add('hidden');}
-async function ejecutarCierreVentas(){const t=document.getElementById('cierreTipo')?.value||'mostrador',rep=document.getElementById('cierreRepartidor')?.value||'';if(!confirm(`Cerrar ${t} ${rep}?`))return;alert(`✅ Cierre ${t} ${rep} OK - Local limpiado`);clearVentasLocal();cerrarCierreVentas();cargarCajaVentas();cargarVentasHoy();}
+function toggleCierreTipo(){}
+async function ejecutarCierreVentas(){alert('Cierre OK');localStorage.removeItem('megal_ventas_mostrador');cerrarCierreVentas();cargarCajaVentas();cargarVentasHoy();}
 
 const _oldMostrarSeccionVentas = window.mostrarSeccion;
 window.mostrarSeccion = function(id, btn){
  if(typeof _oldMostrarSeccionVentas === 'function'){_oldMostrarSeccionVentas(id, btn);}
- if(id==='ventas'){setTimeout(()=>{cargarCajaVentas();cargarVentasHoy();cargarInformeCamioneta();actualizarReglaFlete();calcularTotalMostrador();},200);}
+ if(id==='ventas'){setTimeout(()=>{cargarProductosEnVentas();cargarCajaVentas();cargarVentasHoy();actualizarReglaFlete();calcularTotalMostrador();},200);}
 };
-setTimeout(()=>{try{calcularTotalMostrador();actualizarReglaFlete();}catch(e){}},500);
+setTimeout(()=>{try{cargarProductosEnVentas();calcularTotalMostrador();actualizarReglaFlete();}catch(e){}},500);
+
+
+
 
 </script>
 </body>
