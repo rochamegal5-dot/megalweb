@@ -280,7 +280,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 </div>
 
 <script>
-const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock';
+const API_GPS='/api/postgres?table=gps_locations', API_ERP='/api/postgres', API_STOCK='/api/postgres?table=deposito';
 const ROCHA_CENTER=[-34.4836,-54.3334];
 const UMBRAL_ONLINE=300;
 let dashMap, gpsMap, gpsMapHist;
@@ -816,9 +816,6 @@ document.addEventListener('DOMContentLoaded',()=>{ initMaps(); initTurso(); });
 
 <script>
 
-
-
-  
 // ===== VENTAS DINAMICO - PRODUCTOS Y FLETE DESDE TURSO =====
 let mostradorModo='retira';
 let preciosBase={"11":900,"13":1100,"45":3800,"fraccionado":300};
@@ -1031,9 +1028,6 @@ window.mostrarSeccion = function(id, btn){
  if(id==='ventas'){setTimeout(()=>{cargarProductosEnVentas();cargarCajaVentas();cargarVentasHoy();actualizarReglaFlete();calcularTotalMostrador();},200);}
 };
 setTimeout(()=>{try{cargarProductosEnVentas();calcularTotalMostrador();actualizarReglaFlete();}catch(e){}},500);
-
-
-
 
 </script>
 </body>
