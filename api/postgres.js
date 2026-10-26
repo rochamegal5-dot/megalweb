@@ -1,13 +1,21 @@
 
 import { sql } from '@vercel/postgres';
 
+// Fallback para Neon que usa DATABASE_URL en vez de POSTGRES_URL
+if (!process.env.POSTGRES_URL && process.env.DATABASE_URL) {
+  process.env.POSTGRES_URL = process.env.DATABASE_URL;
+}
+if (!process.env.POSTGRES_URL && process.env.DATABASE_URL_UNPOOLED) {
+  process.env.POSTGRES_URL = process.env.DATABASE_URL_UNPOOLED;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { table, hoy, id } = req.query;
+  const { table, hoy } = req.query;
 
   try {
     if (req.method === 'GET') {
@@ -15,7 +23,6 @@ export default async function handler(req, res) {
         const { rows } = await sql`SELECT * FROM gps_locations ORDER BY recorded_at DESC LIMIT 100`;
         return res.json({ data: rows });
       }
-
       if (table === 'productos') {
         const { rows } = await sql`SELECT * FROM productos ORDER BY id`;
         return res.json({ data: rows });
@@ -44,11 +51,15 @@ export default async function handler(req, res) {
         const { rows } = await sql`SELECT * FROM ventas ORDER BY fecha DESC LIMIT 500`;
         return res.json({ data: rows });
       }
-      if (table === 'puntos_referencia') {
+      if (table === 'puntos_referencia' || table === 'puntos') {
         const { rows } = await sql`SELECT * FROM puntos_referencia ORDER BY id`;
         return res.json({ data: rows });
       }
-      return res.status(400).json({ error: 'Tabla no permitida', data: [] });
+      if (table === 'gps_locations') {
+        const { rows } = await sql`SELECT * FROM gps_locations ORDER BY recorded_at DESC LIMIT 100`;
+        return res.json({ data: rows });
+      }
+      return res.status(400).json({ error: 'Tabla no permitida: '+table, data: [] });
     }
 
     if (req.method === 'POST') {
@@ -56,11 +67,11 @@ export default async function handler(req, res) {
       if (!table) return res.status(400).json({ error: 'Falta table' });
 
       if (table === 'productos') {
-        const { id, nombre, tipo, costo_proveedor, precio_venta, costo, precio_venta_lista } = body;
+        const { id, nombre, tipo, costo_proveedor, precio_venta } = body;
         await sql`
-          INSERT INTO productos (id, nombre, tipo, costo_proveedor, precio_venta, costo, precio_venta_lista)
-          VALUES (${id}, ${nombre}, ${tipo||'otro'}, ${costo_proveedor||0}, ${precio_venta||0}, ${costo||0}, ${precio_venta_lista||0})
-          ON CONFLICT (id) DO UPDATE SET nombre = EXCLUDED.nombre, tipo = EXCLUDED.tipo, costo_proveedor = EXCLUDED.costo_proveedor, precio_venta = EXCLUDED.precio_venta, costo = EXCLUDED.costo, precio_venta_lista = EXCLUDED.precio_venta_lista
+          INSERT INTO productos (id, nombre, tipo, costo_proveedor, precio_venta)
+          VALUES (${id}, ${nombre}, ${tipo||'otro'}, ${costo_proveedor||0}, ${precio_venta||0})
+          ON CONFLICT (id) DO UPDATE SET nombre = EXCLUDED.nombre, tipo = EXCLUDED.tipo, costo_proveedor = EXCLUDED.costo_proveedor, precio_venta = EXCLUDED.precio_venta
         `;
         const { rows } = await sql`SELECT * FROM productos WHERE id = ${id}`;
         return res.json({ data: rows });
@@ -82,8 +93,8 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Metodo no permitido' });
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: e.message, data: [] });
+    console.error('PG ERROR:', e);
+    return res.status(500).json({ error: e.message, data: [], detail: e.toString() });
   }
 }
 
