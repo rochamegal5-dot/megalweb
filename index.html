@@ -891,7 +891,7 @@ async function registrarVentaMostrador(){
 }
 async function cargarCaja(){
  try{
-  const r=await fetch(${API_ERP}?table=ventas&hoy=1); const j=await r.json(); const ventas=j.data||[];
+  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); const ventas=j.data||[];
   let cm_cont=0, cm_tarj=0, cm_flete=0, vend_cont=0, vend_tarj=0, vend_flete=0; const porVendedor={};
   ventas.forEach(v=>{ const row=Array.isArray(v)?{tipo:v[1], pago:v[9], flete:v[8], total:v[10], rep:v[11], estado:v[12]}:v; const est=row.estado||'cerrada'; const pago=row.pago||'contado'; const f=parseFloat(row.flete)||0; const tot=parseFloat(row.total)||0; const rep=row.rep||row.repartidor_id||'s/r'; if(est==='cerrada'){ if(pago==='contado') cm_cont+=tot; else cm_tarj+=tot; cm_flete+=f; } else { if(pago==='contado') vend_cont+=tot; else vend_tarj+=tot; vend_flete+=f; if(!porVendedor[rep]) porVendedor[rep]={cont:0,tarj:0,flete:0,cant:0}; if(pago==='contado') porVendedor[rep].cont+=tot; else porVendedor[rep].tarj+=tot; porVendedor[rep].flete+=f; porVendedor[rep].cant++; } });
   const el1=document.getElementById('cajaMostradorResumen'); if(el1) el1.innerHTML=`Contado: <b style="color:#22c55e">$ ${cm_cont}</b><br>Tarjeta: <b style="color:#38bdf8">$ ${cm_tarj}</b><br>Fletes: <b style="color:#f59e0b">$ ${cm_flete}</b><br>Total: <b>$ ${cm_cont+cm_tarj}</b>`;
@@ -922,7 +922,7 @@ async function cargarInformeCamioneta(){
 }
 async function cargarVentasHoy(){
  try{
-  const r=await fetch(${API_ERP}?table=ventas&hoy=1); const j=await r.json(); let ventas=j.data||[];
+  const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); let ventas=j.data||[];
   ventas=ventas.filter(v=>{ const tipo=Array.isArray(v)?v[1]:v.tipo_venta; return tipo==='mostrador'; });
   const el=document.getElementById('ventasHoyTabla'); if(!el) return;
   el.innerHTML=ventas.length?`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Pago</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead><tbody>${ventas.map(v=>{ const row=Array.isArray(v)?{fecha:v[0], tcli:v[3], cliente:v[4], prod:v[5], pago:v[9], flete:v[8], total:v[10], modo:v[2]}:v; return `<tr><td style="padding:4px;border:1px solid #1f2937">${(row.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${row.cliente||''} (${row.tcli||''})</td><td style="padding:4px;border:1px solid #1f2937">${row.prod||''}</td><td style="padding:4px;border:1px solid #1f2937">${row.pago||''}</td><td style="padding:4px;border:1px solid #1f2937">$${row.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$${row.total||0}</td><td style="padding:4px;border:1px solid #1f2937">${row.modo||''}</td></tr>`; }).join('')}</tbody></table>`:'<i style="color:#64748b">Sin ventas mostrador hoy</i>';
