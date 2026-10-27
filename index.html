@@ -188,7 +188,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 
 <div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-    <h3 style="font-weight:900">📦 Stock TURSO - Depósito + Productos</h3>
+    <h3 style="font-weight:900">📦 Stock POSTGRES - Depósito + Productos</h3>
     <div style="display:flex;gap:8px">
       <button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">📝 Balance Inicial</button>
       <button onclick="abrirNuevoProducto()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900;font-size:12px">➕ Nuevo Producto</button>
@@ -690,7 +690,7 @@ async function initTurso(){
   cargarRepartidores();
   cargarPuntosRuta();
   actualizarUI();
-  document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></div> Conectado a Turso megal-erp';
+  document.getElementById('headerStatus').innerHTML='<div style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block"></div> Conectado a Vercel Postgres - Neon';
   
   // Polling cada 7s para simular realtime
   setInterval(async ()=>{
