@@ -144,7 +144,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 </div>
 
 <script>
-const API_GPS='/api/gps', API_ERP='/api/erp', API_STOCK='/api/stock';
+const API_GPS='/api/postgres?table=gps_locations', API_ERP='/api/postgres', API_STOCK='/api/postgres?table=deposito';
 const ROCHA_CENTER=[-34.4836,-54.3334];
 const UMBRAL_ONLINE=300;
 let dashMap, gpsMap, gpsMapHist;
@@ -168,51 +168,29 @@ function mostrarSeccion(id, btn){
 async function cargarStock(){
   const status=document.getElementById('stockStatus');
   const content=document.getElementById('stockContent');
-  if(status) status.textContent='Cargando Turso /api/stock...';
+  if(status) status.textContent='Cargando POSTGRES /api/postgres?table=deposito...';
   try{
     const r=await fetch(API_STOCK);
-    const data=await r.json();
-    console.log('STOCK TURSO',data);
-    if(!data.ok) throw new Error(data.error||'Error');
-    const dep=data.deposito||[];
-    const cams=data.camionetas||[];
-    const movs=data.movimientos||[];
-    const fracc=data.fraccionadas||[];
-    const productos=data.productos||[];
+    const j=await r.json();
+    const dep=j.data||j.deposito||[];
+    console.log('STOCK POSTGRES',dep);
     
     if(status) status.style.display='none';
     
-    const gas = dep.filter(d=>['11','13','43.5','45'].includes(String(d.producto_id)));
-    const otros = dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
+    const gas = dep.filter(d=>['11','13','43.5','45'].includes(String(d.producto_id||d.id)));
+    const otros = dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id||d.id)));
     
     content.innerHTML=`
-      <div style="margin-bottom:8px"><b style="font-size:13px">🔥 Gas Envasado</b><span style="font-size:11px;color:#94a3b8"> - ${gas.length} productos base</span></div>
+      <div style="margin-bottom:8px"><b style="font-size:13px">🔥 Gas Envasado</b></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">
-        ${gas.map(d=>`<div class="card" style="margin:0;border:2px solid ${d.producto_id==='43.5'?'#38bdf8':'#2d3748'}"><div style="font-weight:900">${d.producto_id}kg - ${d.nombre||''}</div><div style="font-size:13px;margin-top:8px;line-height:1.8">Llenas: <b style="color:#22c55e;font-size:18px">${d.llenas}</b><br>Vacías: <b style="color:#f59e0b">${d.vacias}</b><br>Cambio: <b style="color:#ef4444">${d.cambio||0}</b>${d.producto_id==='43.5'?`<div style="margin-top:8px;background:#0f172a;padding:6px;border-radius:6px;border:1px solid #38bdf8">En uso: <b style="color:#38bdf8">${d.kilos_en_uso} kg</b><div style="background:#334155;height:8px;border-radius:4px;margin-top:4px"><div style="width:${Math.max(5,(d.kilos_en_uso/43.5*100)).toFixed(0)}%;height:100%;background:#38bdf8;border-radius:4px"></div></div></div>`:''}</div><div style="margin-top:6px">${d.permite_completo?'<span style="font-size:10px;background:#22c55e22;color:#22c55e;padding:2px 6px;border-radius:4px">COMPLETO</span>':''} ${d.es_fraccionado?'<span style="font-size:10px;background:#38bdf822;color:#38bdf8;padding:2px 6px;border-radius:4px">FRACC 1-3kg</span>':''}</div></div>`).join('')}
+        ${gas.map(d=>`<div class="card" style="margin:0"><div style="font-weight:900">${d.producto_id||d.id}kg</div><div style="margin-top:8px">Llenas: <b style="color:#22c55e">${d.llenas||0}</b><br>Vacías: <b style="color:#f59e0b">${d.vacias||0}</b></div></div>`).join('')}
       </div>
-
-      ${otros.length?`
-      <div style="margin-bottom:8px"><b style="font-size:13px">🧰 Otros Productos / Insumos</b><span style="font-size:11px;color:#94a3b8"> - ${otros.length} productos</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">
-        ${otros.map(d=>`<div class="card" style="margin:0;border:1px solid #334155"><div style="font-weight:900;font-size:13px">${d.producto_id} - ${d.nombre||''}</div><div style="font-size:12px;margin-top:6px">Stock: <b style="color:#22c55e">${d.llenas}</b> | Vacías: ${d.vacias||0} | Cambio: ${d.cambio||0}</div></div>`).join('')}
-      </div>`: '<div class="card" style="margin-bottom:16px"><i style="color:#64748b;font-size:12px">Sin otros productos - Usá ➕ Nuevo Producto para agregar válvulas, mangueras, reguladores, etc.</i></div>'}
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="card" style="margin:0"><h4 style="font-weight:bold">🚚 Cargar Camioneta (con hora)</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="repStock" style="flex:1"><option value="antonio">Antonio</option><option value="jose">José</option><option value="mostrador">Mostrador</option></select><select id="prodStock" style="flex:1">${dep.map(d=>`<option value="${d.producto_id}">${d.producto_id} - ${d.nombre}</option>`).join('')}</select><input id="cantStock" type="number" value="1" min="1" style="width:60px"></div><button onclick="cargarCamioneta()" style="width:100%;margin-top:8px;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">CARGAR</button><p style="font-size:10px;color:#64748b;margin-top:6px">Se guarda hora exacta para auditar</p></div>
-        <div class="card" style="margin:0"><h4 style="font-weight:bold">⚖️ Fraccionado 43.5 (1-3kg)</h4><div style="display:flex;gap:6px;margin-top:8px"><select id="kilosStock" style="flex:1"><option value="1">1 kg</option><option value="1.5">1.5 kg</option><option value="2" selected>2 kg</option><option value="2.5">2.5 kg</option><option value="3">3 kg</option></select><input id="clienteStock" type="text" placeholder="Cliente" style="flex:1"></div><button onclick="venderFraccionado()" style="width:100%;margin-top:8px;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">VENDER kg</button></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="card" style="margin:0"><b>🚚 Camionetas</b><div style="font-size:12px;margin-top:8px;max-height:200px;overflow:auto">${cams.length?cams.map(c=>`<div style="padding:3px 0;border-bottom:1px solid #ffffff0a">${c.repartidor_id} - ${c.producto_id}: <b>${c.llenas}</b> L</div>`).join(''):'<i style="color:#64748b">Vacías</i>'}<button onclick="descargarCamioneta()" style="margin-top:8px;padding:6px 10px;background:#475569;color:white;border:none;border-radius:6px;font-size:11px">Descargar todo a depósito</button></div></div>
-        <div class="card" style="margin:0"><b>📋 Movimientos - hora para auditar</b><div style="font-size:11px;max-height:220px;overflow:auto;margin-top:8px">${movs.map(m=>`<div style="padding:3px 0;border-bottom:1px solid #ffffff0a"><span style="color:#94a3b8">${(m.fecha_hora||'').substring(11,19)}</span> - ${m.detalle||m.tipo}</div>`).join('')||'<i style="color:#64748b">Sin movimientos</i>'}</div></div>
-      </div>
-
-      <div class="card" style="margin-top:12px"><b>🏭 Proveedor - Canje y Compra Envase</b><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><select id="provTipo" style="flex:1;min-width:160px"><option value="canje_vacio">Canje Vacías → Llenas</option><option value="canje_cambio">Canje Cambio → Llenas</option><option value="compra_envase">Compra Envase Completo (aumenta total)</option></select><select id="provProd" style="flex:1">${dep.map(d=>`<option value="${d.producto_id}">${d.producto_id}</option>`).join('')}</select><input id="provCant" type="number" value="1" min="1" style="width:70px"><input id="provRemito" type="text" placeholder="Remito" style="width:100px"><button onclick="ingresoProveedor()" style="padding:8px 14px;background:#f59e0b;color:#000;font-weight:900;border:none;border-radius:8px">INGRESAR</button></div></div>
+      ${otros.length?`<div style="margin-bottom:8px"><b>🧰 Otros</b></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">${otros.map(d=>`<div class="card" style="margin:0">${d.producto_id||d.id} - ${d.nombre||''} - Stock: ${d.llenas||0}</div>`).join('')}</div>`:''}
     `;
   }catch(e){
     console.error(e);
     if(status) status.textContent='❌ '+e.message;
-    content.innerHTML=`<div class="card" style="color:#ef4444">Error: ${e.message}</div>`;
+    content.innerHTML=`<div class="card" style="color:#ef4444">Error: ${e.message} - Revisá que /api/postgres?table=deposito devuelva datos</div>`;
   }
 }
 
