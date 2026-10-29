@@ -83,7 +83,101 @@ function calcularTotal(){ const c=parseFloat(document.getElementById('vmCant')?.
 async function registrarVenta(){ const tipo=document.getElementById('vmTipoCliente')?.value||'consumidor_final'; const cli=document.getElementById('vmCliente')?.value||'Consumidor Final'; const pid=document.getElementById('vmProducto')?.value||'13'; const cant=parseInt(document.getElementById('vmCant')?.value)||1; const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0; const flete=parseFloat(document.getElementById('vmFlete')?.value)||0; const pago=document.getElementById('vmPago')?.value||'contado'; const total=parseFloat(document.getElementById('vmTotal')?.value)||0; const prod=productosCache.find(p=>p.id===pid); const costo=prod?prod.costo_proveedor||0:0; const payload={cliente_nombre:cli,producto_id:pid,cantidad:cant,precio_unitario:precio,costo_proveedor:costo,flete,total,pago,tipo_cliente:tipo,modo:modoActual}; try{ const r=await fetch(`${API_ERP}?table=ventas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); alert('✅ Venta $'+total); cargarCaja(); cargarVentasHoy(); }catch(e){ alert('Error '+e.message); } }
 async function cargarCaja(){ try{ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); const v=j.data||[]; let cont=0,tarj=0,f=0; v.filter(x=> (x.tipo_venta||'mostrador')==='mostrador').forEach(x=>{ const tot=parseFloat(x.total)||0; const fl=parseFloat(x.flete)||0; if(x.pago==='contado') cont+=tot; else tarj+=tot; f+=fl; }); document.getElementById('cajaMostrador').innerHTML=`Contado $${cont}<br>Tarjeta $${tarj}<br>Fletes $${f}<br>Total $${cont+tarj}`; document.getElementById('cajaCamioneta').innerHTML=`${v.filter(x=>x.tipo_venta==='camioneta').length} ventas camioneta hoy`; }catch(e){} }
 async function cargarVentasHoy(){ try{ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); const v=(j.data||[]).filter(x=> (x.tipo_venta||'mostrador')==='mostrador'); const el=document.getElementById('ventasHoy'); if(!el) return; if(v.length===0){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; } el.innerHTML='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:4px;border:1px solid #1f2937">Hora</th><th style="padding:4px;border:1px solid #1f2937">Cliente</th><th style="padding:4px;border:1px solid #1f2937">Prod</th><th style="padding:4px;border:1px solid #1f2937">Total</th></tr>'+v.map(x=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(x.fecha_hora||x.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${x.cliente_nombre}</td><td style="padding:4px;border:1px solid #1f2937">${x.producto_id}</td><td style="padding:4px;border:1px solid #1f2937">$${x.total}</td></tr>`).join('')+'</table>'; }catch(e){} }
-async function cargarStock(){ const st=document.getElementById('stockStatus'); const cont=document.getElementById('listaStock'); if(st) st.textContent='Cargando POSTGRES...'; try{ const r=await fetch(`${API_STOCK}`); const j=await r.json(); const data=j.data||[]; if(st) st.textContent=`${data.length} productos en deposito POSTGRES`; if(cont) cont.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">ID</th><th style="padding:6px;border:1px solid #1f2937">Nombre</th><th style="padding:6px;border:1px solid #1f2937">Llenas</th><th style="padding:6px;border:1px solid #1f2937">Vacias</th></tr>'+data.map(d=>`<tr><td style="padding:6px;border:1px solid #1f2937">${d.producto_id}</td><td style="padding:6px;border:1px solid #1f2937">${d.nombre||d.producto_id}</td><td style="padding:6px;border:1px solid #1f2937">${d.llenas||0}</td><td style="padding:6px;border:1px solid #1f2937">${d.vacias||0}</td></tr>`).join('')+'</table>'; }catch(e){ if(st) st.textContent='Error: '+e.message; } }
+async function cargarStock(){
+  const st=document.getElementById('stockStatus');
+  const cont=document.getElementById('listaStock');
+  if(st) st.textContent='Cargando POSTGRES...';
+  try{
+    const r=await fetch(`${API_STOCK}`);
+    const j=await r.json();
+    const dep=j.data||[];
+    if(st) st.textContent=`${dep.length} productos en deposito POSTGRES`;
+    
+    const gasIds=['11','13','43.5','45'];
+    const gas=dep.filter(d=>gasIds.includes(String(d.producto_id||d.id)));
+    const otros=dep.filter(d=>!gasIds.includes(String(d.producto_id||d.id)));
+    
+    if(cont) cont.innerHTML=`
+      <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" style="background:#f59e0b;color:#000" onclick="abrirBalanceInicial()">📝 Balance Inicial (Admin)</button>
+        <span style="font-size:11px;color:#94a3b8;padding-top:8px">Stock inicial y edición si hubo error</span>
+      </div>
+      
+      <div style="margin-bottom:16px">
+        <h4 style="color:#38bdf8;margin-bottom:8px">🔥 GAS ENVASADO (11,13,43.5,45)</h4>
+        <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">ID</th><th style="padding:6px;border:1px solid #1f2937">Nombre</th><th style="padding:6px;border:1px solid #1f2937">Llenas</th><th style="padding:6px;border:1px solid #1f2937">Vacias</th><th style="padding:6px;border:1px solid #1f2937">Cambio</th><th style="padding:6px;border:1px solid #1f2937">Acción</th></tr>
+        ${gas.map(d=>`<tr><td style="padding:6px;border:1px solid #1f2937">${d.producto_id||d.id}</td><td style="padding:6px;border:1px solid #1f2937">${d.nombre||''}</td><td style="padding:6px;border:1px solid #1f2937;color:#22c55e;font-weight:bold">${d.llenas||0}</td><td style="padding:6px;border:1px solid #1f2937;color:#f59e0b">${d.vacias||0}</td><td style="padding:6px;border:1px solid #1f2937">${d.cambio||0}</td><td style="padding:6px;border:1px solid #1f2937"><button class="btn" style="background:#0ea5e9;color:white;padding:4px 8px;font-size:11px" onclick="abrirEditarStock('${d.producto_id||d.id}')">✏ Editar</button></td></tr>`).join('')||'<tr><td colspan="6" style="padding:8px;color:#64748b">Sin gas</td></tr>'}
+        </table>
+      </div>
+      
+      <div style="margin-bottom:16px">
+        <h4 style="color:#22c55e;margin-bottom:8px">🧰 OTROS ARTICULOS DEL LOCAL</h4>
+        <table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">ID</th><th style="padding:6px;border:1px solid #1f2937">Nombre</th><th style="padding:6px;border:1px solid #1f2937">Stock</th><th style="padding:6px;border:1px solid #1f2937">Vacias</th><th style="padding:6px;border:1px solid #1f2937">Precio</th><th style="padding:6px;border:1px solid #1f2937">Acción</th></tr>
+        ${otros.map(d=>`<tr><td style="padding:6px;border:1px solid #1f2937">${d.producto_id||d.id}</td><td style="padding:6px;border:1px solid #1f2937">${d.nombre||''}</td><td style="padding:6px;border:1px solid #1f2937;color:#22c55e;font-weight:bold">${d.llenas||0}</td><td style="padding:6px;border:1px solid #1f2937">${d.vacias||0}</td><td style="padding:6px;border:1px solid #1f2937">$${d.precio||0}</td><td style="padding:6px;border:1px solid #1f2937"><button class="btn" style="background:#22c55e;color:white;padding:4px 8px;font-size:11px" onclick="abrirEditarStock('${d.producto_id||d.id}')">✏ Editar</button></td></tr>`).join('')||'<tr><td colspan="6" style="padding:8px;color:#64748b">Sin otros - Ejecuta el SQL</td></tr>'}
+        </table>
+      </div>
+      
+      <div style="margin-top:16px;border:1px solid #f59e0b;border-radius:8px;padding:12px;background:#42200622">
+        <h4 style="color:#f59e0b">🔄 Cambios en Stock - Otras Modalidades</h4>
+        <p style="font-size:11px;color:#94a3b8;margin-bottom:8px">Defectuosos, pérdidas, ajustes, devoluciones</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div><label style="font-size:11px">Producto</label><select id="csProducto" style="width:100%"></select></div>
+          <div><label style="font-size:11px">Tipo</label><select id="csTipo" style="width:100%"><option value="cambio">Cambio cliente</option><option value="defectuosa">Defectuosa fábrica</option><option value="perdida">Pérdida/Rotura</option><option value="ajuste">Ajuste Inventario</option><option value="devolucion">Devolución Vacía</option><option value="llenado">Llenado vacía→llena</option></select></div>
+          <div><label style="font-size:11px">Cant</label><input id="csCant" type="number" value="1" style="width:100%"></div>
+        </div>
+        <div style="margin-top:8px"><label style="font-size:11px">Motivo Admin</label><input id="csMotivo" placeholder="Ej: Garrafa abollada" style="width:100%"></div>
+        <button class="btn" style="background:#f59e0b;color:#000;width:100%;margin-top:8px" onclick="registrarCambioStock()">Registrar Cambio</button>
+      </div>
+    `;
+    actualizarSelectCambioStock();
+  }catch(e){ if(st) st.textContent='Error: '+e.message; }
+}
+async function abrirEditarStock(productoId){
+  try{
+    const r=await fetch(`${API_STOCK}`);
+    const j=await r.json();
+    const prod=(j.data||[]).find(p=>(p.producto_id||p.id)===productoId);
+    if(!prod){ alert('No encontrado'); return; }
+    const llenas=prompt(`Editar ${productoId} - Llenas:`, prod.llenas||0);
+    if(llenas===null) return;
+    const vacias=prompt(`Vacías:`, prod.vacias||0);
+    if(vacias===null) return;
+    const cambio=prompt(`Cambio:`, prod.cambio||0);
+    if(cambio===null) return;
+    const payload={producto_id:productoId, nombre:prod.nombre||productoId, llenas:parseInt(llenas)||0, vacias:parseInt(vacias)||0, cambio:parseInt(cambio)||0, kilos_en_uso:prod.kilos_en_uso||0};
+    const rr=await fetch(`${API_STOCK}`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'actualizar_stock', ...payload})});
+    alert('✅ Stock actualizado'); cargarStock();
+  }catch(e){ alert('Error '+e.message); }
+}
+
+async function abrirBalanceInicial(){
+  if(!confirm('¿Balance Inicial? Sobrescribe stock actual. Solo ADMIN.')) return;
+  const r=await fetch(`${API_STOCK}`);
+  const j=await r.json();
+  let texto='Actual:\n'; (j.data||[]).forEach(p=>{ texto+=`${p.producto_id||p.id}:${p.llenas||0},${p.vacias||0},${p.cambio||0}\n`; });
+  const input=prompt(texto+'\nNuevo balance (ID:llenas,vacias,cambio por línea):');
+  if(!input) return;
+  const balances=input.split('\n').map(line=>{ const [id, vals]=line.split(':'); if(!id||!vals) return null; const [l,v,c]=vals.split(',').map(x=>parseInt(x.trim())||0); return {producto_id:id.trim(), llenas:l, vacias:v, cambio:c, nombre:id.trim()}; }).filter(Boolean);
+  await fetch(`${API_STOCK}`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'balance_inicial', balances})});
+  alert('✅ Balance guardado'); cargarStock();
+}
+
+async function registrarCambioStock(){
+  const producto_id=document.getElementById('csProducto')?.value;
+  const tipo_cambio=document.getElementById('csTipo')?.value||'cambio';
+  const cantidad=parseInt(document.getElementById('csCant')?.value)||1;
+  const motivo=document.getElementById('csMotivo')?.value||'';
+  if(!producto_id){ alert('Selecciona producto'); return; }
+  if(!confirm(`¿Registrar ${tipo_cambio} ${cantidad}x ${producto_id}?`)) return;
+  await fetch(`${API_STOCK}`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'cambio_stock', producto_id, tipo_cambio, cantidad, motivo})});
+  alert('✅ Cambio registrado'); document.getElementById('csMotivo').value=''; cargarStock();
+}
+
+function actualizarSelectCambioStock(){
+  const sel=document.getElementById('csProducto');
+  const selV=document.getElementById('vmProducto');
+  if(sel && selV) sel.innerHTML=selV.innerHTML;
+}
 async function cargarRepartidores(){ try{ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); document.getElementById('listaRepartidores').innerHTML=(j.data||[]).map(r=>`<div>${r.nombre}</div>`).join('')||'Sin repartidores'; }catch(e){} }
 async function cargarClientes(){ try{ const r=await fetch(`${API_ERP}?table=clientes`); const j=await r.json(); document.getElementById('listaClientes').innerHTML=(j.data||[]).map(c=>`<div>${c.nombre}</div>`).join('')||'Sin clientes'; }catch(e){} }
 async function cargarProveedores(){ try{ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); document.getElementById('listaProveedores').innerHTML=(j.data||[]).map(p=>`<div>${p.nombre}</div>`).join('')||'Sin proveedores'; }catch(e){} }
