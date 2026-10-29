@@ -16,6 +16,12 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 .view-section{display:block}
 input,select{width:100%;padding:8px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:white;margin-top:4px}
 button.btn{padding:8px 16px;border-radius:8px;border:none;font-weight:bold;cursor:pointer}
+ .tab-bar{display:flex;align-items:center;background:#1e293b;border-radius:12px 12px 0 0;padding:0 8px;border:1px solid #334155;border-bottom:2px solid #334155;gap:2px;overflow:auto}
+.tab-bar .app-icon{width:32px;height:32px;background:#38bdf8;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;margin:8px 12px 8px 4px;flex-shrink:0}
+.m-tab{padding:12px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#94a3b8;border-bottom:3px solid transparent;white-space:nowrap}
+.m-tab.active{color:#38bdf8;border-bottom:3px solid #38bdf8;background:#0f172a}
+.m-tab-content{display:none;padding:16px;background:#0f172a;border:1px solid #334155;border-top:none;border-radius:0 0 12px 12px}
+.m-tab-content.active{display:block}
 </style>
 </head><body>
 <div class="sidebar">
@@ -45,7 +51,16 @@ button.btn{padding:8px 16px;border-radius:8px;border:none;font-weight:bold;curso
 <label style="font-size:11px">Cliente</label><input id="vmCliente" placeholder="Nombre">
 <div style="display:flex;gap:8px;margin-top:8px"><button id="btnRetira" class="btn" style="flex:1;background:#0ea5e9;color:white" onclick="setModo('retira')">Retira</button><button id="btnDomicilio" class="btn" style="flex:1;background:#1f2937;color:#94a3b8" onclick="setModo('domicilio')">Domicilio</button></div>
 <div id="reglaFlete" style="font-size:10px;color:#22c55e;margin-top:4px"></div>
-<label style="font-size:11px">Producto</label><select id="vmProducto" onchange="actualizarPrecio()"></select>
+<label style="font-size:11px">Producto</label><select id="vmProducto" onchange="actualizarUIProductoVenta()"></select>
+<div id="fraccEnVentas" style="display:none;margin-top:12px;border:2px solid #38bdf8;border-radius:8px;padding:12px;background:#0c1a2e44">
+  <h5 style="color:#38bdf8">⚖ Fraccionado 1-3kg (usa Tubo 43.5)</h5>
+  <div id="fraccStockInfo" style="font-size:11px;color:#94a3b8;margin:6px 0"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div><label style="font-size:11px">Kilos</label><select id="vmFraccKilos"><option value="1">1 kg</option><option value="2" selected>2 kg</option><option value="3">3 kg</option></select></div>
+    <div><label style="font-size:11px">Precio/kg</label><input id="vmPrecioFracc" type="number" value="150"></div>
+  </div>
+  <button class="btn" style="background:#38bdf8;color:#000;width:100%;margin-top:8px" onclick="venderFraccionadoDesdeVentas()">VENDER FRACCIONADO</button>
+</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label style="font-size:11px">Cant</label><input id="vmCant" type="number" value="1" onchange="calcularTotal()"></div><div><label style="font-size:11px">Precio</label><input id="vmPrecio" type="number" onchange="calcularTotal()"></div></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label style="font-size:11px">Pago</label><select id="vmPago"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option></select></div><div><label style="font-size:11px">Flete</label><input id="vmFlete" type="number" value="0" onchange="calcularTotal()"></div></div>
 <label style="font-size:11px">Total</label><input id="vmTotal" readonly style="background:#052e16;color:#22c55e;font-weight:bold">
@@ -84,20 +99,30 @@ async function registrarVenta(){ const tipo=document.getElementById('vmTipoClien
 async function cargarCaja(){ try{ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); const v=j.data||[]; let cont=0,tarj=0,f=0; v.filter(x=> (x.tipo_venta||'mostrador')==='mostrador').forEach(x=>{ const tot=parseFloat(x.total)||0; const fl=parseFloat(x.flete)||0; if(x.pago==='contado') cont+=tot; else tarj+=tot; f+=fl; }); document.getElementById('cajaMostrador').innerHTML=`Contado $${cont}<br>Tarjeta $${tarj}<br>Fletes $${f}<br>Total $${cont+tarj}`; document.getElementById('cajaCamioneta').innerHTML=`${v.filter(x=>x.tipo_venta==='camioneta').length} ventas camioneta hoy`; }catch(e){} }
 async function cargarVentasHoy(){ try{ const r=await fetch(`${API_ERP}?table=ventas&hoy=1`); const j=await r.json(); const v=(j.data||[]).filter(x=> (x.tipo_venta||'mostrador')==='mostrador'); const el=document.getElementById('ventasHoy'); if(!el) return; if(v.length===0){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; } el.innerHTML='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:4px;border:1px solid #1f2937">Hora</th><th style="padding:4px;border:1px solid #1f2937">Cliente</th><th style="padding:4px;border:1px solid #1f2937">Prod</th><th style="padding:4px;border:1px solid #1f2937">Total</th></tr>'+v.map(x=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(x.fecha_hora||x.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${x.cliente_nombre}</td><td style="padding:4px;border:1px solid #1f2937">${x.producto_id}</td><td style="padding:4px;border:1px solid #1f2937">$${x.total}</td></tr>`).join('')+'</table>'; }catch(e){} }
 
+function cambiarTabStock(tab){
+  document.querySelectorAll('.m-tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.m-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('btn-'+tab).classList.add('active');
+}
 async function cargarStock(){
   const st=document.getElementById('stockStatus');
   const cont=document.getElementById('listaStock');
-  if(st) st.textContent='Cargando POSTGRES...';
+  if(st) st.textContent='Cargando...';
   try{
-    const r=await fetch(`${API_STOCK}`);
-    const j=await r.json();
-    const dep=j.data||[];
-    if(st) st.textContent=`${dep.length} productos en deposito POSTGRES`;
-    
+    const r=await fetch(API_STOCK); const j=await r.json(); const dep=j.data||[];
+    if(st) st.textContent=dep.length+' productos';
     const gasIds=['11','13','43.5','45'];
     const gas=dep.filter(d=>gasIds.includes(String(d.producto_id||d.id)));
     const otros=dep.filter(d=>!gasIds.includes(String(d.producto_id||d.id)));
-    
+    const dep43 = dep.find(d=>String(d.producto_id||d.id)==='43.5');
+    const tuboHtml = renderTubo43Control(dep43);
+    const gasRows = gas.map(d=>'<tr><td style="padding:6px;border:1px solid #1f2937">'+(d.producto_id||d.id)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.nombre||'')+'</td><td style="padding:6px;border:1px solid #1f2937;color:#22c55e">'+(d.llenas||0)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.vacias||0)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.cambio||0)+'</td><td style="padding:6px;border:1px solid #1f2937"><button class="btn" style="background:#0ea5e9;color:white;padding:4px 8px" onclick="abrirEditarStock(\''+(d.producto_id||d.id)+'\')">Editar</button></td></tr>').join('');
+    const otrosRows = otros.map(d=>'<tr><td style="padding:6px;border:1px solid #1f2937">'+(d.producto_id||d.id)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.nombre||'')+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.llenas||0)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.vacias||0)+'</td><td style="padding:6px;border:1px solid #1f2937">$'+(d.precio||0)+'</td><td style="padding:6px;border:1px solid #1f2937"><button class="btn" style="background:#22c55e;color:white;padding:4px 8px" onclick="abrirEditarStock(\''+(d.producto_id||d.id)+'\')">Editar</button></td></tr>').join('');
+    if(cont) cont.innerHTML='<div class="tab-bar"><div class="app-icon">📦</div><div id="btn-stock" class="m-tab active" onclick="cambiarTabStock(\'stock\')">📦 STOCK</div><div id="btn-ingreso" class="m-tab" onclick="cambiarTabStock(\'ingreso\')">🚚 INGRESO</div><div id="btn-otros" class="m-tab" onclick="cambiarTabStock(\'otros\')">🧰 OTROS</div><div id="btn-historial" class="m-tab" onclick="cambiarTabStock(\'historial\')">📊 HISTORIAL</div></div><div id="tab-stock" class="m-tab-content active">'+tuboHtml+'<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:12px"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">ID</th><th>Nombre</th><th>Llenas</th><th>Vacias</th><th>Cambio</th><th>Acción</th></tr>'+gasRows+'</table></div><div id="tab-otros" class="m-tab-content"><table style="width:100%;font-size:12px;border-collapse:collapse"><tr><th>ID</th><th>Nombre</th><th>Stock</th><th>Vacias</th><th>Precio</th><th>Acción</th></tr>'+otrosRows+'</table></div><div id="tab-ingreso" class="m-tab-content"><div id="igLlenas"></div><div id="igVacias"></div><button class="btn" style="background:#22c55e;color:#000;width:100%;margin-top:8px" onclick="registrarIngresoGas()">Registrar Ingreso Gas</button></div><div id="tab-historial" class="m-tab-content"><div id="historialMovimientos">Cargando...</div></div>';
+    renderIngresoGasInputs();
+  }catch(e){ if(st) st.textContent='Error: '+e.message; }
+}
     if(cont) cont.innerHTML=`
       <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" style="background:#f59e0b;color:#000" onclick="abrirBalanceInicial()">📝 Balance Inicial (Admin)</button>
@@ -346,7 +371,34 @@ function actualizarSelectCambioStock(){
   if(sel && selV) sel.innerHTML=selV.innerHTML;
   const selIo=document.getElementById('ioProducto'); if(selIo && selV) selIo.innerHTML=selV.innerHTML;
 }
-
+function actualizarUIProductoVenta(){
+  const prod = document.getElementById('vmProducto')?.value||'';
+  const fraccDiv = document.getElementById('fraccEnVentas');
+  if(prod==='fraccionado'){
+    if(fraccDiv) fraccDiv.style.display='block';
+    fetch(API_STOCK).then(r=>r.json()).then(j=>{
+      const dep43 = (j.data||[]).find(d=>String(d.producto_id||d.id)==='43.5');
+      const el = document.getElementById('fraccStockInfo');
+      if(el && dep43) el.innerHTML='Tubo en uso: <b>'+(parseFloat(dep43.kilos_en_uso)||0).toFixed(1)+'kg / 43.5kg</b> | Llenos: '+dep43.llenas;
+    });
+  } else if(prod==='43.5'){
+    alert('43.5 NO se vende entero. Usa Fraccionado');
+    document.getElementById('vmProducto').value='fraccionado';
+    actualizarUIProductoVenta();
+  } else {
+    if(fraccDiv) fraccDiv.style.display='none';
+    actualizarPrecio();
+  }
+}
+async function venderFraccionadoDesdeVentas(){
+  const kilos=parseFloat(document.getElementById('vmFraccKilos')?.value)||0;
+  const cliente=document.getElementById('vmCliente')?.value||'Cliente';
+  const precio=parseFloat(document.getElementById('vmPrecio')?.value)||150;
+  if(!confirm('Vender '+kilos+'kg a '+cliente+'?')) return;
+  const r=await fetch(API_STOCK,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'venta_fraccionada', kilos, cliente_nombre:cliente, precio_kilo:precio})});
+  const j=await r.json();
+  if(j.error) alert(j.error); else { alert('Vendido '+kilos+'kg - Quedan '+(j.restante?.toFixed(1)||'?')+'kg'); cargarStock(); cargarCaja(); }
+}
 async function cargarRepartidores(){ try{ const r=await fetch(`${API_ERP}?table=repartidores`); const j=await r.json(); document.getElementById('listaRepartidores').innerHTML=(j.data||[]).map(r=>`<div>${r.nombre}</div>`).join('')||'Sin repartidores'; }catch(e){} }
 async function cargarClientes(){ try{ const r=await fetch(`${API_ERP}?table=clientes`); const j=await r.json(); document.getElementById('listaClientes').innerHTML=(j.data||[]).map(c=>`<div>${c.nombre}</div>`).join('')||'Sin clientes'; }catch(e){} }
 async function cargarProveedores(){ try{ const r=await fetch(`${API_ERP}?table=proveedores`); const j=await r.json(); document.getElementById('listaProveedores').innerHTML=(j.data||[]).map(p=>`<div>${p.nombre}</div>`).join('')||'Sin proveedores'; }catch(e){} }
