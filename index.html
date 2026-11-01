@@ -340,7 +340,88 @@ async function cargarVentasHoy(){
     h+='</table>'; el.innerHTML=h;
   }catch(e){ el.innerHTML='Error: '+e.message; }
 }
-async function cargarFinanzas(){ /* tu lógica */ }
+
+let finanzasCache=[];
+
+async function cargarFinanzas(){
+  let fecha=document.getElementById('finFecha').value;
+  if(!fecha){ const hoy=new Date(); fecha=hoy.toISOString().split('T')[0]; document.getElementById('finFecha').value=fecha; }
+  const el=document.getElementById('tablaFinanzas');
+  if(el) el.innerHTML='Cargando...';
+  try{
+    // Crea tabla si no existe (evita el 500)
+    const r=await fetch(API+'?table=finanzas&fecha='+fecha,{cache:'no-store'});
+    const j=await r.json();
+    finanzasCache=j.data||[];
+
+    const rV=await fetch(API+'?table=ventas',{cache:'no-store'});
+    const jV=await rV.json();
+    const ventas=(jV.data||[]).filter(v=> (v.fecha||'').toString().split('T')[0]===fecha);
+
+    let totIng=0, totEgr=0, totFlete=0;
+    let porMetodo={}; let porCat={};
+    let html='<table><tr style="background:#0f172a"><th>Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
+
+    finanzasCache.forEach(f=>{
+      const monto=parseFloat(f.monto)||0;
+      if(f.tipo==='ingreso') totIng+=monto; else if(f.tipo!=='cierre') totEgr+=monto;
+      if(f.categoria==='flete') totFlete+=monto;
+      porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto;
+      porCat[f.categoria]=(porCat[f.categoria]||0)+monto;
+      const hora=(f.fecha||'').toString().substring(11,19);
+      html+=`<tr style="border-left:4px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><td>${hora}</td><td>${f.tipo}</td><td>${f.descripcion||f.categoria}</td><td style="font-weight:900;color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">$${monto}</td></tr>`;
+    });
+
+    ventas.forEach(v=>{
+      const m=parseFloat(v.total)||0; const fl=parseFloat(v.flete)||0;
+      totIng+=m; totFlete+=fl;
+      porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m;
+      porCat['venta_gas']=(porCat['venta_gas']||0)+m;
+      const h2=(v.fecha||'').toString().substring(11,19);
+      html+=`<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td>${h2}</td><td>venta</td><td>${v.producto_id||''} ${v.cliente_nombre||''}</td><td style="font-weight:900;color:#22c55e">$${m} (flete $${fl})</td></tr>`;
+    });
+
+    html+='</table>';
+    if(el) el.innerHTML=html;
+    document.getElementById('finIngresos').textContent='$'+totIng;
+    document.getElementById('finEgresos').textContent='$'+totEgr;
+    document.getElementById('finFletes').textContent='$'+totFlete;
+    document.getElementById('finBalance').textContent='$'+(totIng-totEgr);
+
+    let rm=document.getElementById('resumenMetodo'); let hr=''; for(let met in porMetodo){ hr+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${met}</span><b>$${porMetodo[met]}</b></div>`; } if(rm) rm.innerHTML=hr;
+    let rc=document.getElementById('resumenCategoria'); let hc=''; for(let cat in porCat){ hc+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${cat}</span><b>$${porCat[cat]}</b></div>`; } if(rc) rc.innerHTML=hc;
+
+  }catch(e){ if(el) el.innerHTML='Error: '+e.message+'<br>¿Creaste la tabla finanzas en Neon?'; }
+}
+
+function abrirModalFinanza(tipo){
+  document.getElementById('modalFinanza').classList.remove('hidden');
+  document.getElementById('finTipo').value=tipo;
+  document.getElementById('tituloFinanza').textContent=tipo==='ingreso'?'💰 Nuevo Ingreso':'💸 Nuevo Egreso';
+}
+function cerrarModalFinanza(){ document.getElementById('modalFinanza').classList.add('hidden'); }
+
+async function guardarFinanza(){
+  const tipo=document.getElementById('finTipo').value;
+  const monto=parseFloat(document.getElementById('finMonto').value)||0;
+  if(!monto){ alert('Monto'); return; }
+  const payload={ tipo, categoria:document.getElementById('finCategoria').value, descripcion:document.getElementById('finDesc').value, monto, metodo_pago:document.getElementById('finMetodo').value, fecha:new Date().toISOString() };
+  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  cerrarModalFinanza(); cargarFinanzas();
+  document.getElementById('finMonto').value=''; document.getElementById('finDesc').value='';
+}
+
+async function hacerCierreCaja(){
+  const fecha=document.getElementById('finFecha').value||new Date().toISOString().split('T')[0];
+  if(!confirm('¿Cerrar caja del '+fecha+'?')) return;
+  const ing=document.getElementById('finIngresos').textContent;
+  const egr=document.getElementById('finEgresos').textContent;
+  const bal=document.getElementById('finBalance').textContent;
+  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'cierre', categoria:'cierre_caja', descripcion:`Cierre caja ${fecha} Ing:${ing} Egr:${egr} Bal:${bal}`, monto:parseFloat(bal.replace('$',''))||0, fecha:new Date().toISOString()})});
+  alert('✅ Caja cerrada: '+bal);
+}
+
+  
 function initGpsMaps(){ /* tu lógica */ }
 function cargarGpsVivo(){ /* tu lógica */ }
 
