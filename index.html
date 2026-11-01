@@ -105,7 +105,23 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
     </div>
   </div>
 </div>
-<div id="view-proveedores" class="view-section hidden"><div class="card">Módulo Proveedores - próximo</div></div>
+<div id="view-proveedores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="font-weight:900">🏭 Proveedores - Gas</h3>
+    <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button>
+  </div>
+  <div class="card">
+    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px">
+      <input type="hidden" id="provIdEdit">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="provNombre" placeholder="Nombre ej: 【entity-Petrobras¦canonical_name=Petrobras】" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px">
+        <input id="provTelefono" placeholder="Tel" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button onclick="guardarProveedor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="document.getElementById('formProveedor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div>
+    </div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Tel</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaProveedores"><tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
  <div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <h3 style="font-weight:900">📦 Stock - Depósito</h3>
@@ -541,6 +557,17 @@ mostrarSeccion=function(id,btn){
   if(id==='productos') setTimeout(cargarProductosCatalogo,100);
   if(id==='stock') setTimeout(cargarStock,100);
 }
+// --- PROVEEDORES ---
+var provCache=[];
+async function cargarProveedores(){
+  var tbody=document.getElementById('tablaProveedores'); if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr>';
+  try{ var r=await fetch(API+'?table=proveedores',{cache:'no-store'}); var j=await r.json(); provCache=j.data||[]; var h=''; for(var i=0;i<provCache.length;i++){ var p=provCache[i]; h+='<tr><td style="padding:8px;border:1px solid #1f2937;font-weight:700">'+(p.nombre||'')+'</td><td style="padding:8px;border:1px solid #1f2937">'+(p.telefono||'')+'</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProveedor(\''+(p.id||p.nombre)+'\')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarProveedor(\''+(p.id||p.nombre)+'\')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>'; } tbody.innerHTML=h||'<tr><td colspan="3" style="text-align:center">Sin proveedores</td></tr>'; }catch(e){ tbody.innerHTML='<tr><td colspan="3" style="color:#ef4444">'+e.message+'</td></tr>'; }
+}
+function abrirNuevoProveedor(){ document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEdit').value=''; document.getElementById('provNombre').value=''; }
+async function guardarProveedor(){ var id=document.getElementById('provIdEdit').value; var nombre=document.getElementById('provNombre').value.trim(); if(!nombre){ alert('Nombre'); return; } await fetch(API+'?table=proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id||nombre, nombre:nombre, telefono:document.getElementById('provTelefono').value})}); document.getElementById('formProveedor').classList.add('hidden'); cargarProveedores(); }
+function editarProveedor(id){ var p=provCache.find(function(x){ return String(x.id)===String(id)||String(x.nombre)===String(id); }); if(!p) return; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEdit').value=p.id; document.getElementById('provNombre').value=p.nombre; document.getElementById('provTelefono').value=p.telefono||''; }
+async function eliminarProveedor(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=proveedores&id='+encodeURIComponent(id),{method:'DELETE'}); cargarProveedores(); }
 </script>
 </body>
 </html>
