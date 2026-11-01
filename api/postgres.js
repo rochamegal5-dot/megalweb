@@ -17,6 +17,11 @@ export default async function handler(req, res) {
         if (hoy === '1') { const { rows } = await sql`SELECT * FROM ventas WHERE fecha >= CURRENT_DATE ORDER BY fecha DESC`; return res.json({ data: rows }); }
         const { rows } = await sql`SELECT * FROM ventas ORDER BY fecha DESC LIMIT 500`; return res.json({ data: rows });
       }
+      if(table==='finanzas'){ 
+  var fechaQ=req.query.fecha;
+  if(fechaQ){ var {rows}=await sql`SELECT * FROM finanzas WHERE fecha::date = ${fechaQ}::date ORDER BY fecha DESC`; return res.json({data:[STRIPPED] }
+  var {rows}=await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 500`; return res.json({data:[STRIPPED] 
+}
       return res.status(400).json({ error: 'Tabla no permitida: '+table, data: [] });
     }
 
@@ -187,6 +192,13 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error('PG ERROR:', e);
     return res.status(500).json({ error: e.message, data: [] });
+
+   if(table==='finanzas'){ 
+  await sql`CREATE TABLE IF NOT EXISTS finanzas (id SERIAL PRIMARY KEY, fecha TIMESTAMPTZ DEFAULT NOW(), tipo TEXT, categoria TEXT, descripcion TEXT, monto NUMERIC, metodo_pago TEXT, repartidor_id TEXT)`;
+  var {tipo,categoria,descripcion,monto,metodo_pago}=b;
+  await sql`INSERT INTO finanzas (tipo,categoria,descripcion,monto,metodo_pago,fecha) VALUES (${tipo},${categoria},${descripcion||categoria},${monto},${metodo_pago||'contado'}, ${b.fecha ? sql`${b.fecha}::timestamptz` : sql`NOW()`})`;
+  return res.json({ok:true}); 
+}     
   }
 }
 
