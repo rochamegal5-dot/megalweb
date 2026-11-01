@@ -31,6 +31,7 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <button class="tab" onclick="mostrarSeccion('proveedores',this)">🏭 Proveedores</button>
 <button class="tab" onclick="mostrarSeccion('stock',this)">📦 Stock</button>
 <button class="tab" onclick="mostrarSeccion('ventas',this)">💰 Ventas</button>
+<button class="tab" onclick="mostrarSeccion('finanzas',this)">📊 Finanzas</button>
 <div id="headerStatus" style="margin-top:auto;font-size:11px;color:#22c55e">● Conectado Postgres</div>
 </div>
 <div class="main">
@@ -208,8 +209,63 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
   <div id="tab-ventas-camioneta" class="hidden">
     <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Estas ventas vienen de la APP del repartidor. No suman a caja hasta cierre.</p><div id="informeCamionetaList" style="margin-top:10px"></div></div>
   </div>
+
+<div id="view-finanzas" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div><h3 style="font-weight:900">📊 Finanzas - Megal Rocha</h3><p style="font-size:11px;color:#94a3b8">Caja diaria, ingresos, egresos, fletes, cierres</p></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="abrirModalFinanza('ingreso')" style="background:#22c55e;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💰 Ingreso</button>
+      <button onclick="abrirModalFinanza('egreso')" style="background:#ef4444;color:white;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💸 Egreso</button>
+      <button onclick="hacerCierreCaja()" style="background:#f59e0b;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">🔒 Cierre Caja</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">INGRESOS HOY</p><b id="finIngresos" style="font-size:20px;color:#22c55e">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">EGRESOS HOY</p><b id="finEgresos" style="font-size:20px;color:#ef4444">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">FLETES HOY</p><b id="finFletes" style="font-size:20px;color:#38bdf8">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px;background:#22c55e20;border:2px solid #22c55e"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="finBalance" style="font-size:22px;color:#22c55e">$0</b></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="card">
+      <h4 style="font-weight:900">💵 Ingresos / Egresos Hoy</h4>
+      <div style="display:flex;gap:6px;margin:10px 0">
+        <input type="date" id="finFecha" style="padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px">
+        <button onclick="cargarFinanzas()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px">Buscar</button>
+      </div>
+      <div id="tablaFinanzas" style="max-height:400px;overflow:auto;font-size:11px"></div>
+    </div>
+    <div class="card">
+      <h4 style="font-weight:900">📦 Resumen por Método</h4>
+      <div id="resumenMetodo" style="margin-top:10px"></div>
+      <h4 style="font-weight:900;margin-top:16px">🚚 Por Repartidor</h4>
+      <div id="resumenRepartidor" style="margin-top:10px"></div>
+      <h4 style="font-weight:900;margin-top:16px">📊 Por Categoría</h4>
+      <div id="resumenCategoria" style="margin-top:10px"></div>
+    </div>
+  </div>
+  </div>
 </div>
+
+  <div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div class="card" style="width:100%;max-width:450px">
+      <h3 id="tituloFinanza">Nuevo Movimiento</h3>
+      <div style="display:grid;gap:10px;margin-top:12px">
+        <select id="finTipo" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select>
+        <select id="finCategoria" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="venta_gas">Venta Gas</option><option value="flete">Flete</option><option value="combustible">Combustible</option><option value="proveedor">Pago Proveedor</option><option value="sueldo">Sueldo Repartidor</option><option value="mantenimiento">Mantenimiento</option><option value="otro_ingreso">Otro Ingreso</option><option value="otro_egreso">Otro Egreso</option></select>
+        <input id="finDesc" placeholder="Descripción ej: Pago Petrobras remito 123" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input id="finMonto" type="number" placeholder="Monto $" style="padding:10px;background:#1e293b;border:2px solid #22c55e;color:white;border-radius:8px;font-weight:900">
+          <select id="finMetodo" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarFinanza()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">Guardar</button><button onclick="cerrarModalFinanza()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
+    </div>
+  </div>
 </div>
+  
+
 <script>
 const API='/api/postgres';
 function mostrarSeccion(id,btn){
@@ -603,6 +659,65 @@ mostrarSeccion=function(id,btn){
   if(id==='proveedores') setTimeout(cargarProveedores,100);
   if(id==='repartidores') setTimeout(cargarRepartidores,100);
   if(id==='gps'){ setTimeout(function(){ initGpsMaps(); cargarGpsVivo(); },200); }
+}
+
+  // --- FINANZAS POSTGRES COMPLETO ---
+var finanzasCache=[];
+async function cargarFinanzas(){
+  var fecha=document.getElementById('finFecha').value;
+  if(!fecha){ var hoy=new Date(); fecha=hoy.toISOString().split('T')[0]; document.getElementById('finFecha').value=fecha; }
+  var el=document.getElementById('tablaFinanzas');
+  if(el) el.innerHTML='Cargando...';
+  try{
+    var r=await fetch(API+'?table=finanzas&fecha='+fecha,{cache:'no-store'});
+    var j=await r.json();
+    finanzasCache=j.data||[];
+    // También sumar ventas del día para ingresos automáticos
+    var rV=await fetch(API+'?table=ventas',{cache:'no-store'}); var jV=await rV.json(); var ventas=(jV.data||[]).filter(function(v){ var f=(v.fecha||'').toString().split('T')[0]; return f===fecha; });
+    var totIng=0, totEgr=0, totFlete=0;
+    var porMetodo={contado:0, tarjeta:0, transferencia:0};
+    var porRep={};
+    var porCat={};
+    var html='<table style="width:100%;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
+    // Finanzas manuales
+    for(var i=0;i<finanzasCache.length;i++){ var f=finanzasCache[i]; var monto=parseFloat(f.monto)||0; if(f.tipo==='ingreso') totIng+=monto; else totEgr+=monto; if(f.categoria==='flete') totFlete+=monto; porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto; porCat[f.categoria]=(porCat[f.categoria]||0)+monto; var hora=(f.fecha||'').toString().substring(11,19); html+='<tr style="border-left:4px solid '+(f.tipo==='ingreso'?'#22c55e':'#ef4444')+'"><td style="padding:4px;border:1px solid #1f2937">'+hora+'</td><td style="padding:4px;border:1px solid #1f2937">'+f.tipo+'</td><td style="padding:4px;border:1px solid #1f2937">'+(f.descripcion||f.categoria)+'</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900;color:'+(f.tipo==='ingreso'?'#22c55e':'#ef4444')+'">$'+monto+'</td></tr>'; }
+    // Ventas como ingresos
+    for(var k=0;k<ventas.length;k++){ var v=ventas[k]; var m=parseFloat(v.total)||0; var fl=parseFloat(v.flete)||0; totIng+=m; totFlete+=fl; porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m; porCat['venta_gas']=(porCat['venta_gas']||0)+m; var h2=(v.fecha||'').toString().substring(11,19); html+='<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td style="padding:4px;border:1px solid #1f2937">'+h2+'</td><td style="padding:4px;border:1px solid #1f2937">venta</td><td style="padding:4px;border:1px solid #1f2937">'+(v.producto_id||'')+' '+(v.cliente_nombre||'')+'</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$'+m+' (flete $'+fl+')</td></tr>'; }
+    html+='</table>';
+    if(el) el.innerHTML=html||'<i style="color:#64748b">Sin movimientos hoy</i>';
+    document.getElementById('finIngresos').textContent='$'+totIng;
+    document.getElementById('finEgresos').textContent='$'+totEgr;
+    document.getElementById('finFletes').textContent='$'+totFlete;
+    document.getElementById('finBalance').textContent='$'+(totIng-totEgr);
+    // Resúmenes
+    var rm=document.getElementById('resumenMetodo'); var hr=''; for(var met in porMetodo){ hr+='<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>'+met+'</span><b>$'+porMetodo[met]+'</b></div>'; } if(rm) rm.innerHTML=hr;
+    var rc=document.getElementById('resumenCategoria'); var hc=''; for(var cat in porCat){ hc+='<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>'+cat+'</span><b>$'+porCat[cat]+'</b></div>'; } if(rc) rc.innerHTML=hc;
+  }catch(e){ if(el) el.innerHTML='Error: '+e.message; }
+}
+function abrirModalFinanza(tipo){ document.getElementById('modalFinanza').classList.remove('hidden'); document.getElementById('finTipo').value=tipo; document.getElementById('tituloFinanza').textContent=tipo==='ingreso'?'💰 Nuevo Ingreso':'💸 Nuevo Egreso'; }
+function cerrarModalFinanza(){ document.getElementById('modalFinanza').classList.add('hidden'); }
+async function guardarFinanza(){
+  var tipo=document.getElementById('finTipo').value;
+  var monto=parseFloat(document.getElementById('finMonto').value)||0;
+  if(!monto){ alert('Monto'); return; }
+  var payload={ tipo:tipo, categoria:document.getElementById('finCategoria').value, descripcion:document.getElementById('finDesc').value, monto:monto, metodo_pago:document.getElementById('finMetodo').value, fecha:new Date().toISOString() };
+  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  cerrarModalFinanza(); cargarFinanzas();
+  document.getElementById('finMonto').value=''; document.getElementById('finDesc').value='';
+}
+async function hacerCierreCaja(){
+  var fecha=document.getElementById('finFecha').value||new Date().toISOString().split('T')[0];
+  if(!confirm('¿Cerrar caja del '+fecha+'? Esto guarda el balance.')) return;
+  var ing=document.getElementById('finIngresos').textContent;
+  var egr=document.getElementById('finEgresos').textContent;
+  var bal=document.getElementById('finBalance').textContent;
+  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'cierre', categoria:'cierre_caja', descripcion:'Cierre caja '+fecha+' Ing:'+ing+' Egr:'+egr+' Bal:'+bal, monto:parseFloat(bal.replace('$',''))||0, fecha:new Date().toISOString()})});
+  alert('✅ Caja cerrada: '+bal);
+}
+var oldMostrarFin=mostrarSeccion;
+mostrarSeccion=function(id,btn){
+  oldMostrarFin(id,btn);
+  if(id==='finanzas') setTimeout(cargarFinanzas,100);
 }
 </script>
 </body>
