@@ -126,7 +126,33 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
   </div>
 </div>
 
-<div id="view-ventas" class="view-section hidden"><div class="card">Módulo Ventas - próximo</div></div>
+<div id="view-ventas" class="view-section hidden">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="btnTabMostrador" onclick="cambiarTabVentas('mostrador')" style="flex:1;padding:12px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:10px">🛒 MOSTRADOR</button>
+    <button id="btnTabCamioneta" onclick="cambiarTabVentas('camioneta')" style="flex:1;padding:12px;background:#1f2937;color:#94a3b8;font-weight:700;border:1px solid #334155;border-radius:10px">🚚 INFORME CAMIONETA (APP)</button>
+  </div>
+
+  <div id="tab-ventas-mostrador">
+    <div class="card">
+      <h3 style="font-weight:900">💰 Venta Mostrador - Rocha</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
+        <div><label style="font-size:11px">Cliente / Tipo</label><select id="ventaTipoCliente" onchange="actualizarReglaFlete()" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="consumidor_final">Consumidor Final</option><option value="mides">MIDES</option><option value="comercio">Comercio</option><option value="retira">Retira en Local</option></select><input id="ventaCliente" placeholder="Nombre cliente" style="width:100%;margin-top:6px;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"></div>
+        <div><label style="font-size:11px">Producto</label><select id="ventaProducto" onchange="onProductoChange()" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg (no se vende entero)</option><option value="fraccionado">FRACCIONADO 1-3kg (usa tubo 43.5)</option></select>
+          <div id="boxFraccionado" class="hidden" style="margin-top:6px;display:flex;gap:6px"><select id="ventaKilos" style="flex:1;padding:10px;background:#0f172a;border:1px solid #f59e0b;color:#f59e0b;border-radius:8px"><option value="1">1 kg</option><option value="2">2 kg</option><option value="3">3 kg</option></select><span id="stockTuboInfo" style="font-size:11px;color:#94a3b8;padding:8px"></span></div>
+        </div>
+        <div><label style="font-size:11px">Pago</label><select id="ventaPago" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option></select><div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-top:6px"><div><label style="font-size:11px">Modo</label><select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px"><option value="retira">Retira</option><option value="domicilio">Domicilio</option></select></div><div><label style="font-size:11px">Flete</label><input id="ventaFlete" type="number" value="0" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px"></div></div></div>
+      </div>
+      <div id="reglaFleteInfo" style="margin-top:10px;padding:8px;background:#0f172a;border-radius:8px;font-size:12px;color:#f59e0b"></div>
+      <div style="margin-top:12px;background:#0f172a;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#94a3b8">Total:</span><b id="ventaTotal" style="font-size:24px;color:#22c55e">$0</b></div>
+      <button onclick="registrarVentaMostrador()" style="width:100%;margin-top:12px;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px;font-size:16px">✅ REGISTRAR VENTA</button>
+    </div>
+    <div class="card"><h4 style="font-weight:900">📋 Ventas Hoy - Mostrador</h4><div id="ventasHoyTabla" style="margin-top:8px;font-size:12px">Cargando...</div></div>
+  </div>
+
+  <div id="tab-ventas-camioneta" class="hidden">
+    <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Estas ventas vienen de la APP del repartidor. No suman a caja hasta cierre.</p><div id="informeCamionetaList" style="margin-top:10px"></div></div>
+  </div>
+</div>
 </div>
 <script>
 const API='/api/postgres';
@@ -349,6 +375,83 @@ async function importarClientesWhatsApp(e){
 var oldMostrarCli=mostrarSeccion;
 mostrarSeccion=function(id,btn){
   oldMostrarCli(id,btn);
+  if(id==='clientes') setTimeout(cargarClientes,100);
+  if(id==='productos') setTimeout(cargarProductosCatalogo,100);
+  if(id==='stock') setTimeout(cargarStock,100);
+}
+  // --- VENTAS POSTGRES ---
+var tubo43Cache=null;
+function cambiarTabVentas(tab){
+  document.getElementById('tab-ventas-mostrador').classList.add('hidden');
+  document.getElementById('tab-ventas-camioneta').classList.add('hidden');
+  document.getElementById('btnTabMostrador').style.background='#1f2937'; document.getElementById('btnTabMostrador').style.color='#94a3b8';
+  document.getElementById('btnTabCamioneta').style.background='#1f2937'; document.getElementById('btnTabCamioneta').style.color='#94a3b8';
+  if(tab==='mostrador'){ document.getElementById('tab-ventas-mostrador').classList.remove('hidden'); document.getElementById('btnTabMostrador').style.background='#0ea5e9'; document.getElementById('btnTabMostrador').style.color='white'; cargarVentasHoy(); cargarStockTubo43(); }
+  if(tab==='camioneta'){ document.getElementById('tab-ventas-camioneta').classList.remove('hidden'); document.getElementById('btnTabCamioneta').style.background='#f59e0b'; document.getElementById('btnTabCamioneta').style.color='#000'; cargarInformeCamioneta(); }
+}
+async function cargarStockTubo43(){
+  try{ var r=await fetch(API+'?table=deposito'); var j=await r.json(); var dep=(j.data||[]).find(function(d){return String(d.producto_id)==='43.5';}); tubo43Cache=dep; var info=document.getElementById('stockTuboInfo'); if(info&&dep) info.textContent='Tubo: '+parseFloat(dep.kilos_en_uso||0).toFixed(1)+'kg / '+dep.llenas+' llenas'; }catch(e){}
+}
+function onProductoChange(){
+  var prod=document.getElementById('ventaProducto').value;
+  var box=document.getElementById('boxFraccionado');
+  if(prod==='43.5'){ alert('⚠️ El tubo 43.5 NO se vende entero. Es tanque madre. Usa FRACCIONADO 1-3kg'); document.getElementById('ventaProducto').value='fraccionado'; box.classList.remove('hidden'); }
+  else if(prod==='fraccionado'){ box.classList.remove('hidden'); }
+  else { box.classList.add('hidden'); }
+  calcularTotalMostrador();
+}
+function actualizarReglaFlete(){
+  var tipoCli=document.getElementById('ventaTipoCliente').value;
+  var modo=document.getElementById('ventaModo').value;
+  var fleteInput=document.getElementById('ventaFlete');
+  var info=document.getElementById('reglaFleteInfo');
+  var regla='';
+  if(tipoCli==='retira'){ fleteInput.value=0; fleteInput.disabled=true; regla='REGLA: Retira en local = SIN FLETE (obligatorio)'; }
+  else if(tipoCli==='comercio'){ fleteInput.value=0; fleteInput.disabled=true; regla='REGLA: Comercio = NUNCA flete'; }
+  else if((tipoCli==='consumidor_final'||tipoCli==='mides') && modo==='domicilio'){ fleteInput.disabled=false; if(parseInt(fleteInput.value||0)===0) fleteInput.value=120; regla='REGLA: Consumidor Final / MIDES a domicilio = FLETE $120 OBLIGATORIO (editable)'; }
+  else if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; regla='Retira = sin flete'; }
+  else { fleteInput.disabled=false; regla='Domicilio - flete opcional'; }
+  if(info) info.textContent=regla;
+  calcularTotalMostrador();
+}
+function calcularTotalMostrador(){
+  var prod=document.getElementById('ventaProducto').value;
+  var precios={ '11': 800, '13': 950, '45': 3500, 'fraccionado': 150 };
+  var base=precios[prod]||0;
+  if(prod==='fraccionado'){ var kg=parseInt(document.getElementById('ventaKilos').value)||1; base=kg*precios.fraccionado; }
+  var flete=parseInt(document.getElementById('ventaFlete').value)||0;
+  var total=base+flete;
+  var el=document.getElementById('ventaTotal'); if(el) el.textContent='$'+total;
+}
+async function registrarVentaMostrador(){
+  var prod=document.getElementById('ventaProducto').value;
+  var tipoCli=document.getElementById('ventaTipoCliente').value;
+  var modo=document.getElementById('ventaModo').value;
+  var cliente=document.getElementById('ventaCliente').value||'Cliente Mostrador';
+  var pago=document.getElementById('ventaPago').value;
+  var flete=parseInt(document.getElementById('ventaFlete').value)||0;
+  var totalText=document.getElementById('ventaTotal').textContent.replace('$',''); var total=parseInt(totalText)||0;
+  if(prod==='fraccionado'){
+    var kg=parseInt(document.getElementById('ventaKilos').value)||1;
+    if(!confirm('Vender '+kg+'kg fraccionado a '+cliente+' por $'+total+'?')) return;
+    var r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada', kilos:kg, cliente_nombre:cliente})});
+    var j=await r.json(); if(j.error){ alert(j.error); return; }
+    alert('✅ Vendido '+kg+'kg. Quedan '+parseFloat(j.restante||0).toFixed(1)+'kg en tubo');
+  } else {
+    if(!confirm('Vender '+prod+' a '+cliente+' total $'+total+'?')) return;
+    await fetch(API+'?table=ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto_id:prod, cliente_nombre:cliente, cantidad:1, total:total, flete:flete, pago:pago, tipo_cliente:tipoCli, modo:modo})});
+  }
+  document.getElementById('ventaCliente').value=''; cargarVentasHoy(); cargarStockTubo43();
+}
+async function cargarVentasHoy(){
+  var el=document.getElementById('ventasHoyTabla'); if(!el) return; el.innerHTML='Cargando...';
+  try{ var r=await fetch(API+'?table=ventas',{cache:'no-store'}); var j=await r.json(); var v=j.data||[]; if(!v.length){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; } var h='<table style="width:100%;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>'; for(var i=0;i<v.length;i++){ var row=v[i]; var hora=(row.fecha||row.created_at||'').toString().substring(11,19); h+='<tr><td style="padding:4px;border:1px solid #1f2937">'+hora+'</td><td style="padding:4px;border:1px solid #1f2937">'+(row.cliente_nombre||'')+' ('+(row.tipo_cliente||'')+')</td><td style="padding:4px;border:1px solid #1f2937">'+(row.producto_id||'')+'</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$'+(row.total||0)+'</td></tr>'; } h+='</table>'; el.innerHTML=h; }catch(e){ el.innerHTML='Error: '+e.message; }
+}
+async function cargarInformeCamioneta(){ var el=document.getElementById('informeCamionetaList'); if(!el) return; el.innerHTML='Las ventas de camioneta vienen de la APP del repartidor (tabla ventas con modo camioneta). Cuando conectemos la APP se mostrarán acá.'; }
+var oldMostrarVentas=mostrarSeccion;
+mostrarSeccion=function(id,btn){
+  oldMostrarVentas(id,btn);
+  if(id==='ventas'){ setTimeout(function(){ cambiarTabVentas('mostrador'); actualizarReglaFlete(); calcularTotalMostrador(); },150); }
   if(id==='clientes') setTimeout(cargarClientes,100);
   if(id==='productos') setTimeout(cargarProductosCatalogo,100);
   if(id==='stock') setTimeout(cargarStock,100);
