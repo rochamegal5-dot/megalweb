@@ -56,7 +56,23 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
     <div class="card" style="padding:8px;margin-top:10px"><div id="gpsMapHist"></div></div>
   </div>
 </div>
-<div id="view-repartidores" class="view-section hidden"><div class="card">Módulo Repartidores - próximo</div></div>
+<div id="view-repartidores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="font-weight:900">🛵 Repartidores</h3>
+    <button onclick="abrirNuevoRepartidor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button>
+  </div>
+  <div class="card">
+    <div id="formRepartidor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px">
+      <input type="hidden" id="repIdEdit">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="repNombre" placeholder="Nombre ej: Juan" style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px">
+        <input id="repTelefono" placeholder="Tel 09..." style="padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button onclick="guardarRepartidor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="document.getElementById('formRepartidor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div>
+    </div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Tel</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaRepartidores"><tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
 <div id="view-productos" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <div><h3 style="font-weight:900">📦 Productos - Catálogo</h3><p style="font-size:11px;color:#94a3b8">Sin cantidades - el stock está en Depósito</p></div>
@@ -568,6 +584,26 @@ function abrirNuevoProveedor(){ document.getElementById('formProveedor').classLi
 async function guardarProveedor(){ var id=document.getElementById('provIdEdit').value; var nombre=document.getElementById('provNombre').value.trim(); if(!nombre){ alert('Nombre'); return; } await fetch(API+'?table=proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id||nombre, nombre:nombre, telefono:document.getElementById('provTelefono').value})}); document.getElementById('formProveedor').classList.add('hidden'); cargarProveedores(); }
 function editarProveedor(id){ var p=provCache.find(function(x){ return String(x.id)===String(id)||String(x.nombre)===String(id); }); if(!p) return; document.getElementById('formProveedor').classList.remove('hidden'); document.getElementById('provIdEdit').value=p.id; document.getElementById('provNombre').value=p.nombre; document.getElementById('provTelefono').value=p.telefono||''; }
 async function eliminarProveedor(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=proveedores&id='+encodeURIComponent(id),{method:'DELETE'}); cargarProveedores(); }
+// --- REPARTIDORES ---
+var repCache=[];
+async function cargarRepartidores(){
+  var tbody=document.getElementById('tablaRepartidores'); if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr>';
+  try{ var r=await fetch(API+'?table=repartidores',{cache:'no-store'}); var j=await r.json(); repCache=j.data||[]; var h=''; for(var i=0;i<repCache.length;i++){ var p=repCache[i]; h+='<tr><td style="padding:8px;border:1px solid #1f2937;font-weight:700">'+(p.nombre||'')+'</td><td style="padding:8px;border:1px solid #1f2937">'+(p.telefono||'')+'</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="editarRepartidor(\''+(p.id||p.nombre)+'\')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarRepartidor(\''+(p.id||p.nombre)+'\')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>'; } tbody.innerHTML=h||'<tr><td colspan="3" style="text-align:center">Sin repartidores</td></tr>'; }catch(e){ tbody.innerHTML='<tr><td colspan="3" style="color:#ef4444">'+e.message+'</td></tr>'; }
+}
+function abrirNuevoRepartidor(){ document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=''; document.getElementById('repNombre').value=''; }
+async function guardarRepartidor(){ var id=document.getElementById('repIdEdit').value; var nombre=document.getElementById('repNombre').value.trim(); if(!nombre){ alert('Nombre'); return; } await fetch(API+'?table=repartidores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id||nombre, nombre:nombre, telefono:document.getElementById('repTelefono').value})}); document.getElementById('formRepartidor').classList.add('hidden'); cargarRepartidores(); }
+function editarRepartidor(id){ var p=repCache.find(function(x){ return String(x.id)===String(id)||String(x.nombre)===String(id); }); if(!p) return; document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=p.id; document.getElementById('repNombre').value=p.nombre; document.getElementById('repTelefono').value=p.telefono||''; }
+async function eliminarRepartidor(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=repartidores&id='+encodeURIComponent(id),{method:'DELETE'}); cargarRepartidores(); }
+
+// Hook final para todos
+var oldMostrarTodos=mostrarSeccion;
+mostrarSeccion=function(id,btn){
+  oldMostrarTodos(id,btn);
+  if(id==='proveedores') setTimeout(cargarProveedores,100);
+  if(id==='repartidores') setTimeout(cargarRepartidores,100);
+  if(id==='gps'){ setTimeout(function(){ initGpsMaps(); cargarGpsVivo(); },200); }
+}
 </script>
 </body>
 </html>
