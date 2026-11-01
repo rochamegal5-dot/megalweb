@@ -41,7 +41,18 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
 <div class="main">
-<div id="view-resumen" class="view-section"><div class="card"><h3>Resumen - Rocha</h3><p style="font-size:12px;color:#94a3b8">Base OK. API: /api/postgres</p></div></div>
+<div id="view-resumen" class="view-section">
+  <div class="card">
+    <h3 style="font-weight:900">📊 Resumen - Rocha</h3>
+    <p style="font-size:11px;color:#94a3b8">Megal Gas - Base Postgres Neon</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px">
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">VENTAS HOY</p><b id="resVentasHoy" style="font-size:20px;color:#22c55e">$0</b><p style="font-size:10px" id="resVentasCount">0 ventas</p></div>
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">STOCK LLENAS</p><b id="resStockTotal" style="font-size:20px">0</b><p style="font-size:10px" id="resStockDetalle">11:0 | 13:0 | 45:0</p></div>
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="resCajaHoy" style="font-size:20px">$0</b><p style="font-size:10px;color:#38bdf8" id="resFletesHoy">Fletes $0</p></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h4>📋 Últimas Ventas</h4><div id="resUltimasVentas" style="font-size:11px;margin-top:8px">Cargando...</div></div>
+  </div>
+</div>
 
 <div id="view-gps" class="view-section hidden">
   <!-- GPS aquí -->
@@ -49,13 +60,60 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   <div id="gpsHistTab" class="hidden"><div class="card" style="padding:8px"><div id="gpsMapHist"></div></div></div>
 </div>
 
-<div id="view-repartidores" class="view-section hidden"><div class="card"><h3>🛵 Repartidores</h3></div><div class="card"><table><tbody id="tablaRepartidores"></tbody></table></div></div>
+<div id="view-repartidores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-weight:900">🛵 Repartidores</h3><button onclick="abrirNuevoRepartidor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button></div>
+  <div class="card">
+    <div id="formRepartidor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px"><input type="hidden" id="repIdEdit"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><input id="repNombre" placeholder="Nombre ej: Juan"><input id="repTelefono" placeholder="Tel 09..."></div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="guardarRepartidor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="document.getElementById('formRepartidor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div>
+    <table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>Acc</th></tr></thead><tbody id="tablaRepartidores"><tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
 
-<div id="view-productos" class="view-section hidden"><div class="card"><h3>📦 Productos</h3></div><div class="card"><table><tbody id="tablaProductos"></tbody></table></div></div>
+<div id="view-productos" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="font-weight:900">📦 Productos - Catálogo</h3><p style="font-size:11px;color:#94a3b8">Sin cantidades - el stock está en Depósito</p></div><button onclick="abrirNuevoProductoCatalogo()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Producto</button></div>
+  <div class="card">
+    <div id="formProducto" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
+      <h4 id="tituloFormProd">Nuevo Producto</h4><input type="hidden" id="prodIdEditando">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+        <div><label style="font-size:11px">Código *</label><input id="prodCodigo" placeholder="VALVULA-13" style="width:100%"></div>
+        <div><label style="font-size:11px">Nombre *</label><input id="prodNombre" placeholder="Válvula 13kg" style="width:100%"></div>
+        <div><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%"><option value="garrafa">Garrafa</option><option value="tubo">Tubo</option><option value="valvula">Válvula</option><option value="regulador">Regulador</option><option value="otro">Otro</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarProductoCatalogo()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">Guardar</button><button onclick="cancelarEdicionProd()" style="padding:10px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
+    </div>
+    <table><thead><tr style="background:#0f172a"><th>Código</th><th>Nombre</th><th>Tipo</th><th>Acc</th></tr></thead><tbody id="tablaProductos"><tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
 
-<div id="view-clientes" class="view-section hidden"><div class="card"><h3>👥 Clientes</h3></div><div class="card"><table><tbody id="tablaClientes"></tbody></table></div></div>
+<div id="view-clientes" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="font-weight:900">👥 Clientes - Rocha</h3><div style="display:flex;gap:8px"><button onclick="document.getElementById('inputImportClientes').click()" style="background:#25D366;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">📥 Importar .vcf</button><button onclick="abrirNuevoCliente()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button><input id="inputImportClientes" type="file" accept=".vcf,.csv,.txt" style="display:none" onchange="importarClientesWhatsApp(event)"></div></div>
+  <div class="card"><input id="buscadorClientes" placeholder="Buscar nombre o teléfono..." oninput="filtrarClientes()" style="width:100%;margin-bottom:12px"><table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>Dirección</th><th>Tipo</th><th>Acc</th></tr></thead><tbody id="tablaClientes"><tr><td colspan="5" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table></div>
+</div>
+<div id="modalCliente" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:500px"><h3 id="tituloCliente">Nuevo Cliente</h3><input type="hidden" id="cliIdEdit"><div style="display:grid;gap:10px;margin-top:12px"><input id="cliNombre" placeholder="Nombre *"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="cliTelefono" placeholder="Tel 098..."><select id="cliTipo"><option value="particular">Particular</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div><input id="cliDireccion" placeholder="Dirección"></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarCliente()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="cerrarCliente()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div></div>
 
-<div id="view-proveedores" class="view-section hidden"><div class="card"><h3>🏭 Proveedores</h3></div><div class="card"><table><tbody id="tablaProveedores"></tbody></table></div></div>
+<div id="view-proveedores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="font-weight:900">🏭 Proveedores - Gas</h3>
+    <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo Proveedor</button>
+  </div>
+  <div class="card">
+    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px">
+      <input type="hidden" id="provIdEdit">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label style="font-size:11px">Nombre *</label><input id="provNombre" placeholder="Ej: 【entity-Petrobras¦canonical_name=Petrobras】" style="width:100%"></div>
+        <div><label style="font-size:11px">Teléfono</label><input id="provTelefono" placeholder="Ej: 098..." style="width:100%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+        <div><label style="font-size:11px">RUT (opcional)</label><input id="provRut" placeholder="RUT" style="width:100%"></div>
+        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Dirección" style="width:100%"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="guardarProveedor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button>
+        <button onclick="document.getElementById('formProveedor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
+      </div>
+    </div>
+    <table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>RUT</th><th>Acc</th></tr></thead><tbody id="tablaProveedores"><tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
+  </div>
+</div>
 
 <div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -420,6 +478,125 @@ async function hacerCierreCaja(){
   await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'cierre', categoria:'cierre_caja', descripcion:`Cierre caja ${fecha} Ing:${ing} Egr:${egr} Bal:${bal}`, monto:parseFloat(bal.replace('$',''))||0, fecha:new Date().toISOString()})});
   alert('✅ Caja cerrada: '+bal);
 }
+let provCache=[];
+
+async function cargarProveedores(){
+  const tbody=document.getElementById('tablaProveedores');
+  if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr>';
+  try{
+    const r=await fetch(API+'?table=proveedores',{cache:'no-store'});
+    const j=await r.json();
+    provCache=j.data||[];
+    if(!provCache.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Sin proveedores - Agregá el primero</td></tr>'; return; }
+    let h='';
+    provCache.forEach(p=>{
+      const idSafe=String(p.id||p.nombre).replace(/'/g,'');
+      h+=`<tr><td style="font-weight:700">${p.nombre||''}</td><td>${p.telefono||''}</td><td style="font-size:10px">${p.rut||''}</td><td><button onclick="editarProveedor('${idSafe}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarProveedor('${idSafe}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`;
+    });
+    tbody.innerHTML=h;
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="color:#ef4444">Error: ${e.message}</td></tr>`; }
+}
+
+function abrirNuevoProveedor(){
+  document.getElementById('formProveedor').classList.remove('hidden');
+  document.getElementById('provIdEdit').value='';
+  document.getElementById('provNombre').value='';
+  document.getElementById('provTelefono').value='';
+  document.getElementById('provRut').value='';
+  document.getElementById('provDireccion').value='';
+}
+
+async function guardarProveedor(){
+  const id=document.getElementById('provIdEdit').value;
+  const nombre=document.getElementById('provNombre').value.trim();
+  if(!nombre){ alert('Nombre obligatorio'); return; }
+  const payload={
+    id: id || nombre.toUpperCase().replace(/\s+/g,'-'),
+    nombre: nombre,
+    telefono: document.getElementById('provTelefono').value,
+    rut: document.getElementById('provRut').value,
+    direccion: document.getElementById('provDireccion').value
+  };
+  await fetch(API+'?table=proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  document.getElementById('formProveedor').classList.add('hidden');
+  cargarProveedores();
+}
+
+function editarProveedor(id){
+  const p=provCache.find(x=> String(x.id)===String(id) || String(x.nombre)===String(id));
+  if(!p) return;
+  document.getElementById('formProveedor').classList.remove('hidden');
+  document.getElementById('provIdEdit').value=p.id;
+  document.getElementById('provNombre').value=p.nombre||'';
+  document.getElementById('provTelefono').value=p.telefono||'';
+  document.getElementById('provRut').value=p.rut||'';
+  document.getElementById('provDireccion').value=p.direccion||'';
+}
+
+async function eliminarProveedor(id){
+  if(!confirm('¿Eliminar proveedor '+id+'?')) return;
+  await fetch(API+'?table=proveedores&id='+encodeURIComponent(id),{method:'DELETE'});
+  cargarProveedores();
+}
+
+async function cargarResumen(){
+ try{
+  const hoy=new Date().toISOString().split('T')[0];
+  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); const jV=await rV.json(); const ventas=(jV.data||[]);
+  const ventasHoy=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
+  const totHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
+  const fleteHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.flete)||0),0);
+  document.getElementById('resVentasHoy').textContent='$'+totHoy;
+  document.getElementById('resVentasCount').textContent=ventasHoy.length+' ventas';
+  document.getElementById('resCajaHoy').textContent='$'+totHoy;
+  document.getElementById('resFletesHoy').textContent='Fletes $'+fleteHoy;
+
+  const rD=await fetch(API+'?table=deposito'); const jD=await rD.json(); const dep=jD.data||[];
+  const totLlenas=dep.reduce((s,d)=>s+(parseInt(d.llenas)||0),0);
+  const d11=dep.find(d=>String(d.producto_id)==='11'); const d13=dep.find(d=>String(d.producto_id)==='13'); const d45=dep.find(d=>String(d.producto_id)==='45');
+  document.getElementById('resStockTotal').textContent=totLlenas+' llenas';
+  document.getElementById('resStockDetalle').textContent=`11:${d11?.llenas||0} | 13:${d13?.llenas||0} | 45:${d45?.llenas||0}`;
+
+  let h=''; ventas.slice(0,5).forEach(v=>{ h+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${(v.fecha||'').substring(11,16)} ${v.cliente_nombre||''} ${v.producto_id}</span><b>$${v.total}</b></div>`; });
+  document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
+ }catch(e){ console.log('resumen error',e); }
+}
+
+async function cargarProductosCatalogo(){
+  const tbody=document.getElementById('tablaProductos'); if(!tbody) return;
+  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr>';
+  try{ const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); const data=j.data||[];
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Sin productos</td></tr>'; return; }
+    tbody.innerHTML=''; data.forEach(p=>{
+      const id=String(p.id).replace(/'/g,''); const nomSafe=String(p.nombre||'').replace(/'/g,'');
+      const tr=document.createElement('tr'); tr.innerHTML=`<td style="font-weight:900">${p.id}</td><td>${p.nombre}</td><td style="text-align:center">${p.tipo||''}</td><td style="text-align:center"><button onclick="editarProductoCatalogo('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarProductoCatalogo('${id}','${nomSafe}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px">X</button></td>`; tbody.appendChild(tr);
+    });
+  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="color:#ef4444">${e.message}</td></tr>`; }
+}
+function abrirNuevoProductoCatalogo(){ document.getElementById('formProducto').classList.remove('hidden'); document.getElementById('tituloFormProd').textContent='Nuevo'; document.getElementById('prodIdEditando').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; }
+function cancelarEdicionProd(){ document.getElementById('formProducto').classList.add('hidden'); }
+async function guardarProductoCatalogo(){ const idEdit=document.getElementById('prodIdEditando').value.trim(); const codigo=document.getElementById('prodCodigo').value.trim().toUpperCase().replace(/\s+/g,'-'); const nombre=document.getElementById('prodNombre').value.trim(); if(!codigo||!nombre){ alert('Código y nombre'); return; } await fetch(API+'?table=productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:idEdit||codigo, nombre, tipo:document.getElementById('prodTipo').value})}); cancelarEdicionProd(); cargarProductosCatalogo(); }
+async function editarProductoCatalogo(id){ const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); const row=(j.data||[]).find(x=>String(x.id)===String(id)); if(!row) return; document.getElementById('formProducto').classList.remove('hidden'); document.getElementById('prodIdEditando').value=row.id; document.getElementById('prodCodigo').value=row.id; document.getElementById('prodNombre').value=row.nombre||''; document.getElementById('prodTipo').value=row.tipo||'otro'; document.getElementById('tituloFormProd').textContent='Editar '+row.nombre; }
+async function eliminarProductoCatalogo(id,nombre){ if(!confirm('Eliminar '+nombre+'?')) return; await fetch(API+'?table=productos&id='+encodeURIComponent(id),{method:'DELETE'}); cargarProductosCatalogo(); }
+
+let clientesCache=[];
+async function cargarClientes(){ const tbody=document.getElementById('tablaClientes'); if(!tbody) return; tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center">Cargando...</td></tr>'; try{ const r=await fetch(API+'?table=clientes',{cache:'no-store'}); const j=await r.json(); clientesCache=j.data||[]; renderTablaClientes(clientesCache); }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444">${e.message}</td></tr>`; } }
+function renderTablaClientes(lista){ const tbody=document.getElementById('tablaClientes'); if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center">Sin clientes</td></tr>'; return; } let h=''; lista.forEach(c=>{ const id=String(c.id||c.telefono||'').replace(/'/g,''); const nom=(c.nombre||'').replace(/</g,''); h+=`<tr><td style="font-weight:700">${nom}</td><td><a href="https://wa.me/${(c.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:#25D366">${c.telefono||''}</a></td><td>${c.direccion||''}</td><td>${c.tipo||''}</td><td><button onclick="editarCliente('${id}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarCliente('${id}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`; }); tbody.innerHTML=h; }
+function filtrarClientes(){ const q=(document.getElementById('buscadorClientes').value||'').toLowerCase(); if(!q) return renderTablaClientes(clientesCache); const f=clientesCache.filter(c=> (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').includes(q)); renderTablaClientes(f); }
+function abrirNuevoCliente(){ document.getElementById('modalCliente').classList.remove('hidden'); document.getElementById('tituloCliente').textContent='Nuevo Cliente'; document.getElementById('cliIdEdit').value=''; document.getElementById('cliNombre').value=''; document.getElementById('cliTelefono').value=''; document.getElementById('cliDireccion').value=''; }
+function cerrarCliente(){ document.getElementById('modalCliente').classList.add('hidden'); }
+async function guardarCliente(){ const idEdit=document.getElementById('cliIdEdit').value.trim(); const nombre=document.getElementById('cliNombre').value.trim(); const tel=document.getElementById('cliTelefono').value.trim(); if(!nombre){ alert('Nombre'); return; } const payload={id:idEdit||tel||Date.now().toString(36), nombre, telefono:tel, direccion:document.getElementById('cliDireccion').value, tipo:document.getElementById('cliTipo').value}; await fetch(API+'?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cerrarCliente(); cargarClientes(); }
+async function editarCliente(id){ const c=clientesCache.find(x=> String(x.id)===String(id) || String(x.telefono)===String(id)); if(!c) return; abrirNuevoCliente(); document.getElementById('cliIdEdit').value=c.id; document.getElementById('cliNombre').value=c.nombre||''; document.getElementById('cliTelefono').value=c.telefono||''; document.getElementById('cliDireccion').value=c.direccion||''; document.getElementById('cliTipo').value=c.tipo||'particular'; document.getElementById('tituloCliente').textContent='Editar '+c.nombre; }
+async function eliminarCliente(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=clientes&id='+encodeURIComponent(id),{method:'DELETE'}); cargarClientes(); }
+async function importarClientesWhatsApp(e){ const file=e.target.files[0]; if(!file) return; const text=await file.text(); const lines=text.split('\n'); let importados=[]; let cur={}; lines.forEach(l=>{ l=l.trim(); if(l.startsWith('BEGIN:VCARD')) cur={}; if(l.startsWith('FN:')) cur.nombre=l.substring(3); if(l.startsWith('TEL')){ const parts=l.split(':'); cur.telefono=parts[1]||''; } if(l.startsWith('END:VCARD')){ if(cur.nombre&&cur.telefono){ importados.push({id:cur.telefono.replace(/\D/g,''), nombre:cur.nombre, telefono:cur.telefono, tipo:'particular'}); } cur={}; } }); if(!importados.length){ alert('No se pudo leer VCF'); return; } if(!confirm(`Importar ${importados.length} contactos?`)) return; for(let k=0;k<importados.length;k++){ await fetch(API+'?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(importados[k])}); } alert('Importados '+importados.length); cargarClientes(); }
+
+let repCache=[];
+async function cargarRepartidores(){ const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr>'; try{ const r=await fetch(API+'?table=repartidores',{cache:'no-store'}); const j=await r.json(); repCache=j.data||[]; let h=''; repCache.forEach(p=>{ h+=`<tr><td style="font-weight:700">${p.nombre||''}</td><td>${p.telefono||''}</td><td><button onclick="editarRepartidor('${p.id||p.nombre}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarRepartidor('${p.id||p.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`; }); tbody.innerHTML=h||'<tr><td colspan="3" style="text-align:center">Sin repartidores</td></tr>'; }catch(e){ tbody.innerHTML=`<tr><td colspan="3" style="color:#ef4444">${e.message}</td></tr>`; } }
+function abrirNuevoRepartidor(){ document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=''; document.getElementById('repNombre').value=''; }
+async function guardarRepartidor(){ const id=document.getElementById('repIdEdit').value; const nombre=document.getElementById('repNombre').value.trim(); if(!nombre){ alert('Nombre'); return; } await fetch(API+'?table=repartidores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id||nombre, nombre, telefono:document.getElementById('repTelefono').value})}); document.getElementById('formRepartidor').classList.add('hidden'); cargarRepartidores(); }
+function editarRepartidor(id){ const p=repCache.find(x=> String(x.id)===String(id)||String(x.nombre)===String(id)); if(!p) return; document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=p.id; document.getElementById('repNombre').value=p.nombre; document.getElementById('repTelefono').value=p.telefono||''; }
+async function eliminarRepartidor(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=repartidores&id='+encodeURIComponent(id),{method:'DELETE'}); cargarRepartidores(); }
 
   
 function initGpsMaps(){ /* tu lógica */ }
