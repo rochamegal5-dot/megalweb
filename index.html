@@ -36,7 +36,50 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 <div id="view-productos" class="view-section hidden"><div class="card">Módulo Productos - próximo</div></div>
 <div id="view-clientes" class="view-section hidden"><div class="card">Módulo Clientes - próximo</div></div>
 <div id="view-proveedores" class="view-section hidden"><div class="card">Módulo Proveedores - próximo</div></div>
-<div id="view-stock" class="view-section hidden"><div class="card">Módulo Stock - próximo</div></div>
+ <div id="view-stock" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="font-weight:900">📦 Stock - Depósito</h3>
+    <div style="display:flex;gap:8px">
+      <button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">📝 Balance</button>
+      <button onclick="abrirNuevoProducto()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button>
+    </div>
+  </div>
+  <div id="stockStatus" style="font-size:12px;color:#94a3b8;margin:8px">Cargando /api/postgres?table=deposito...</div>
+  <div id="stockContent"></div>
+
+  <div id="modalBalance" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div class="card" style="width:100%;max-width:650px;max-height:90vh;overflow:auto">
+      <h3 style="font-weight:900">📝 Balance Inicial</h3>
+      <div id="balanceForm" style="display:grid;gap:8px;margin-top:12px"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="guardarBalanceInicial()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button>
+        <button onclick="cerrarBalanceInicial()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalProducto" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div class="card" style="width:100%;max-width:450px">
+      <h3>➕ Nuevo Producto</h3>
+      <div style="display:grid;gap:8px;margin-top:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input id="npId" placeholder="ID ej: VALVULA-13">
+          <input id="npNombre" placeholder="Nombre ej: Válvula 13kg">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <input id="npLlenas" type="number" value="0" placeholder="Llenas">
+          <input id="npVacias" type="number" value="0" placeholder="Vacías">
+          <input id="npKilos" type="number" value="0" placeholder="Kg 43.5">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="guardarNuevoProducto()" style="flex:1;padding:10px;background:#38bdf8;color:#000;font-weight:900;border:none;border-radius:8px">Crear</button>
+        <button onclick="cerrarNuevoProducto()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="view-ventas" class="view-section hidden"><div class="card">Módulo Ventas - próximo</div></div>
 </div>
 <script>
@@ -46,6 +89,94 @@ function mostrarSeccion(id,btn){
  const el=document.getElementById('view-'+id); if(el) el.classList.remove('hidden');
  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
  if(btn) btn.classList.add('active');
+}
+ // --- STOCK POSTGRES ---
+function renderTubo43Control(dep43){
+  if(!dep43) return '<div class="card" style="border-color:#ef4444">No hay tubo 43.5</div>';
+  var kilos=parseFloat(dep43.kilos_en_uso)||0;
+  var porc=Math.max(5,(kilos/43.5*100)).toFixed(0);
+  var color=kilos>20?'#22c55e':kilos>5?'#f59e0b':'#ef4444';
+  var html='';
+  html+='<div style="background:#0f172a;padding:12px;border-radius:8px;border:2px solid '+color+'">';
+  html+='<b style="color:'+color+'">🔥 TUBO 43.5 MADRE: '+kilos.toFixed(1)+' / 43.5 kg</b>';
+  html+='<div style="background:#334155;height:16px;border-radius:8px;margin-top:8px"><div style="width:'+porc+'%;height:100%;background:'+color+'"></div></div>';
+  html+='<div style="display:flex;gap:8px;margin-top:8px"><button onclick="iniciarNuevoTubo43()" style="flex:1;padding:8px;background:'+color+';color:#000;font-weight:900;border:none;border-radius:6px">🔄 Iniciar Nuevo Tubo</button></div>';
+  html+='</div>';
+  return html;
+}
+async function cargarStock(){
+  var status=document.getElementById('stockStatus');
+  var content=document.getElementById('stockContent');
+  if(status) status.textContent='Cargando...';
+  try{
+    var r=await fetch(API+'?table=deposito');
+    var j0=await r.json();
+    var dep=j0.data||[];
+    var gasIds=['11','13','43.5','45'];
+    var gas=dep.filter(function(d){ return gasIds.indexOf(String(d.producto_id))!==-1; });
+    var dep43=dep.find(function(d){ return String(d.producto_id)==='43.5'; });
+    var tubo=renderTubo43Control(dep43);
+    var rows='';
+    for(var i=0;i<gas.length;i++){
+      var d=gas[i];
+      rows+='<tr><td style="padding:6px;border:1px solid #1f2937">'+d.producto_id+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.nombre||'')+'</td><td style="padding:6px;border:1px solid #1f2937;color:#22c55e">'+(d.llenas||0)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.vacias||0)+'</td><td style="padding:6px;border:1px solid #1f2937">'+(d.cambio||0)+'</td><td style="padding:6px;border:1px solid #1f2937"><button onclick="abrirEditarStock(\''+d.producto_id+'\')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>';
+    }
+    content.innerHTML=tubo+'<div class="card" style="margin-top:12px"><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">ID</th><th>Nombre</th><th>Llenas</th><th>Vacias</th><th>Cambio</th><th>Acc</th></tr>'+rows+'</table></div>';
+    if(status) status.style.display='none';
+  }catch(e){ if(status) status.textContent='Error: '+e.message; }
+}
+function abrirBalanceInicial(){
+  document.getElementById('modalBalance').classList.remove('hidden');
+  fetch(API+'?table=deposito').then(function(r){return r.json();}).then(function(j0){
+    var dep=j0.data||[];
+    var form=document.getElementById('balanceForm');
+    var h='';
+    for(var i=0;i<dep.length;i++){
+      var d=dep[i];
+      h+='<div style="display:grid;grid-template-columns:70px 1fr 60px 60px 60px;gap:6px;background:#0f172a;padding:8px;border-radius:8px"><b>'+d.producto_id+'</b><span style="font-size:11px;color:#94a3b8">'+(d.nombre||'')+'</span><input data-id="'+d.producto_id+'" data-field="llenas" type="number" value="'+(d.llenas||0)+'"><input data-id="'+d.producto_id+'" data-field="vacias" type="number" value="'+(d.vacias||0)+'"><input data-id="'+d.producto_id+'" data-field="kilos" type="number" value="'+(d.kilos_en_uso||0)+'"></div>';
+    }
+    form.innerHTML=h;
+  });
+}
+function cerrarBalanceInicial(){ document.getElementById('modalBalance').classList.add('hidden'); }
+async function guardarBalanceInicial(){
+  var inputs=document.querySelectorAll('#balanceForm input[data-id]');
+  var map={};
+  for(var i=0;i<inputs.length;i++){ var inp=inputs[i]; var id=inp.getAttribute('data-id'); var field=inp.getAttribute('data-field'); if(!map[id]) map[id]={producto_id:id}; map[id][field]=parseFloat(inp.value)||0; }
+  var balances=[];
+  for(var k in map){ balances.push({producto_id:k, nombre:k, llenas:map[k].llenas||0, vacias:map[k].vacias||0, cambio:map[k].cambio||0, kilos_en_uso:map[k].kilos||0}); }
+  var r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial',balances:balances})});
+  var j=await r.json(); if(j.ok||j.data){ alert('Balance guardado'); cerrarBalanceInicial(); cargarStock(); } else alert(j.error||'Error');
+}
+function abrirNuevoProducto(){ document.getElementById('modalProducto').classList.remove('hidden'); }
+function cerrarNuevoProducto(){ document.getElementById('modalProducto').classList.add('hidden'); }
+async function guardarNuevoProducto(){
+  var id=document.getElementById('npId').value.trim();
+  var nombre=document.getElementById('npNombre').value.trim();
+  var llenas=parseInt(document.getElementById('npLlenas').value)||0;
+  var vacias=parseInt(document.getElementById('npVacias').value)||0;
+  var kilos=parseFloat(document.getElementById('npKilos').value)||0;
+  if(!id||!nombre){ alert('ID y nombre'); return; }
+  var r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'crear_producto',producto:{producto_id:id,nombre:nombre,llenas:llenas,vacias:vacias,kilos_en_uso:kilos}})});
+  var j=await r.json(); cerrarNuevoProducto(); cargarStock();
+}
+async function iniciarNuevoTubo43(){
+  if(!confirm('¿Iniciar nuevo tubo 43.5?')) return;
+  var r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'iniciar_tubo_43'})});
+  var j=await r.json(); if(j.error) alert(j.error); else cargarStock();
+}
+async function abrirEditarStock(id){
+  var r=await fetch(API+'?table=deposito'); var j=await r.json(); var dep=(j.data||[]).find(function(d){return String(d.producto_id)===String(id);}); if(!dep) return;
+  var llenas=prompt('Llenas',dep.llenas||0); if(llenas===null) return;
+  var vacias=prompt('Vacias',dep.vacias||0); if(vacias===null) return;
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'actualizar_stock',producto_id:id,llenas:parseInt(llenas)||0,vacias:parseInt(vacias)||0,cambio:dep.cambio||0,kilos_en_uso:dep.kilos_en_uso||0,nombre:dep.nombre||id})});
+  cargarStock();
+}
+// hook para cargar al entrar
+var oldMostrar=mostrarSeccion;
+mostrarSeccion=function(id,btn){
+  oldMostrar(id,btn);
+  if(id==='stock') setTimeout(cargarStock,100);
 }
 </script>
 </body>
