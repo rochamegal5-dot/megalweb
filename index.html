@@ -87,9 +87,65 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
+  
 <div id="view-ventas" class="view-section hidden">
-  <div class="card"><h3>💰 Ventas Mostrador</h3><div id="ventasHoyTabla"></div></div>
-</div> <!-- IMPORTANTE: ESTE CIERRE ES EL QUE TE FALTABA -->
+  <!-- Tabs Mostrador / Camioneta -->
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="btnTabMostrador" onclick="cambiarTabVentas('mostrador')" style="flex:1;padding:12px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:10px">🛒 MOSTRADOR</button>
+    <button id="btnTabCamioneta" onclick="cambiarTabVentas('camioneta')" style="flex:1;padding:12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:10px">🚚 CAMIONETA APP</button>
+  </div>
+
+  <div id="tab-ventas-mostrador">
+    <div class="card">
+      <h3 style="font-weight:900">💰 Venta Mostrador - Rocha</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
+        <div>
+          <label style="font-size:11px">Tipo Cliente</label>
+          <select id="ventaTipoCliente" onchange="actualizarReglaFlete()" style="width:100%">
+            <option value="consumidor_final">Consumidor Final</option>
+            <option value="mides">MIDES</option>
+            <option value="comercio">Comercio</option>
+            <option value="retira">Retira en Local</option>
+          </select>
+          <input id="ventaCliente" placeholder="Nombre cliente" style="width:100%;margin-top:6px">
+        </div>
+        <div>
+          <label style="font-size:11px">Producto</label>
+          <select id="ventaProducto" onchange="onProductoChange()" style="width:100%">
+            <option value="11">11kg - $800</option>
+            <option value="13">13kg - $950</option>
+            <option value="45">45kg - $3500</option>
+            <option value="fraccionado">FRACCIONADO 1-3kg (usa tubo 43.5)</option>
+          </select>
+          <div id="boxFraccionado" class="hidden" style="margin-top:6px;display:flex;gap:6px;align-items:center">
+            <select id="ventaKilos" onchange="calcularTotalMostrador()" style="flex:1"><option value="1">1 kg</option><option value="2">2 kg</option><option value="3">3 kg</option></select>
+            <span id="stockTuboInfo" style="font-size:11px;color:#f59e0b"></span>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px">Pago / Modo</label>
+          <select id="ventaPago" style="width:100%"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option></select>
+          <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-top:6px">
+            <select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%"><option value="retira">Retira</option><option value="domicilio">Domicilio</option></select>
+            <input id="ventaFlete" type="number" value="0" style="width:100%">
+          </div>
+        </div>
+      </div>
+      <div id="reglaFleteInfo" style="margin-top:10px;padding:8px;background:#0f172a;border-radius:8px;font-size:12px;color:#f59e0b">REGLA: Seleccioná cliente</div>
+      <div style="margin-top:12px;background:#0f172a;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:#94a3b8">Total:</span><b id="ventaTotal" style="font-size:28px;color:#22c55e">$0</b>
+      </div>
+      <button onclick="registrarVentaMostrador()" style="width:100%;margin-top:12px;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px;font-size:16px">✅ REGISTRAR VENTA</button>
+    </div>
+    <div class="card"><h4 style="font-weight:900">📋 Ventas Hoy - Mostrador</h4><div id="ventasHoyTabla" style="margin-top:8px;font-size:12px">Cargando...</div></div>
+  </div>
+
+  <div id="tab-ventas-camioneta" class="hidden">
+    <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Ventas que vienen de la APP del repartidor. No suman a caja hasta cierre.</p><div id="informeCamionetaList" style="margin-top:10px;color:#94a3b8">Conectando APP...</div></div>
+  </div>
+</div>
+
+ 
 
 <div id="view-finanzas" class="view-section hidden">
   <div class="card"><h3>📊 Finanzas</h3><div id="tablaFinanzas"></div></div>
