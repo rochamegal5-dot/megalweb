@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>#gpsMap,#gpsMapHist{height:500px;width:100%;border-radius:12px}</style>
 <head>
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Megal ERP - Vercel Postgres</title>
@@ -31,7 +35,27 @@ body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
 </div>
 <div class="main">
 <div id="view-resumen" class="view-section"><div class="card"><h3>Resumen - Rocha</h3><p style="font-size:12px;color:#94a3b8">Base OK. API: /api/postgres</p></div></div>
-<div id="view-gps" class="view-section hidden"><div class="card">Módulo GPS - próximo paso</div></div>
+<div id="view-gps" class="view-section hidden">
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button id="btnGpsVivo" onclick="cambiarTabGps('vivo')" style="padding:10px 14px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:10px">📍 En Vivo</button>
+    <button id="btnGpsHist" onclick="cambiarTabGps('historial')" style="padding:10px 14px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:10px">📊 Historial</button>
+    <span id="gpsStatus" style="margin-left:auto;font-size:11px;color:#94a3b8;padding:10px">● Conectado</span>
+  </div>
+  <div id="gpsVivoTab">
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:12px">
+      <div class="card" style="padding:8px"><div id="gpsMap"></div></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card"><h4 style="font-size:13px">🚚 Repartidores</h4><select id="selRepartidorGps" onchange="centrarRepartidor(this.value)" style="width:100%;margin-top:6px;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px"><option value="">-- Todos --</option></select><div id="listaEstadosRep" style="margin-top:10px;max-height:180px;overflow:auto;font-size:11px"></div></div>
+        <div class="card" style="max-height:200px;overflow:auto"><h4 style="font-size:12px">📍 Puntos</h4><div id="listaMarcadores" style="font-size:11px"></div></div>
+        <div class="card" style="max-height:200px;overflow:auto"><h4 style="font-size:12px">📋 Registro</h4><table style="width:100%;font-size:10px"><thead><tr style="background:#0f172a"><th>Hora</th><th>Rep</th><th>Vel</th></tr></thead><tbody id="tablaVivoGps"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div id="gpsHistTab" class="hidden">
+    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap"><select id="histRepId" style="padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px"><option value="">-- Repartidor --</option></select><input type="date" id="histFecha" style="padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px"><button onclick="generarInformeGps()" style="padding:8px 14px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:8px">Generar</button></div>
+    <div class="card" style="padding:8px;margin-top:10px"><div id="gpsMapHist"></div></div>
+  </div>
+</div>
 <div id="view-repartidores" class="view-section hidden"><div class="card">Módulo Repartidores - próximo</div></div>
 <div id="view-productos" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -451,6 +475,67 @@ async function cargarInformeCamioneta(){ var el=document.getElementById('informe
 var oldMostrarVentas=mostrarSeccion;
 mostrarSeccion=function(id,btn){
   oldMostrarVentas(id,btn);
+  if(id==='ventas'){ setTimeout(function(){ cambiarTabVentas('mostrador'); actualizarReglaFlete(); calcularTotalMostrador(); },150); }
+  if(id==='clientes') setTimeout(cargarClientes,100);
+  if(id==='productos') setTimeout(cargarProductosCatalogo,100);
+  if(id==='stock') setTimeout(cargarStock,100);
+}
+  // --- GPS POSTGRES ---
+var gpsMap=null, gpsMapHist=null, gpsMarkers=new Map(), gpsPoll=null;
+var ROCHA=[-34.4836,-54.3334];
+function initGpsMaps(){
+  if(gpsMap) return;
+  gpsMap=L.map('gpsMap').setView(ROCHA,13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMap);
+  gpsMapHist=L.map('gpsMapHist').setView(ROCHA,13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMapHist);
+}
+function cambiarTabGps(tab){
+  document.getElementById('gpsVivoTab').classList.add('hidden');
+  document.getElementById('gpsHistTab').classList.add('hidden');
+  document.getElementById('btnGpsVivo').style.background='#1f2937'; document.getElementById('btnGpsVivo').style.color='#94a3b8';
+  document.getElementById('btnGpsHist').style.background='#1f2937'; document.getElementById('btnGpsHist').style.color='#94a3b8';
+  if(tab==='vivo'){ document.getElementById('gpsVivoTab').classList.remove('hidden'); document.getElementById('btnGpsVivo').style.background='#0ea5e9'; document.getElementById('btnGpsVivo').style.color='white'; setTimeout(function(){ gpsMap&&gpsMap.invalidateSize(); },200); }
+  else { document.getElementById('gpsHistTab').classList.remove('hidden'); document.getElementById('btnGpsHist').style.background='#0ea5e9'; document.getElementById('btnGpsHist').style.color='white'; setTimeout(function(){ gpsMapHist&&gpsMapHist.invalidateSize(); },200); }
+}
+async function cargarGpsVivo(){
+  try{
+    var r=await fetch(API+'?table=gps_locations',{cache:'no-store'}); var j=await r.json(); var rows=j.data||[];
+    var sel=document.getElementById('selRepartidorGps');
+    var lista=document.getElementById('listaEstadosRep');
+    var tabla=document.getElementById('tablaVivoGps');
+    if(sel && sel.options.length<=1){
+      var repR=await fetch(API+'?table=repartidores'); var repJ=await repR.json(); var reps=repJ.data||[];
+      for(var i=0;i<reps.length;i++){ var o=document.createElement('option'); o.value=reps[i].id||reps[i].nombre; o.textContent=reps[i].nombre||reps[i].id; sel.appendChild(o); }
+    }
+    // Marcadores
+    gpsMarkers.forEach(function(m){ gpsMap.removeLayer(m); }); gpsMarkers.clear();
+    var h='';
+    for(var i=0;i<Math.min(rows.length,50);i++){
+      var g=rows[i];
+      var lat=parseFloat(g.latitud||g.lat||0), lng=parseFloat(g.longitud||g.lng||0);
+      if(!lat||!lng) continue;
+      var marker=L.marker([lat,lng]).addTo(gpsMap).bindPopup((g.repartidor_id||'')+' '+(g.velocidad||0)+' km/h');
+      gpsMarkers.set(g.id||i,marker);
+      h+='<tr><td>'+(g.recorded_at||'').toString().substring(11,19)+'</td><td>'+(g.repartidor_id||'')+'</td><td>'+(g.velocidad||0)+'</td></tr>';
+    }
+    if(lista) lista.innerHTML=rows.length+' registros GPS';
+    if(tabla) tabla.innerHTML=h;
+  }catch(e){ var s=document.getElementById('gpsStatus'); if(s) s.textContent='Error GPS: '+e.message; }
+}
+function centrarRepartidor(id){ if(!id){ gpsMap.setView(ROCHA,13); return; } var found=null; gpsMarkers.forEach(function(m){ var p=m.getPopup().getContent(); if(p.indexOf(id)!==-1) found=m; }); if(found) gpsMap.setView(found.getLatLng(),15); }
+async function generarInformeGps(){
+  var rep=document.getElementById('histRepId').value; var fecha=document.getElementById('histFecha').value; if(!rep||!fecha){ alert('Elegí repartidor y fecha'); return; }
+  var r=await fetch(API+'?table=gps_locations',{cache:'no-store'}); var j=await r.json(); var rows=(j.data||[]).filter(function(g){ return String(g.repartidor_id)===String(rep) && (g.recorded_at||'').toString().indexOf(fecha)===0; });
+  if(!rows.length){ alert('Sin datos para esa fecha'); return; }
+  var latlngs=rows.map(function(g){ return [parseFloat(g.latitud||g.lat), parseFloat(g.longitud||g.lng)]; }).filter(function(c){ return c[0]&&c[1]; });
+  if(latlngs.length){ L.polyline(latlngs,{color:'#0ea5e9',weight:4}).addTo(gpsMapHist); gpsMapHist.fitBounds(latlngs); }
+}
+var oldMostrarFinal=mostrarSeccion;
+mostrarSeccion=function(id,btn){
+  oldMostrarFinal(id,btn);
+  if(id==='gps'){ setTimeout(function(){ initGpsMaps(); cargarGpsVivo(); if(gpsPoll) clearInterval(gpsPoll); gpsPoll=setInterval(cargarGpsVivo,7000); },200); }
+  else { if(gpsPoll){ clearInterval(gpsPoll); gpsPoll=null; } }
   if(id==='ventas'){ setTimeout(function(){ cambiarTabVentas('mostrador'); actualizarReglaFlete(); calcularTotalMostrador(); },150); }
   if(id==='clientes') setTimeout(cargarClientes,100);
   if(id==='productos') setTimeout(cargarProductosCatalogo,100);
