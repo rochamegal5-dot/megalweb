@@ -220,7 +220,82 @@ async function guardarIngresoGas(){
   await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas', producto_id:prod, llenas, vacias, remito})});
   alert('Ingreso guardado'); cargarStock(); cambiarTabStock('gas');
 }
+let tubo43Cache=null;
 
+function cambiarTabVentas(tab){
+  document.getElementById('tab-ventas-mostrador').classList.add('hidden');
+  document.getElementById('tab-ventas-camioneta').classList.add('hidden');
+  document.getElementById('btnTabMostrador').style.background='#1f2937';
+  document.getElementById('btnTabCamioneta').style.background='#1f2937';
+  document.getElementById('btnTabMostrador').style.color='#94a3b8';
+  document.getElementById('btnTabCamioneta').style.color='#94a3b8';
+  if(tab==='mostrador'){ document.getElementById('tab-ventas-mostrador').classList.remove('hidden'); document.getElementById('btnTabMostrador').style.background='#0ea5e9'; document.getElementById('btnTabMostrador').style.color='white'; cargarVentasHoy(); cargarStockTubo43(); }
+  if(tab==='camioneta'){ document.getElementById('tab-ventas-camioneta').classList.remove('hidden'); document.getElementById('btnTabCamioneta').style.background='#f59e0b'; document.getElementById('btnTabCamioneta').style.color='#000'; }
+}
+
+async function cargarStockTubo43(){
+  try{ const r=await fetch(API+'?table=deposito'); const j=await r.json(); const dep=(j.data||[]).find(d=>String(d.producto_id)==='43.5'); tubo43Cache=dep; const info=document.getElementById('stockTuboInfo'); if(info&&dep) info.textContent=`Tubo: ${parseFloat(dep.kilos_en_uso||0).toFixed(1)}kg`; }catch(e){}
+}
+
+function onProductoChange(){
+  const prod=document.getElementById('ventaProducto').value;
+  const box=document.getElementById('boxFraccionado');
+  if(prod==='fraccionado') box.classList.remove('hidden'); else box.classList.add('hidden');
+  calcularTotalMostrador();
+}
+
+function actualizarReglaFlete(){
+  const tipoCli=document.getElementById('ventaTipoCliente').value;
+  const modo=document.getElementById('ventaModo').value;
+  const fleteInput=document.getElementById('ventaFlete');
+  const info=document.getElementById('reglaFleteInfo');
+  if(tipoCli==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Retira en local = SIN FLETE (obligatorio)'; }
+  else if(tipoCli==='comercio'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Comercio = NUNCA flete'; }
+  else if((tipoCli==='consumidor_final'||tipoCli==='mides') && modo==='domicilio'){ fleteInput.disabled=false; if(parseInt(fleteInput.value||0)===0) fleteInput.value=120; info.textContent='REGLA: Consumidor Final / MIDES a domicilio = FLETE $120 OBLIGATORIO (editable)'; }
+  else if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='Retira = sin flete'; }
+  else { fleteInput.disabled=false; info.textContent='Domicilio - flete opcional'; }
+  calcularTotalMostrador();
+}
+
+function calcularTotalMostrador(){
+  const prod=document.getElementById('ventaProducto').value;
+  const precios={'11':800,'13':950,'45':3500,'fraccionado':150};
+  let base=precios[prod]||0;
+  if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; base=kg*precios.fraccionado; }
+  const flete=parseInt(document.getElementById('ventaFlete').value)||0;
+  document.getElementById('ventaTotal').textContent='$'+(base+flete);
+}
+
+async function registrarVentaMostrador(){
+  const prod=document.getElementById('ventaProducto').value;
+  const cliente=document.getElementById('ventaCliente').value||'Cliente Mostrador';
+  const tipoCli=document.getElementById('ventaTipoCliente').value;
+  const modo=document.getElementById('ventaModo').value;
+  const pago=document.getElementById('ventaPago').value;
+  const flete=parseInt(document.getElementById('ventaFlete').value)||0;
+  const total=parseInt(document.getElementById('ventaTotal').textContent.replace('$',''))||0;
+
+  if(prod==='fraccionado'){
+    const kg=parseInt(document.getElementById('ventaKilos').value)||1;
+    if(!confirm(`Vender ${kg}kg fraccionado a ${cliente} por $${total}?`)) return;
+    const r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada', kilos:kg, cliente_nombre:cliente})});
+    const j=await r.json(); if(j.error){ alert(j.error); return; }
+    alert(`✅ Vendido ${kg}kg. Quedan ${parseFloat(j.restante||0).toFixed(1)}kg`);
+  } else {
+    if(!confirm(`Vender ${prod} a ${cliente} total $${total}?`)) return;
+    await fetch(API+'?table=ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto_id:prod, cliente_nombre:cliente, cantidad:1, total, flete, pago, tipo_cliente:tipoCli, modo})});
+  }
+  document.getElementById('ventaCliente').value=''; cargarVentasHoy(); cargarStockTubo43();
+}
+
+async function cargarVentasHoy(){
+  const el=document.getElementById('ventasHoyTabla'); if(!el) return; el.innerHTML='Cargando...';
+  try{ const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); const v=j.data||[]; if(!v.length){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; }
+    let h='<table><tr style="background:#0f172a"><th>Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>';
+    v.forEach(row=>{ const hora=(row.fecha||row.created_at||'').toString().substring(11,19); h+=`<tr><td>${hora}</td><td>${row.cliente_nombre||''} (${row.tipo_cliente||''})</td><td>${row.producto_id||''}</td><td style="font-weight:900">$${row.total||0}</td></tr>`; });
+    h+='</table>'; el.innerHTML=h;
+  }catch(e){ el.innerHTML='Error: '+e.message; }
+}
 async function cargarFinanzas(){ /* tu lógica */ }
 function initGpsMaps(){ /* tu lógica */ }
 function cargarGpsVivo(){ /* tu lógica */ }
