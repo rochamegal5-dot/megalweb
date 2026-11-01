@@ -145,13 +145,57 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
- 
 
 <div id="view-finanzas" class="view-section hidden">
-  <div class="card"><h3>📊 Finanzas</h3><div id="tablaFinanzas"></div></div>
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div><h3 style="font-weight:900">📊 Finanzas - Megal Rocha</h3><p style="font-size:11px;color:#94a3b8">Caja diaria, ingresos, egresos, fletes, cierres</p></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="abrirModalFinanza('ingreso')" style="background:#22c55e;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💰 Ingreso</button>
+      <button onclick="abrirModalFinanza('egreso')" style="background:#ef4444;color:white;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💸 Egreso</button>
+      <button onclick="hacerCierreCaja()" style="background:#f59e0b;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">🔒 Cierre Caja</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">INGRESOS HOY</p><b id="finIngresos" style="font-size:20px;color:#22c55e">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">EGRESOS HOY</p><b id="finEgresos" style="font-size:20px;color:#ef4444">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">FLETES HOY</p><b id="finFletes" style="font-size:20px;color:#38bdf8">$0</b></div>
+    <div class="card" style="text-align:center;padding:12px;background:#22c55e20;border:2px solid #22c55e"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="finBalance" style="font-size:22px;color:#22c55e">$0</b></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="card">
+      <h4 style="font-weight:900">💵 Movimientos Hoy</h4>
+      <div style="display:flex;gap:6px;margin:10px 0">
+        <input type="date" id="finFecha">
+        <button onclick="cargarFinanzas()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px">Buscar</button>
+      </div>
+      <div id="tablaFinanzas" style="max-height:400px;overflow:auto;font-size:11px">Cargando...</div>
+    </div>
+    <div class="card">
+      <h4 style="font-weight:900">📦 Resumen por Método</h4><div id="resumenMetodo" style="margin-top:10px"></div>
+      <h4 style="font-weight:900;margin-top:16px">📊 Por Categoría</h4><div id="resumenCategoria" style="margin-top:10px"></div>
+    </div>
+  </div>
 </div>
 
-</div> <!-- cierra main -->
+<!-- MODAL FINANZAS (va FUERA del main, al final del body) -->
+<div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:100%;max-width:450px">
+    <h3 id="tituloFinanza">Nuevo Movimiento</h3>
+    <div style="display:grid;gap:10px;margin-top:12px">
+      <select id="finTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select>
+      <select id="finCategoria"><option value="venta_gas">Venta Gas</option><option value="flete">Flete</option><option value="combustible">Combustible</option><option value="proveedor">Pago Proveedor</option><option value="sueldo">Sueldo Repartidor</option><option value="mantenimiento">Mantenimiento</option><option value="otro_ingreso">Otro Ingreso</option><option value="otro_egreso">Otro Egreso</option></select>
+      <input id="finDesc" placeholder="Descripción ej: Pago Petrobras remito 123">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input id="finMonto" type="number" placeholder="Monto $" style="border:2px solid #22c55e;font-weight:900">
+        <select id="finMetodo"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarFinanza()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">Guardar</button><button onclick="cerrarModalFinanza()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
+  </div>
+</div>
+
 
 <!-- MODALES FUERA DEL MAIN -->
 <div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">...</div>
