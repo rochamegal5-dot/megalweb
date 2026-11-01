@@ -40,6 +40,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 <div id="headerStatus" style="margin-top:auto;font-size:11px;color:#22c55e">● Conectado Postgres</div>
 </div>
 
+
 <div class="main">
 <div id="view-resumen" class="view-section">
   <div class="card">
@@ -55,7 +56,6 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
 <div id="view-gps" class="view-section hidden">
-  <!-- GPS aquí -->
   <div id="gpsVivoTab"><div class="card" style="padding:8px"><div id="gpsMap"></div></div></div>
   <div id="gpsHistTab" class="hidden"><div class="card" style="padding:8px"><div id="gpsMapHist"></div></div></div>
 </div>
@@ -88,7 +88,6 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="font-weight:900">👥 Clientes - Rocha</h3><div style="display:flex;gap:8px"><button onclick="document.getElementById('inputImportClientes').click()" style="background:#25D366;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">📥 Importar .vcf</button><button onclick="abrirNuevoCliente()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button><input id="inputImportClientes" type="file" accept=".vcf,.csv,.txt" style="display:none" onchange="importarClientesWhatsApp(event)"></div></div>
   <div class="card"><input id="buscadorClientes" placeholder="Buscar nombre o teléfono..." oninput="filtrarClientes()" style="width:100%;margin-bottom:12px"><table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>Dirección</th><th>Tipo</th><th>Acc</th></tr></thead><tbody id="tablaClientes"><tr><td colspan="5" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table></div>
 </div>
-<div id="modalCliente" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:500px"><h3 id="tituloCliente">Nuevo Cliente</h3><input type="hidden" id="cliIdEdit"><div style="display:grid;gap:10px;margin-top:12px"><input id="cliNombre" placeholder="Nombre *"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="cliTelefono" placeholder="Tel 098..."><select id="cliTipo"><option value="particular">Particular</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div><input id="cliDireccion" placeholder="Dirección"></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarCliente()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="cerrarCliente()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div></div>
 
 <div id="view-proveedores" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -120,15 +119,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <h3 style="font-weight:900">📦 Stock - Depósito</h3>
     <button onclick="abrirBalanceInicial()" style="background:#f59e0b;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">📝 Balance</button>
   </div>
-  
-  <!-- PESTAÑAS ESTILO GOOGLE -->
   <div style="display:flex;gap:6px;margin-bottom:12px;background:#111827;padding:6px;border-radius:10px">
     <button id="tabStockGas" onclick="cambiarTabStock('gas')" style="flex:1;padding:10px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:8px">🔥 GAS (11,13,45)</button>
     <button id="tabStock43" onclick="cambiarTabStock('tubo43')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">🧪 TUBO 43.5</button>
     <button id="tabStockOtros" onclick="cambiarTabStock('otros')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">🔧 OTROS</button>
     <button id="tabStockIngreso" onclick="cambiarTabStock('ingreso')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">🚚 INGRESO</button>
   </div>
-
   <div id="stockTabGas"><div id="stockContentGas"></div></div>
   <div id="stockTab43" class="hidden"><div id="stockContent43"></div></div>
   <div id="stockTabOtros" class="hidden"><div id="stockContentOtros"></div></div>
@@ -145,14 +141,11 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
-  
 <div id="view-ventas" class="view-section hidden">
-  <!-- Tabs Mostrador / Camioneta -->
   <div style="display:flex;gap:8px;margin-bottom:12px">
     <button id="btnTabMostrador" onclick="cambiarTabVentas('mostrador')" style="flex:1;padding:12px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:10px">🛒 MOSTRADOR</button>
     <button id="btnTabCamioneta" onclick="cambiarTabVentas('camioneta')" style="flex:1;padding:12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:10px">🚚 CAMIONETA APP</button>
   </div>
-
   <div id="tab-ventas-mostrador">
     <div class="card">
       <h3 style="font-weight:900">💰 Venta Mostrador - Rocha</h3>
@@ -197,12 +190,10 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     </div>
     <div class="card"><h4 style="font-weight:900">📋 Ventas Hoy - Mostrador</h4><div id="ventasHoyTabla" style="margin-top:8px;font-size:12px">Cargando...</div></div>
   </div>
-
   <div id="tab-ventas-camioneta" class="hidden">
-    <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Ventas que vienen de la APP del repartidor. No suman a caja hasta cierre.</p><div id="informeCamionetaList" style="margin-top:10px;color:#94a3b8">Conectando APP...</div></div>
+    <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Ventas que vienen de la APP del repartidor.</p><div id="informeCamionetaList" style="margin-top:10px;color:#94a3b8">Conectando APP...</div></div>
   </div>
 </div>
-
 
 <div id="view-finanzas" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -213,14 +204,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
       <button onclick="hacerCierreCaja()" style="background:#f59e0b;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">🔒 Cierre Caja</button>
     </div>
   </div>
-
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
     <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">INGRESOS HOY</p><b id="finIngresos" style="font-size:20px;color:#22c55e">$0</b></div>
     <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">EGRESOS HOY</p><b id="finEgresos" style="font-size:20px;color:#ef4444">$0</b></div>
     <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">FLETES HOY</p><b id="finFletes" style="font-size:20px;color:#38bdf8">$0</b></div>
     <div class="card" style="text-align:center;padding:12px;background:#22c55e20;border:2px solid #22c55e"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="finBalance" style="font-size:22px;color:#22c55e">$0</b></div>
   </div>
-
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
     <div class="card">
       <h4 style="font-weight:900">💵 Movimientos Hoy</h4>
@@ -237,23 +226,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
-<!-- MODAL FINANZAS (va FUERA del main, al final del body) -->
-<div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="width:100%;max-width:450px">
-    <h3 id="tituloFinanza">Nuevo Movimiento</h3>
-    <div style="display:grid;gap:10px;margin-top:12px">
-      <select id="finTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select>
-      <select id="finCategoria"><option value="venta_gas">Venta Gas</option><option value="flete">Flete</option><option value="combustible">Combustible</option><option value="proveedor">Pago Proveedor</option><option value="sueldo">Sueldo Repartidor</option><option value="mantenimiento">Mantenimiento</option><option value="otro_ingreso">Otro Ingreso</option><option value="otro_egreso">Otro Egreso</option></select>
-      <input id="finDesc" placeholder="Descripción ej: Pago Petrobras remito 123">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <input id="finMonto" type="number" placeholder="Monto $" style="border:2px solid #22c55e;font-weight:900">
-        <select id="finMetodo"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarFinanza()" style="flex:1;padding:12px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">Guardar</button><button onclick="cerrarModalFinanza()" style="padding:12px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
-  </div>
-</div>
+</div> <!-- FIN .main - ESTE ES EL CIERRE QUE TE FALTABA -->
 
+<!-- MODALES FUERA DEL MAIN - NO TOCAR, VAN ACÁ -->
+<div id="modalCliente" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:500px"><h3 id="tituloCliente">Nuevo Cliente</h3><input type="hidden" id="cliIdEdit"><div style="display:grid;gap:10px;margin-top:12px"><input id="cliNombre" placeholder="Nombre *"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="cliTelefono" placeholder="Tel 098..."><select id="cliTipo"><option value="particular">Particular</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div><input id="cliDireccion" placeholder="Dirección"></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarCliente()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="cerrarCliente()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div></div>
+
+<div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:450px"><h3 id="tituloFinanza">Nuevo Movimiento</h3><div style="display:grid;gap:10px;margin-top:12px"><select id="finTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select
 
 
 <script>
@@ -600,7 +578,103 @@ async function eliminarRepartidor(id){ if(!confirm('Eliminar?')) return; await f
   
 function initGpsMaps(){ /* tu lógica */ }
 function cargarGpsVivo(){ /* tu lógica */ }
+/////
+<script>
+const API='/api/postgres';
+let gpsMap=null, gpsMapHist=null, gpsPoll=null;
+let tubo43Cache=null;
+let finanzasCache=[];
+let provCache=[];
+let repCache=[];
+let clientesCache=[];
 
+function mostrarSeccion(id,btn){
+  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
+  var el=document.getElementById('view-'+id);
+  if(el) el.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(id==='resumen') cargarResumen();
+  if(id==='stock') { cargarStock(); cambiarTabStock('gas'); }
+  if(id==='finanzas') cargarFinanzas();
+  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},100); }
+  if(id==='productos') cargarProductosCatalogo();
+  if(id==='clientes') cargarClientes();
+  if(id==='proveedores') cargarProveedores();
+  if(id==='repartidores') cargarRepartidores();
+  if(id==='ventas'){ cambiarTabVentas('mostrador'); }
+}
+
+function cambiarTabStock(tab){
+  ['Gas','43','Otros','Ingreso'].forEach(t=>{
+    const tabEl=document.getElementById('stockTab'+t);
+    const btnEl=document.getElementById('tabStock'+t);
+    if(tabEl) tabEl.classList.add('hidden');
+    if(btnEl){ btnEl.style.background='#1f2937'; btnEl.style.color='#94a3b8'; }
+  });
+  if(tab==='gas'){ document.getElementById('stockTabGas').classList.remove('hidden'); const b=document.getElementById('tabStockGas'); b.style.background='#0ea5e9'; b.style.color='white'; }
+  if(tab==='tubo43'){ document.getElementById('stockTab43').classList.remove('hidden'); const b=document.getElementById('tabStock43'); b.style.background='#f59e0b'; b.style.color='#000'; }
+  if(tab==='otros'){ document.getElementById('stockTabOtros').classList.remove('hidden'); const b=document.getElementById('tabStockOtros'); b.style.background='#0ea5e9'; b.style.color='white'; }
+  if(tab==='ingreso'){ document.getElementById('stockTabIngreso').classList.remove('hidden'); const b=document.getElementById('tabStockIngreso'); b.style.background='#22c55e'; b.style.color='#000'; }
+}
+
+async function cargarStock(){
+  try{
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); const dep=j.data||[];
+    const gas=dep.filter(d=>['11','13','45'].includes(String(d.producto_id)));
+    const tubo43=dep.find(d=>String(d.producto_id)==='43.5');
+    const otros=dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
+    let hGas='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Llenas</th><th>Vacias</th><th>Cambio</th><th>Acc</th></tr>';
+    gas.forEach(d=>{ hGas+=`<tr><td>${d.producto_id}</td><td>${d.nombre||''}</td><td style="color:#22c55e;font-weight:900">${d.llenas||0}</td><td>${d.vacias||0}</td><td>${d.cambio||0}</td><td><button onclick="abrirEditarStock('${d.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
+    hGas+='</table>'; if(!gas.length) hGas='<p style="padding:10px;color:#94a3b8">Sin stock gas. Usá Ingreso o Balance.</p>'+hGas;
+    const elGas=document.getElementById('stockContentGas'); if(elGas) elGas.innerHTML=hGas;
+    if(tubo43){
+      const kilos=parseFloat(tubo43.kilos_en_uso)||0; const porc=Math.min(100,Math.max(5,(kilos/43.5*100))).toFixed(0); const color=kilos>20?'#22c55e':kilos>5?'#f59e0b':'#ef4444';
+      const el43=document.getElementById('stockContent43');
+      if(el43) el43.innerHTML=`<div style="background:#0f172a;padding:16px;border-radius:12px;border:3px solid ${color}"><b style="color:${color};font-size:18px">🔥 TUBO 43.5 MADRE: ${kilos.toFixed(1)} / 43.5 kg (${porc}%)</b><div style="background:#334155;height:24px;border-radius:12px;margin-top:12px"><div style="width:${porc}%;height:100%;background:${color};border-radius:12px"></div></div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>Llenas: ${tubo43.llenas||0}</div><div>Vacias: ${tubo43.vacias||0}</div></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="iniciarNuevoTubo43()" style="flex:1;padding:12px;background:${color};color:#000;font-weight:900;border:none;border-radius:8px">🔄 Nuevo Tubo Lleno</button><button onclick="abrirEditarStock('43.5')" style="padding:12px;background:#334155;color:white;border:none;border-radius:8px">Editar</button></div></div>`;
+    } else {
+      const el43=document.getElementById('stockContent43'); if(el43) el43.innerHTML='<div class="card" style="border-color:#ef4444">No hay tubo 43.5<br><br><button onclick="guardarIngresoGas43()" style="padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Crear tubo 43.5 inicial</button></div>';
+    }
+    let hOtros='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Stock</th><th>Acc</th></tr>';
+    otros.forEach(o=>{ hOtros+=`<tr><td>${o.producto_id}</td><td>${o.nombre||''}</td><td>${o.llenas||0}</td><td><button onclick="abrirEditarStock('${o.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
+    hOtros+='</table>'; const elOtros=document.getElementById('stockContentOtros'); if(elOtros) elOtros.innerHTML=hOtros;
+  }catch(e){ const el=document.getElementById('stockContentGas'); if(el) el.innerHTML='Error: '+e.message; }
+}
+async function guardarIngresoGas(){ const prod=document.getElementById('ingProducto').value; const llenas=parseInt(document.getElementById('ingLlenas').value)||0; const vacias=parseInt(document.getElementById('ingVacias').value)||0; const remito=document.getElementById('ingRemito').value; if(!llenas&&!vacias){alert('Ingresá llenas o vacias');return;} await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:prod,llenas,vacias,remito})}); alert('Ingreso guardado'); cargarStock(); cambiarTabStock('gas'); }
+async function guardarIngresoGas43(){ await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:'43.5',llenas:1,vacias:0,kilos_en_uso:43.5})}); alert('Tubo 43.5 creado'); cargarStock(); }
+async function iniciarNuevoTubo43(){ if(!confirm('¿Iniciar nuevo tubo 43.5 lleno (43.5kg)?')) return; await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'iniciar_tubo_43'})}); cargarStock(); }
+async function abrirEditarStock(pid){ const depRes=await fetch(API+'?table=deposito',{cache:'no-store'}); const depJson=await depRes.json(); const cur=(depJson.data||[]).find(d=>String(d.producto_id)===String(pid)); const defLlenas=cur?.llenas||0; const defVacias=cur?.vacias||0; const nuevo=prompt('Llenas para '+pid+':',defLlenas); if(nuevo===null) return; const vac=prompt('Vacias para '+pid+':',defVacias); if(vac===null) return; let payload={accion:'actualizar_stock',producto_id:pid,llenas:parseInt(nuevo)||0,vacias:parseInt(vac)||0}; if(pid==='43.5'){ const kilos=prompt('Kilos en uso (0-43.5):',cur?.kilos_en_uso||'43.5'); if(kilos!==null) payload.kilos_en_uso=parseFloat(kilos)||0; } await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cargarStock(); }
+async function abrirBalanceInicial(){ const prod=prompt('Producto ID (11,13,45,43.5, OTROS):','11'); if(!prod) return; const llenas=parseInt(prompt('Llenas iniciales:','0'))||0; const vacias=parseInt(prompt('Vacias iniciales:','0'))||0; const kilos=prod==='43.5'?parseFloat(prompt('Kilos en uso:','43.5'))||43.5:0; await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial',producto_id:prod,llenas,vacias,kilos_en_uso:kilos})}); cargarStock(); }
+
+function cambiarTabVentas(tab){
+  document.getElementById('tab-ventas-mostrador').classList.add('hidden');
+  document.getElementById('tab-ventas-camioneta').classList.add('hidden');
+  document.getElementById('btnTabMostrador').style.background='#1f2937';
+  document.getElementById('btnTabCamioneta').style.background='#1f2937';
+  document.getElementById('btnTabMostrador').style.color='#94a3b8';
+  document.getElementById('btnTabCamioneta').style.color='#94a3b8';
+  if(tab==='mostrador'){ document.getElementById('tab-ventas-mostrador').classList.remove('hidden'); document.getElementById('btnTabMostrador').style.background='#0ea5e9'; document.getElementById('btnTabMostrador').style.color='white'; cargarVentasHoy(); cargarStockTubo43(); }
+  if(tab==='camioneta'){ document.getElementById('tab-ventas-camioneta').classList.remove('hidden'); document.getElementById('btnTabCamioneta').style.background='#f59e0b'; document.getElementById('btnTabCamioneta').style.color='#000'; }
+}
+async function cargarStockTubo43(){ try{ const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); const dep=(j.data||[]).find(d=>String(d.producto_id)==='43.5'); tubo43Cache=dep; const info=document.getElementById('stockTuboInfo'); if(info&&dep) info.textContent=`Tubo: ${parseFloat(dep.kilos_en_uso||0).toFixed(1)}kg`; }catch(e){} }
+function onProductoChange(){ const prod=document.getElementById('ventaProducto').value; const box=document.getElementById('boxFraccionado'); if(prod==='fraccionado') box.classList.remove('hidden'); else box.classList.add('hidden'); calcularTotalMostrador(); }
+function actualizarReglaFlete(){ const tipoCli=document.getElementById('ventaTipoCliente').value; const modo=document.getElementById('ventaModo').value; const fleteInput=document.getElementById('ventaFlete'); const info=document.getElementById('reglaFleteInfo'); if(!fleteInput||!info) return; if(tipoCli==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Retira en local = SIN FLETE'; } else if(tipoCli==='comercio'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Comercio = NUNCA flete'; } else if((tipoCli==='consumidor_final'||tipoCli==='mides') && modo==='domicilio'){ fleteInput.disabled=false; if(parseInt(fleteInput.value||0)===0) fleteInput.value=120; info.textContent='REGLA: Final/MIDES domicilio = FLETE $120 OBLIGATORIO'; } else if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='Retira = sin flete'; } else { fleteInput.disabled=false; info.textContent='Domicilio - flete opcional'; } calcularTotalMostrador(); }
+function calcularTotalMostrador(){ const prod=document.getElementById('ventaProducto').value; const precios={'11':800,'13':950,'45':3500,'fraccionado':150}; let base=precios[prod]||0; if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; base=kg*precios.fraccionado; } const flete=parseInt(document.getElementById('ventaFlete')?.value)||0; const el=document.getElementById('ventaTotal'); if(el) el.textContent='$'+(base+flete); }
+async function registrarVentaMostrador(){ const prod=document.getElementById('ventaProducto').value; const cliente=document.getElementById('ventaCliente').value||'Cliente Mostrador'; const tipoCli=document.getElementById('ventaTipoCliente').value; const modo=document.getElementById('ventaModo').value; const pago=document.getElementById('ventaPago').value; const flete=parseInt(document.getElementById('ventaFlete').value)||0; const total=parseInt((document.getElementById('ventaTotal').textContent||'0').replace('$',''))||0; if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; if(!confirm(`Vender ${kg}kg fraccionado a ${cliente} por $${total}?`)) return; const r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kg,cliente_nombre:cliente})}); const j=await r.json(); if(j.error){ alert(j.error); return; } alert(`✅ Vendido ${kg}kg. Quedan ${parseFloat(j.restante||0).toFixed(1)}kg`); } else { if(!confirm(`Vender ${prod} a ${cliente} total $${total}?`)) return; await fetch(API+'?table=ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto_id:prod,cliente_nombre:cliente,cantidad:1,total,flete,pago,tipo_cliente:tipoCli,modo})}); } document.getElementById('ventaCliente').value=''; cargarVentasHoy(); cargarStockTubo43(); cargarResumen(); }
+async function cargarVentasHoy(){ const el=document.getElementById('ventasHoyTabla'); if(!el) return; el.innerHTML='Cargando...'; try{ const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); const v=j.data||[]; if(!v.length){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; } let h='<table><tr style="background:#0f172a"><th>Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>'; v.forEach(row=>{ const hora=(row.fecha||row.created_at||'').toString().substring(11,19); h+=`<tr><td>${hora}</td><td>${row.cliente_nombre||''} (${row.tipo_cliente||''})</td><td>${row.producto_id||''}</td><td style="font-weight:900">$${row.total||0}</td></tr>`; }); h+='</table>'; el.innerHTML=h; }catch(e){ el.innerHTML='Error: '+e.message; } }
+
+async function cargarFinanzas(){
+  let fecha=document.getElementById('finFecha')?.value;
+  if(!fecha){ const hoy=new Date(); fecha=hoy.toISOString().split('T')[0]; const elF=document.getElementById('finFecha'); if(elF) elF.value=fecha; }
+  const el=document.getElementById('tablaFinanzas'); if(el) el.innerHTML='Cargando...';
+  try{
+    const r=await fetch(API+'?table=finanzas&fecha='+fecha,{cache:'no-store'}); const j=await r.json(); finanzasCache=j.data||[];
+    const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); const jV=await rV.json(); const ventas=(jV.data||[]).filter(v=> (v.fecha||'').toString().split('T')[0]===fecha);
+    let totIng=0, totEgr=0, totFlete=0; let porMetodo={}; let porCat={};
+    let html='<table><tr style="background:#0f172a"><th>Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
+    finanzasCache.forEach(f=>{ const monto=parseFloat(f.monto)||0; if(f.tipo==='ingreso') totIng+=monto; else if(f.tipo!=='cierre') totEgr+=monto; if(f.categoria==='flete') totFlete+=monto; porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto; porCat[f.categoria]=(porCat[f.categoria]||0)+monto; const hora=(f.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><td>${hora}</td><td>${f.tipo}</td><td>${f.descripcion||f.categoria}</td><td style="font-weight:900;color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">$${monto}</td></tr>`; });
+    ventas.forEach(v=>{ const m=parseFloat(v.total)||0; const fl=parseFloat(v.flete)||0; totIng+=m; totFlete+=fl; porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m; porCat['venta_gas']=(porCat['venta_gas']||0)+m; const h2=(v.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td>${h2}</td><td>venta</td><td>${v.producto_id||''} ${v.cliente_nombre||''}</td><td style="font-weight:900;color:#22c55e">$${m} (f
+  
 </script>
 </body>
 </html>
