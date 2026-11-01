@@ -719,6 +719,36 @@ mostrarSeccion=function(id,btn){
   oldMostrarFin(id,btn);
   if(id==='finanzas') setTimeout(cargarFinanzas,100);
 }
+
+// --- FIX DEFINITIVO MOSTRARSECCION (reemplaza todos los anteriores) ---
+function mostrarSeccion(id,btn){
+  document.querySelectorAll('.view-section').forEach(function(s){ s.classList.add('hidden'); });
+  var el=document.getElementById('view-'+id);
+  if(el) el.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+
+  if(id==='stock') setTimeout(function(){ if(typeof cargarStock==='function') cargarStock(); },100);
+  if(id==='productos') setTimeout(function(){ if(typeof cargarProductosCatalogo==='function') cargarProductosCatalogo(); },100);
+  if(id==='clientes') setTimeout(function(){ if(typeof cargarClientes==='function') cargarClientes(); },100);
+  if(id==='proveedores') setTimeout(function(){ if(typeof cargarProveedores==='function') cargarProveedores(); },100);
+  if(id==='repartidores') setTimeout(function(){ if(typeof cargarRepartidores==='function') cargarRepartidores(); },100);
+  if(id==='ventas') setTimeout(function(){ 
+    if(typeof cambiarTabVentas==='function') cambiarTabVentas('mostrador');
+    if(typeof actualizarReglaFlete==='function') actualizarReglaFlete();
+    if(typeof calcularTotalMostrador==='function') calcularTotalMostrador();
+  },150);
+  if(id==='gps') setTimeout(function(){ 
+    if(typeof initGpsMaps==='function') initGpsMaps();
+    if(typeof cargarGpsVivo==='function') cargarGpsVivo();
+    if(typeof gpsPoll!=='undefined' && gpsPoll) clearInterval(gpsPoll);
+    if(typeof cargarGpsVivo==='function') gpsPoll=setInterval(cargarGpsVivo,7000);
+  },200);
+  if(id==='finanzas') setTimeout(function(){ if(typeof cargarFinanzas==='function') cargarFinanzas(); },100);
+  
+  // Si salís de GPS, corta el polling
+  if(id!=='gps' && typeof gpsPoll!=='undefined' && gpsPoll){ clearInterval(gpsPoll); gpsPoll=null; }
+}
 </script>
 </body>
 </html>
