@@ -42,6 +42,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 
 
 <div class="main">
+  
 <div id="view-resumen" class="view-section">
   <div class="card">
     <h3 style="font-weight:900">📊 Resumen - Rocha</h3>
@@ -54,6 +55,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div class="card" style="margin-top:12px"><h4>📋 Últimas Ventas</h4><div id="resUltimasVentas" style="font-size:11px;margin-top:8px">Cargando...</div></div>
   </div>
 </div>
+
 
 <div id="view-gps" class="view-section hidden">
   <div id="gpsVivoTab"><div class="card" style="padding:8px"><div id="gpsMap"></div></div></div>
@@ -244,10 +246,17 @@ function mostrarSeccion(id,btn){
   if(el) el.classList.remove('hidden');
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  if(id==='stock') cargarStock();
+  if(id==='resumen') cargarResumen();
+  if(id==='stock') { cargarStock(); cambiarTabStock('gas'); }
   if(id==='finanzas') cargarFinanzas();
-  if(id==='gps'){ initGpsMaps(); cargarGpsVivo(); }
+  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},100); }
+  if(id==='productos') cargarProductosCatalogo();
+  if(id==='clientes') cargarClientes();
+  if(id==='proveedores') cargarProveedores();
+  if(id==='repartidores') cargarRepartidores();
+  if(id==='ventas'){ cambiarTabVentas('mostrador'); }
 }
+
 function cambiarTabStock(tab){
   document.getElementById('stockTabGas').classList.add('hidden');
   document.getElementById('stockTab43').classList.add('hidden');
@@ -520,25 +529,32 @@ async function eliminarProveedor(id){
 async function cargarResumen(){
  try{
   const hoy=new Date().toISOString().split('T')[0];
-  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); const jV=await rV.json(); const ventas=(jV.data||[]);
+  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); 
+  const jV=await rV.json(); 
+  const ventas=(jV.data||[]);
   const ventasHoy=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
   const totHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
   const fleteHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.flete)||0),0);
-  document.getElementById('resVentasHoy').textContent='$'+totHoy;
-  document.getElementById('resVentasCount').textContent=ventasHoy.length+' ventas';
-  document.getElementById('resCajaHoy').textContent='$'+totHoy;
-  document.getElementById('resFletesHoy').textContent='Fletes $'+fleteHoy;
+  const el1=document.getElementById('resVentasHoy'); if(el1) el1.textContent='$'+totHoy;
+  const el2=document.getElementById('resVentasCount'); if(el2) el2.textContent=ventasHoy.length+' ventas';
+  const el3=document.getElementById('resCajaHoy'); if(el3) el3.textContent='$'+totHoy;
+  const el4=document.getElementById('resFletesHoy'); if(el4) el4.textContent='Fletes $'+fleteHoy;
 
-  const rD=await fetch(API+'?table=deposito'); const jD=await rD.json(); const dep=jD.data||[];
+  const rD=await fetch(API+'?table=deposito',{cache:'no-store'}); 
+  const jD=await rD.json(); 
+  const dep=jD.data||[];
   const totLlenas=dep.reduce((s,d)=>s+(parseInt(d.llenas)||0),0);
-  const d11=dep.find(d=>String(d.producto_id)==='11'); const d13=dep.find(d=>String(d.producto_id)==='13'); const d45=dep.find(d=>String(d.producto_id)==='45');
-  document.getElementById('resStockTotal').textContent=totLlenas+' llenas';
-  document.getElementById('resStockDetalle').textContent=`11:${d11?.llenas||0} | 13:${d13?.llenas||0} | 45:${d45?.llenas||0}`;
+  const d11=dep.find(d=>String(d.producto_id)==='11'); 
+  const d13=dep.find(d=>String(d.producto_id)==='13'); 
+  const d45=dep.find(d=>String(d.producto_id)==='45');
+  const el5=document.getElementById('resStockTotal'); if(el5) el5.textContent=totLlenas+' llenas';
+  const el6=document.getElementById('resStockDetalle'); if(el6) el6.textContent=`11:${d11?.llenas||0} | 13:${d13?.llenas||0} | 45:${d45?.llenas||0}`;
 
   let h=''; ventas.slice(0,5).forEach(v=>{ h+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${(v.fecha||'').substring(11,16)} ${v.cliente_nombre||''} ${v.producto_id}</span><b>$${v.total}</b></div>`; });
-  document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
+  const el7=document.getElementById('resUltimasVentas'); if(el7) el7.innerHTML=h||'Sin ventas';
  }catch(e){ console.log('resumen error',e); }
 }
+
 
 async function cargarProductosCatalogo(){
   const tbody=document.getElementById('tablaProductos'); if(!tbody) return;
@@ -588,22 +604,7 @@ let provCache=[];
 let repCache=[];
 let clientesCache=[];
 
-function mostrarSeccion(id,btn){
-  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-  var el=document.getElementById('view-'+id);
-  if(el) el.classList.remove('hidden');
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  if(id==='resumen') cargarResumen();
-  if(id==='stock') { cargarStock(); cambiarTabStock('gas'); }
-  if(id==='finanzas') cargarFinanzas();
-  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},100); }
-  if(id==='productos') cargarProductosCatalogo();
-  if(id==='clientes') cargarClientes();
-  if(id==='proveedores') cargarProveedores();
-  if(id==='repartidores') cargarRepartidores();
-  if(id==='ventas'){ cambiarTabVentas('mostrador'); }
-}
+
 
 function cambiarTabStock(tab){
   ['Gas','43','Otros','Ingreso'].forEach(t=>{
