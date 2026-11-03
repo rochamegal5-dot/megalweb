@@ -1180,180 +1180,212 @@ function calcularFraccTotal(){
 }
  
     
-  // --- VENTAS CON REGLA DE FLETE ---
+ // --- VENTAS CON REGLA DE FLETE - FIX MEGAL FINAL 43.5 ---
 function cambiarTabVentas(t){
-  document.getElementById('tabVentasMostrador').classList.add('hidden');
-  document.getElementById('tabVentasCamioneta').classList.add('hidden');
-  document.getElementById('btnVentasMostrador').style.background='#1f2937'; document.getElementById('btnVentasMostrador').style.color='#94a3b8';
-  document.getElementById('btnVentasCamioneta').style.background='#1f2937'; document.getElementById('btnVentasCamioneta').style.color='#94a3b8';
-  if(t==='mostrador'){ document.getElementById('tabVentasMostrador').classList.remove('hidden'); document.getElementById('btnVentasMostrador').style.background='#0ea5e9'; document.getElementById('btnVentasMostrador').style.color='white'; cargarVentasHoy(); }
-  if(t==='camioneta'){ document.getElementById('tabVentasCamioneta').classList.remove('hidden'); document.getElementById('btnVentasCamioneta').style.background='#0ea5e9'; document.getElementById('btnVentasCamioneta').style.color='white'; cargarInformeCamioneta(); }
+  const tabM=document.getElementById('ventaMostrador')||document.getElementById('tabVentasMostrador');
+  const tabC=document.getElementById('ventaCamioneta')||document.getElementById('tabVentasCamioneta');
+  const btnM=document.getElementById('tabVentaMostrador')||document.getElementById('btnVentasMostrador');
+  const btnC=document.getElementById('tabVentaCamioneta')||document.getElementById('btnVentasCamioneta');
+  if(tabM) tabM.classList.add('hidden');
+  if(tabC) tabC.classList.add('hidden');
+  if(btnM){ btnM.style.background='#1f2937'; btnM.style.color='#94a3b8'; }
+  if(btnC){ btnC.style.background='#1f2937'; btnC.style.color='#94a3b8'; }
+  if(t==='mostrador'){ 
+    if(tabM) tabM.classList.remove('hidden'); 
+    if(btnM){ btnM.style.background='#0ea5e9'; btnM.style.color='white'; }
+    cargarVentasHoy(); 
+  }
+  if(t==='camioneta'){ 
+    if(tabC) tabC.classList.remove('hidden'); 
+    if(btnC){ btnC.style.background='#0ea5e9'; btnC.style.color='white'; }
+    cargarInformeCamioneta(); 
+  }
+}
+
+// Soporta ambos IDs: vmTipoCliente (tu HTML) y ventaTipoCliente (bloque viejo)
+function getTipoCliente(){
+  return document.getElementById('vmTipoCliente')?.value || document.getElementById('ventaTipoCliente')?.value || 'consumidor_final';
+}
+function getModoVenta(){
+  // Tu HTML usa botones Retira/Domicilio, no select
+  const modoBtn = document.getElementById('vmModo')?.value || window._modoMostrador || 'retira';
+  return modoBtn;
+}
+window._modoMostrador='retira';
+function setMostradorModo(m){
+  window._modoMostrador=m;
+  const bR=document.getElementById('btnMostradorRetira');
+  const bD=document.getElementById('btnMostradorDomicilio');
+  if(bR && bD){
+    if(m==='retira'){ bR.style.background='#38bdf8'; bR.style.color='#000'; bD.style.background='#1f2937'; bD.style.color='#94a3b8'; }
+    else { bD.style.background='#38bdf8'; bD.style.color='#000'; bR.style.background='#1f2937'; bR.style.color='#94a3b8'; }
+  }
+  actualizarReglaFlete();
 }
 
 function actualizarReglaFlete(){
-  const tipo = document.getElementById('ventaTipoCliente')?.value || 'consumidor_final';
-  const modo = document.getElementById('ventaModo')?.value || 'domicilio';
-  const fleteInput = document.getElementById('ventaFlete');
-  const texto = document.getElementById('fleteReglaTexto');
-  const box = document.getElementById('boxFlete');
-  if(!fleteInput || !texto) return;
+  const tipo = getTipoCliente();
+  const modo = getModoVenta();
+  const fleteInput = document.getElementById('vmFlete') || document.getElementById('ventaFlete');
+  const texto = document.getElementById('vmFleteInfo') || document.getElementById('fleteReglaTexto') || document.getElementById('vmFleteLock');
+  const box = document.getElementById('boxFlete') || fleteInput;
+  if(!fleteInput) return;
 
   if(modo==='retira'){
     fleteInput.value = 0; fleteInput.disabled = true;
-    texto.textContent = 'Retira en local = $0 (sin flete)';
-    box.style.borderColor = '#334155';
-  } else if(tipo==='comercio'){
+    if(texto) texto.textContent = 'Retira en local = $0 (sin flete) - BLOQUEADO';
+    if(box) box.style.borderColor = '#334155';
+  } else if(tipo==='comercio' || tipo==='comercio_especial' || tipo==='comercio_mides'){
     fleteInput.value = 0; fleteInput.disabled = true;
-    texto.textContent = 'Comercio = nunca lleva flete';
-    box.style.borderColor = '#334155';
+    if(texto) texto.textContent = 'Comercio = nunca lleva flete - BLOQUEADO';
+    if(box) box.style.borderColor = '#334155';
   } else {
-    // consumidor_final o mides + domicilio = 150 obligatorio
     fleteInput.disabled = false;
-    if(parseInt(fleteInput.value)===0) fleteInput.value = 150;
-    texto.textContent = 'Domicilio Consumidor Final/MIDES = $150 obligatorio';
-    box.style.borderColor = '#f59e0b';
+    if(parseInt(fleteInput.value)===0) fleteInput.value = 150; // REGLA MEGAL $150
+    if(texto) texto.textContent = 'Domicilio Consumidor Final/MIDES = $150 obligatorio';
+    if(box) box.style.borderColor = '#f59e0b';
   }
   calcularTotalMostrador();
 }
 
+
+
 function calcularTotalMostrador(){
-  const cant = parseInt(document.getElementById('ventaCantidad')?.value)||1;
-  const precio = parseFloat(document.getElementById('ventaPrecio')?.value)||0;
-  const flete = parseFloat(document.getElementById('ventaFlete')?.value)||0;
+  const cant = parseInt(document.getElementById('vmCant')?.value || document.getElementById('ventaCantidad')?.value)||1;
+  const precio = parseFloat(document.getElementById('vmPrecio')?.value || document.getElementById('ventaPrecio')?.value)||0;
+  const flete = parseFloat(document.getElementById('vmFlete')?.value || document.getElementById('ventaFlete')?.value)||0;
   const total = (cant*precio)+flete;
-  const el = document.getElementById('ventaTotalTexto');
-  if(el) el.textContent = '$'+total;
+  const el = document.getElementById('vmTotal') || document.getElementById('ventaTotalTexto');
+  if(el){ 
+    if(el.tagName==='INPUT') el.value=total; 
+    else el.textContent='$'+total; 
+  }
+  const totalCobrar = document.getElementById('totalACobrar');
+  if(totalCobrar) totalCobrar.textContent='$'+total;
 }
 
 async function cargarRepartidoresEnVentas(){
-  // ya lo hace cargarRepartidores, pero aseguramos que el select de ventas exista
-  if(repCache.length===0) await cargarRepartidores();
+  if(typeof repCache!=='undefined' && repCache.length===0) await cargarRepartidores();
 }
 
- async function guardarVentaMostrador(){
-  const prodId=document.getElementById('ventaProducto').value;
-  const cantidad=parseInt(document.getElementById('ventaCantidad').value)||1;
-  const precio=parseFloat(document.getElementById('ventaPrecio').value)||0;
-  const cliente=document.getElementById('ventaCliente').value||'Mostrador';
-  const tipoVenta=document.getElementById('ventaTipoOperacion')?.value||'solo_gas'; // NUEVO SELECT
-  const kg=extraerKgDeProducto(prodId); // 11,13,45
+// ========= VENTA MOSTRADOR UNIFICADA (soporta vmProducto y ventaProducto) =========
+async function registrarVentaMostrador(){ return guardarVentaMostrador(); }
 
-  if(!prodId) return alert('Seleccioná producto');
-  if(kg===43.5) return alert('Tubo 43.5 no se vende entero. Usá los botones de fraccionado.');
+async function guardarVentaMostrador(){
+  // Lee de ambos IDs para ser compatible
+  const prodId=document.getElementById('vmProducto')?.value || document.getElementById('ventaProducto')?.value;
+  const cantidad=parseInt(document.getElementById('vmCant')?.value || document.getElementById('ventaCantidad')?.value)||1;
+  const precio=parseFloat(document.getElementById('vmPrecio')?.value || document.getElementById('ventaPrecio')?.value)||0;
+  const cliente=document.getElementById('vmCliente')?.value || document.getElementById('ventaCliente')?.value || 'Mostrador';
+  const tipoVenta=document.getElementById('ventaTipoOperacion')?.value || 'solo_gas';
+  const tipoCliente=getTipoCliente();
+  const modo=getModoVenta();
+  const flete=parseFloat(document.getElementById('vmFlete')?.value || document.getElementById('ventaFlete')?.value)||0;
+  const pago=document.getElementById('vmPago')?.value || document.getElementById('ventaPago')?.value || 'contado';
 
-  // 1. Guardar venta
+  const kg=extraerKgDeProducto(prodId);
+
+  if(!prodId) return alert('Seleccioná producto - Si está vacío, clic en Ventas de nuevo');
+  if(kg===43.5) return alert('Tubo 43.5 no se vende entero. Usá los botones 1kg/1.5kg/2kg/2.5kg/3kg a $160/kg');
+
+  // Validar flete
+  if(modo==='retira' && flete!==0) return alert('Retira en local debe ser $0 flete');
+  if((tipoCliente.includes('comercio')) && flete!==0) return alert('Comercio nunca lleva flete');
+
   const idVenta='V_'+Date.now();
-  const total=cantidad*precio;
-  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-    id:idVenta, fecha:new Date().toISOString(), tipo:tipoVenta, producto_id:prodId, producto_nombre:prodId, cantidad, precio_unitario:precio, total, cliente, kilos:kg
+  const total=(cantidad*precio)+flete;
+
+  // Guardar en Postgres (tabla ventas)
+  const API_VENTAS = (typeof API!=='undefined'?API: (typeof API_ERP!=='undefined'?API_ERP:'/api/postgres'));
+  await fetch(API_VENTAS+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:idVenta, fecha:new Date().toISOString(), tipo:tipoVenta, tipo_cliente:tipoCliente, modo:modo, producto_id:prodId, producto_nombre:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg
   })});
 
-  // 2. AJUSTE AUTOMATICO DE STOCK - ESTO ES LO QUE FALTABA
   await ajustarStockAutomatico({tipoVenta, kg, cantidad});
 
-  // 3. Finanzas auto
-  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-    id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoVenta} ${cantidad}x ${kg}kg a ${cliente}`, metodo:'efectivo'
+  await fetch(API_VENTAS+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoVenta} ${cantidad}x ${kg}kg a ${cliente} (${tipoCliente} ${modo})`, metodo:pago
   })});
 
-  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg (${tipoVenta}) - Stock ajustado`);
-  cargarVentas(); cargarStock(); cargarResumen();
+  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg (${tipoVenta}) Flete $${flete} - Total $${total} - Stock ajustado`);
+  cargarVentasHoy(); 
+  if(typeof cargarStock==='function') cargarStock(); 
+  if(typeof cargarResumen==='function') cargarResumen();
 }
 
 function extraerKgDeProducto(prodId){
   if(!prodId) return 0;
-  if(prodId.includes('11')) return 11;
-  if(prodId.includes('13')) return 13;
-  if(prodId.includes('45')) return 45;
-  if(prodId.includes('43')) return 43.5;
-  if(prodId.startsWith('FRACC_')) return parseFloat(prodId.split('_')[1])||0;
+  const s=String(prodId).toLowerCase();
+  if(s.includes('11')) return 11;
+  if(s.includes('13')) return 13;
+  if(s.includes('45')) return 45;
+  if(s.includes('43')) return 43.5;
+  if(s.startsWith('fracc')) return 43.5;
+  if(s.startsWith('fracc_')) return parseFloat(s.split('_')[1])||0;
+  if(s.includes('1kg') || s==='1') return 1;
+  if(s.includes('1.5kg')) return 1.5;
+  if(s.includes('2kg')) return 2;
+  if(s.includes('2.5kg')) return 2.5;
+  if(s.includes('3kg')) return 3;
   return 13;
 }
 
 async function ajustarStockAutomatico({tipoVenta, kg, cantidad}){
-  // Busca stock actual de ese kg
   try{
-    const r=await fetch(API+'?table=stock',{cache:'no-store'});
+    const API_ST = (typeof API_STOCK!=='undefined'?API_STOCK: (typeof API!=='undefined'?API:'/api/postgres'));
+    const r=await fetch(API_ST+'?table=stock',{cache:'no-store'});
     const j=await r.json();
-    let stock=j.data||[];
-    let item=stock.find(s=> (s.tipo||s.kg)==kg || s.id==kg);
-    if(!item){
-      // Si no existe, lo crea
-      item={id:kg+'', tipo:kg+'', kg, llenas:0, vacias:0};
-    }
-
+    let stock=j.data || j.deposito || [];
+    let item=stock.find(s=> String(s.producto_id||s.tipo||s.id||'').includes(String(kg)) || (s.kg==kg));
+    if(!item) item={producto_id:String(kg), id:String(kg), tipo:String(kg), kg, llenas:10, vacias:5};
     let llenas=parseInt(item.llenas)||0;
     let vacias=parseInt(item.vacias)||0;
-
-    if(tipoVenta==='garrafa_completa'){
-      // Se lleva gas+envase -> solo baja llena
-      llenas = Math.max(0, llenas - cantidad);
-    } else if(tipoVenta==='solo_gas'){
-      // Trae vacia, se lleva llena -> baja llena, sube vacia
-      llenas = Math.max(0, llenas - cantidad);
-      vacias = vacias + cantidad;
-    } else if(tipoVenta==='solo_envase_vacio'){
-      // Solo vende fierro vacio
-      vacias = Math.max(0, vacias - cantidad);
-    }
-
-    // Guardar de vuelta
-    await fetch(API+'?table=stock',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      id:item.id||kg+'', tipo:kg+'', kg, llenas, vacias, ultima_venta:new Date().toISOString()
+    if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
+    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias=vacias+cantidad; }
+    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
+    await fetch(API_ST,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      accion:'ajuste_venta', producto_id:String(kg), llenas, vacias
     })});
-
-    console.log(`Stock ajustado ${kg}kg: ${tipoVenta} x${cantidad} -> Llenas:${llenas} Vacias:${vacias}`);
+    // Fallback si tu API no tiene accion ajuste_venta
+    await fetch((typeof API!=='undefined'?API:'/api/postgres')+'?table=stock',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      id:item.id||String(kg), tipo:String(kg), producto_id:String(kg), kg, llenas, vacias, ultima_venta:new Date().toISOString()
+    })}).catch(()=>{});
   }catch(e){ console.error('Error ajustando stock', e); }
-}   
-////    
-
+}
 
 async function cargarVentasHoy(){
   try{
-    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
+    const API_V = (typeof API!=='undefined'?API: (typeof API_ERP!=='undefined'?API_ERP:'/api/postgres'));
+    const r=await fetch(API_V+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
     ventas=ventas.filter(v=> (v.modo||'mostrador')!=='app');
     const hoy=new Date().toISOString().split('T')[0];
     ventas=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
-    const el=document.getElementById('ventasHoyTabla'); if(!el) return;
+    const el=document.getElementById('ventasHoyTabla')||document.getElementById('ventasHoyTablaMostrador'); if(!el) return;
     if(!ventas.length){ el.innerHTML='<i style="color:#64748b">Sin ventas mostrador hoy</i>'; return; }
-    el.innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Pago</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||''} (${v.tipo_cliente||''})</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id||''} x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937">${v.pago||''}</td><td style="padding:4px;border:1px solid #1f2937">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$${v.total||0}</td><td style="padding:4px;border:1px solid #1f2937">${v.modo||''}</td></tr>`).join('')}</tbody></table>`;
+    el.innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Pago</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||v.cliente||''} (${v.tipo_cliente||''})</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id||''} x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937">${v.pago||''}</td><td style="padding:4px;border:1px solid #1f2937">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$${v.total||0}</td></tr>`).join('')}</tbody></table>`;
   }catch(e){ const el=document.getElementById('ventasHoyTabla'); if(el) el.textContent='Error: '+e.message; }
 }
 
-async function cargarInformeCamioneta(){
-  try{
-    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
-    ventas=ventas.filter(v=> v.modo==='app' || (v.producto_id&&String(v.producto_id).includes('app')));
-    const cont=document.getElementById('informeCamionetaList');
-    const resumen=document.getElementById('informeResumen');
-    const status=document.getElementById('informeStatus');
-    if(!cont) return;
-    if(ventas.length===0){ cont.innerHTML='<div class="card" style="color:#64748b">Sin ventas de camioneta hoy (vienen de la APP del repartidor)</div>'; if(resumen) resumen.innerHTML=''; if(status) status.textContent='Sin datos'; return; }
-    let tot=0,fletes=0; ventas.forEach(v=>{ tot+=parseFloat(v.total)||0; fletes+=parseFloat(v.flete)||0; });
-    if(resumen) resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b>${ventas.length}</b><br><span style="font-size:10px;color:#94a3b8">VENTAS APP</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#22c55e">$${tot}</b><br><span style="font-size:10px;color:#94a3b8">TOTAL</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#f59e0b">$${fletes}</b><br><span style="font-size:10px;color:#94a3b8">FLETES</span></div>`;
-    cont.innerHTML=ventas.map(v=>`<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b"><div style="display:flex;justify-content:space-between"><b>${v.cliente_nombre||'Cliente'} (${v.tipo_cliente||''})</b><span style="font-size:10px;color:#94a3b8">${(v.fecha||'').substring(11,19)}</span></div><div style="font-size:11px;margin-top:4px">${v.producto_id||''} x${v.cantidad||1} - $${v.total||0} Flete:$${v.flete||0} - APP</div></div>`).join('');
-    if(status) status.textContent=`Actualizado ${new Date().toLocaleTimeString()} - ${ventas.length} ventas APP`;
-  }catch(e){ const el=document.getElementById('informeCamionetaList'); if(el) el.innerHTML='<div style="color:#ef4444">Error: '+e.message+'</div>'; }
+// FRACCIONADO 43.5 - $160/KG FIJO
+function ventaRapidaFraccionado(kilos){
+  const selK=document.getElementById('vmKilos')||document.getElementById('fraccKilos')||document.getElementById('kilosStock');
+  if(selK) selK.value=kilos;
+  if(typeof abrirModalFraccionado==='function') abrirModalFraccionado();
+  else if(typeof venderFraccionado==='function') { document.getElementById('kilosStock').value=kilos; venderFraccionado(); }
+  else { // fallback directo
+    if(confirm(`¿Vender ${kilos}kg fraccionado a $160/kg = $${kilos*160}?`)){
+      fetch((typeof API_STOCK!=='undefined'?API_STOCK:'/api/stock'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos,cliente_nombre:'Mostrador',precio_kilo:160})})
+      .then(r=>r.json()).then(j=>{ if(j.ok) { alert(`Vendido ${kilos}kg - Restante ${j.restante?.toFixed(1)}kg - $${kilos*160}`); if(typeof cargarStock==='function') cargarStock(); } else alert(j.error); });
+    }
+  }
 }
 
- function ventaRapidaFraccionado(kilos){
-  document.getElementById('fraccKilos').value=kilos;
-  abrirModalFraccionado();
-}   
-// Listener para que al escribir cliente se actualice el tipo
-document.addEventListener('DOMContentLoaded',()=>{
-  const inpCliente = document.getElementById('ventaClienteNombre');
-  if(inpCliente){
-    inpCliente.addEventListener('change',()=>{
-      const opt = document.querySelector(`#listaClientesDatalist option[value="${inpCliente.value}"]`);
-      if(opt){
-        const tipo = opt.getAttribute('data-tipo');
-        if(tipo){ document.getElementById('ventaTipoCliente').value=tipo; actualizarReglaFlete(); }
-      }
-    });
-  }
-});  
-    
+function actualizarPrecioMostrador(){
+  const prod=document.getElementById('vmProducto')?.value;
+  if(prod==='fraccionado'){ document.getElementById('vmFraccionadoBox')?.classList.remove('hidden'); }
+  else { document.getElementById('vmFraccionadoBox')?.classList.add('hidden'); }
+  calcularTotalMostrador();
+}
 
 // --- FINANZAS EMPRESA COMPLETA ---
 
