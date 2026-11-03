@@ -1088,11 +1088,11 @@ async function guardarFinanza(){
 async function eliminarFinanza(id){ if(!confirm('¿Borrar movimiento?')) return; try{ await fetch(`${API}?table=finanzas&id=${id}`,{method:'DELETE'}); cargarFinanzas(); }catch(e){ alert(e.message); } }
 
 
- // --- CAMARAS ---
+// --- CAMARAS ---
 async function cargarCamaras(){
   try{
-    const r = await fetch(`${API}?table=camaras`,{cache:'no-store'}).catch(()=>({json:()=>({data:[STRIPPED]
-    const j = await r.json().catch(()=>({data:[STRIPPED]
+    let r, j;
+    try{ r = await fetch(`${API}?table=camaras`,{cache:'no-store'}); j = await r.json(); }catch(e){ j={data:[]} }
     camarasCache = j.data || JSON.parse(localStorage.getItem('megal_camaras')||'[]');
     const grid = document.getElementById('gridCamaras');
     if(!grid) return;
@@ -1101,7 +1101,7 @@ async function cargarCamaras(){
       <div class="card" style="padding:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>${c.nombre}</b><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${c.ubicacion||''}</span></div>
         <div style="background:#000;border-radius:8px;height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden">
-          ${c.url && c.url.startsWith('http') ? `<img src="${c.url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=color:#64748b>Sin señal - ${c.url}</span>'">` : `<span style="color:#64748b">📹 ${c.nombre}<br><small>${c.url||'Sin URL'}</small><br><small>Ideal: poné IP local o link MJPEG</small></span>`}
+          ${c.url && c.url.startsWith('http') ? `<img src="${c.url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=color:#64748b>Sin señal</span>'">` : `<span style="color:#64748b">📹 ${c.nombre}<br><small>${c.url||'Sin URL'}</small></span>`}
         </div>
         <div style="display:flex;gap:4px;margin-top:8px"><button onclick="editarCamara('${c.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;flex:1">Editar</button><button onclick="eliminarCamara('${c.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button><button onclick="window.open('${c.url}','_blank')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:4px;flex:1">Abrir</button></div>
       </div>`).join('');
@@ -1112,43 +1112,43 @@ function cerrarModalCamara(){ const m=document.getElementById('modalCamara'); m.
 function editarCamara(id){ const c=camarasCache.find(x=>x.id===id); if(!c) return; document.getElementById('camId').value=c.id; document.getElementById('camNombre').value=c.nombre; document.getElementById('camUrl').value=c.url||''; document.getElementById('camUbicacion').value=c.ubicacion||''; document.getElementById('tituloModalCamara').textContent='Editar Cámara'; document.getElementById('modalCamara').classList.remove('hidden'); document.getElementById('modalCamara').style.display='flex'; }
 async function guardarCamara(){
   const id=document.getElementById('camId').value||'cam_'+Date.now();
-  const nombre=document.getElementById('camNombre').value.trim(); const url=document.getElementById('camUrl').value.trim(); const ubicacion=document.getElementById('camUbicacion').value.trim();
+  const nombre=document.getElementById('camNombre').value.trim(); 
+  const url=document.getElementById('camUrl').value.trim(); 
+  const ubicacion=document.getElementById('camUbicacion').value.trim();
   if(!nombre) return alert('Nombre obligatorio');
   const obj={id,nombre,url,ubicacion};
   try{ await fetch(`${API}?table=camaras`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(obj)}); }catch(_){ }
-  let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); arr=arr.filter(x=>x.id!==id); arr.push(obj); localStorage.setItem('megal_camaras',JSON.stringify(arr));
+  let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); 
+  arr=arr.filter(x=>x.id!==id); arr.push(obj); 
+  localStorage.setItem('megal_camaras',JSON.stringify(arr));
   cerrarModalCamara(); cargarCamaras();
 }
 async function eliminarCamara(id){ if(!confirm('¿Borrar cámara?')) return; try{ await fetch(`${API}?table=camaras&id=${id}`,{method:'DELETE'}); }catch(_){ } let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); arr=arr.filter(x=>x.id!==id); localStorage.setItem('megal_camaras',JSON.stringify(arr)); cargarCamaras(); }
 
 // --- MARKETING ---
 function cambiarTabMarketing(t){
-  document.getElementById('tabMktCampanas').classList.add('hidden'); document.getElementById('tabMktClientes').classList.add('hidden'); document.getElementById('tabMktPromos').classList.add('hidden');
-  document.getElementById('btnMktCamp').style.background='#1f2937'; document.getElementById('btnMktCamp').style.color='#94a3b8';
-  document.getElementById('btnMktClientes').style.background='#1f2937'; document.getElementById('btnMktClientes').style.color='#94a3b8';
-  document.getElementById('btnMktPromo').style.background='#1f2937'; document.getElementById('btnMktPromo').style.color='#94a3b8';
-  if(t==='campanas'){ document.getElementById('tabMktCampanas').classList.remove('hidden'); document.getElementById('btnMktCamp').style.background='#0ea5e9'; document.getElementById('btnMktCamp').style.color='white'; }
-  if(t==='clientes'){ document.getElementById('tabMktClientes').classList.remove('hidden'); document.getElementById('btnMktClientes').style.background='#0ea5e9'; document.getElementById('btnMktClientes').style.color='white'; cargarSegmentosMkt(); }
-  if(t==='promos'){ document.getElementById('tabMktPromos').classList.remove('hidden'); document.getElementById('btnMktPromo').style.background='#0ea5e9'; document.getElementById('btnMktPromo').style.color='white'; cargarProductosEnPromo(); }
-}
-function cargarProductosEnPromo(){
-  const sel=document.getElementById('promoProducto');
-  if(sel && productosCache){ sel.innerHTML=productosCache.map(p=>`<option value="${p.id}">${p.id} - ${p.nombre}</option>`).join(''); }
+  document.getElementById('tabMktCampanas').classList.add('hidden'); 
+  document.getElementById('tabMktClientes').classList.add('hidden');
+  const b1=document.getElementById('btnMktCamp'); if(b1){ b1.style.background='#1f2937'; b1.style.color='#94a3b8'; }
+  const b2=document.getElementById('btnMktClientes'); if(b2){ b2.style.background='#1f2937'; b2.style.color='#94a3b8'; }
+  if(t==='campanas'){ document.getElementById('tabMktCampanas').classList.remove('hidden'); if(b1){ b1.style.background='#0ea5e9'; b1.style.color='white'; } }
+  if(t==='clientes'){ document.getElementById('tabMktClientes').classList.remove('hidden'); if(b2){ b2.style.background='#0ea5e9'; b2.style.color='white'; } cargarSegmentosMkt(); }
 }
 async function cargarMarketing(){
   marketingCache = JSON.parse(localStorage.getItem('megal_marketing')||'[]');
   const lista=document.getElementById('listaCampanas'); if(!lista) return;
-  document.getElementById('mktActivas').textContent=marketingCache.filter(m=>m.estado==='activa').length;
-  document.getElementById('mktAlcance').textContent=clientesCache.length||0;
-  const conv=marketingCache.reduce((s,m)=>s+(parseInt(m.conversiones)||0),0); document.getElementById('mktConv').textContent=conv;
+  const act=document.getElementById('mktActivas'); if(act) act.textContent=marketingCache.filter(m=>m.estado==='activa').length;
+  const alc=document.getElementById('mktAlcance'); if(alc) alc.textContent=clientesCache.length||0;
+  const conv=marketingCache.reduce((s,m)=>s+(parseInt(m.conversiones)||0),0); 
+  const convEl=document.getElementById('mktConv'); if(convEl) convEl.textContent=conv;
   if(!marketingCache.length){ lista.innerHTML='<div class="card" style="color:#64748b">Sin campañas - Creá la primera promo</div>'; return; }
-  lista.innerHTML=marketingCache.map(m=>`<div class="card" style="border-left:4px solid ${m.estado==='activa'?'#22c55e':m.estado==='programada'?'#f59e0b':'#64748b'}"><div style="display:flex;justify-content:space-between"><b>${m.nombre}</b><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${m.tipo} - ${m.estado}</span></div><div style="font-size:12px;margin-top:4px;color:#94a3b8">${m.descripcion||''}</div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px"><span>Presu: $${m.presupuesto||0}</span><div><button onclick="editarMarketing('${m.id}')" style="background:#334155;color:white;padding:2px 6px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarMarketing('${m.id}')" style="background:#ef4444;color:white;padding:2px 6px;border:none;border-radius:4px">X</button></div></div></div>`).join('');
+  lista.innerHTML=marketingCache.map(m=>`<div class="card" style="border-left:4px solid ${m.estado==='activa'?'#22c55e':'#f59e0b'}"><div style="display:flex;justify-content:space-between"><b>${m.nombre}</b><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${m.tipo} - ${m.estado}</span></div><div style="font-size:12px;margin-top:4px;color:#94a3b8">${m.descripcion||''}</div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px"><span>Presu: $${m.presupuesto||0}</span><div><button onclick="editarMarketing('${m.id}')" style="background:#334155;color:white;padding:2px 6px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarMarketing('${m.id}')" style="background:#ef4444;color:white;padding:2px 6px;border:none;border-radius:4px">X</button></div></div></div>`).join('');
 }
 function cargarSegmentosMkt(){
   const cont=document.getElementById('mktSegmentos'); if(!cont) return;
   const porTipo={}; clientesCache.forEach(c=>{ const t=c.tipo||'consumidor_final'; porTipo[t]=(porTipo[t]||0)+1; });
   cont.innerHTML=Object.entries(porTipo).map(([k,v])=>`<div class="card" style="text-align:center"><b style="font-size:20px">${v}</b><br><span style="font-size:11px;color:#94a3b8">${k}</span></div>`).join('') || '<span style="color:#64748b">Sin clientes cargados</span>';
-  document.getElementById('mktPreviewEnvio').textContent=`Se enviaría a ${clientesCache.length} clientes (simulado)`;
+  const prev=document.getElementById('mktPreviewEnvio'); if(prev) prev.textContent=`Se enviaría a ${clientesCache.length} clientes (simulado)`;
 }
 function abrirModalMarketing(){ document.getElementById('mktId').value=''; document.getElementById('mktNombre').value=''; document.getElementById('mktDesc').value=''; document.getElementById('mktPresu').value=0; document.getElementById('modalMarketing').classList.remove('hidden'); document.getElementById('modalMarketing').style.display='flex'; }
 function cerrarModalMarketing(){ const m=document.getElementById('modalMarketing'); m.classList.add('hidden'); m.style.display='none'; }
@@ -1165,32 +1165,19 @@ function enviarMktMasivo(){
   const seg=document.getElementById('mktSegmentoSel').value; const msg=document.getElementById('mktMensaje').value.trim();
   if(!msg) return alert('Escribí mensaje');
   let cant=clientesCache.length; if(seg!=='todos') cant=clientesCache.filter(c=>(c.tipo||'consumidor_final')===seg).length;
-  document.getElementById('mktPreviewEnvio').innerHTML=`✅ Simulado: se enviaría <b>"${msg}"</b> a <b>${cant} clientes</b> del segmento <b>${seg}</b> vía WhatsApp (integrar con API real después)`;
-  const id='mkt_'+Date.now(); marketingCache.push({id, nombre:'Masivo '+seg, tipo:'whatsapp', estado:'activa', descripcion:msg, presupuesto:0, conversiones:0}); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing();
+  const prev=document.getElementById('mktPreviewEnvio'); if(prev) prev.innerHTML=`✅ Simulado: se enviaría <b>"${msg}"</b> a <b>${cant} clientes</b> del segmento <b>${seg}</b>`;
+  const nid='mkt_'+Date.now(); marketingCache.push({id:nid, nombre:'Masivo '+seg, tipo:'whatsapp', estado:'activa', descripcion:msg, presupuesto:0, conversiones:0}); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing();
 }
-function generarPromo(){
-  const prod=document.getElementById('promoProducto').value; const desc=document.getElementById('promoDesc').value;
-  const texto=`🔥 ¡PROMO MEGAL! 🔥\nGarrafa ${prod} con ${desc}% OFF solo hoy\n📍 Rocha - Envío $120\n📲 Pedí por WhatsApp\n⏰ ¡Hasta agotar stock!`;
-  document.getElementById('promoTexto').innerText=texto;
-}   
-// Ej: cargarResumen(), cargarStock(), etc.
-// Los vas pegando uno abajo del otro
-
-
-    
 
 // ================= FINAL DEL SCRIPT - NO BORRAR =================
 document.addEventListener('DOMContentLoaded',()=>{
   const hoy=new Date().toISOString().split('T')[0];
   const f=document.getElementById('finFecha');
   if(f) f.value=hoy;
-  cargarResumen();
-  const a=document.getElementById('ventaTipoCliente');
-  if(a) actualizarReglaFlete();
-  const b=document.getElementById('ventaProducto');
-  if(b) calcularTotalMostrador();
+  try{ cargarResumen(); }catch(e){}
 });
-// ================= FIN SCRIPT =================
 </script>
 </body>
 </html>
+    
+
