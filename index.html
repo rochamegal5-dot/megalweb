@@ -350,6 +350,20 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
       <div><label style="font-size:11px">Modo *</label><select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="domicilio">Domicilio (lleva flete)</option><option value="retira">Retira en local (sin flete)</option></select></div>
       <div><label style="font-size:11px">Producto *</label><select id="ventaProducto" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
     </div>
+    <div style="margin-top:8px;background:#0f172a;padding:8px;border-radius:8px;border:1px dashed #334155">
+  <p style="font-size:11px;color:#f59e0b;font-weight:bold;margin-bottom:6px">🔥 GAS FRACCIONADO DE TUBO 43.5 - $160/KG</p>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+    <button onclick="ventaRapidaFraccionado(1)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">1kg<br><b>$160</b></button>
+    <button onclick="ventaRapidaFraccionado(1.5)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">1.5kg<br><b>$240</b></button>
+    <button onclick="ventaRapidaFraccionado(2)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">2kg<br><b>$320</b></button>
+    <button onclick="ventaRapidaFraccionado(2.5)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">2.5kg<br><b>$400</b></button>
+    <button onclick="ventaRapidaFraccionado(3)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">3kg<br><b>$480</b></button>
+  </div>
+</div>
+
+
+
+    
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
       <div><label style="font-size:11px">Cantidad</label><input type="number" id="ventaCantidad" value="1" min="1" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
@@ -1272,6 +1286,10 @@ async function cargarInformeCamioneta(){
   }catch(e){ const el=document.getElementById('informeCamionetaList'); if(el) el.innerHTML='<div style="color:#ef4444">Error: '+e.message+'</div>'; }
 }
 
+ function ventaRapidaFraccionado(kilos){
+  document.getElementById('fraccKilos').value=kilos;
+  abrirModalFraccionado();
+}   
 // Listener para que al escribir cliente se actualice el tipo
 document.addEventListener('DOMContentLoaded',()=>{
   const inpCliente = document.getElementById('ventaClienteNombre');
