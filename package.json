@@ -2,7 +2,6 @@
   "name": "megalweb",
   "type": "module",
   "dependencies": {
-    "@libsql/client": "^0.15.0",
     "@vercel/postgres": "^0.10.0"
   }
 }
