@@ -117,6 +117,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalProducto()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarProducto()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
 </div> 
+  
  <!-- CLIENTES -->   
 <div id="view-clientes" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -287,6 +288,76 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>🚚 Ventas Camioneta (vienen de APP)</h3><span id="informeStatus" style="font-size:11px;color:#94a3b8"></span></div>
     <div id="informeResumen" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px"></div>
     <div id="informeCamionetaList"></div>
+  </div>
+</div>
+
+ <!-- FINANZAS -->
+  <div id="view-finanzas" class="view-section hidden">
+  <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="btnFinResumen" onclick="cambiarTabFinanzas('resumen')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📊 Resumen</button>
+    <button id="btnFinIngresos" onclick="cambiarTabFinanzas('ingresos')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">💰 Ingresos</button>
+    <button id="btnFinEgresos" onclick="cambiarTabFinanzas('egresos')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">💸 Egresos</button>
+    <button id="btnFinCaja" onclick="cambiarTabFinanzas('caja')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🏦 Flujo Caja</button>
+    <button onclick="abrirModalFinanza()" style="background:#16a34a;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold;margin-left:auto">+ Nuevo Movimiento</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="tabFinResumen">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+      <div class="card" style="border-left:4px solid #22c55e;text-align:center"><p style="font-size:11px;color:#94a3b8">INGRESOS MES</p><b id="finTotalIngresos" style="font-size:22px;color:#22c55e">$0</b><p id="finCountIngresos" style="font-size:11px;color:#64748b">0 mov.</p></div>
+      <div class="card" style="border-left:4px solid #ef4444;text-align:center"><p style="font-size:11px;color:#94a3b8">EGRESOS MES</p><b id="finTotalEgresos" style="font-size:22px;color:#ef4444">$0</b><p id="finCountEgresos" style="font-size:11px;color:#64748b">0 mov.</p></div>
+      <div class="card" style="border-left:4px solid #0ea5e9;text-align:center"><p style="font-size:11px;color:#94a3b8">BALANCE MES</p><b id="finBalance" style="font-size:22px;color:white">$0</b><p id="finBalancePct" style="font-size:11px;color:#64748b">0% margen</p></div>
+      <div class="card" style="border-left:4px solid #f59e0b;text-align:center"><p style="font-size:11px;color:#94a3b8">CAJA TOTAL</p><b id="finCajaTotal" style="font-size:22px;color:#f59e0b">$0</b><p style="font-size:11px;color:#64748b">Acumulado</p></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card"><h4 style="margin-bottom:8px">Top Categorías Egresos (Mes)</h4><div id="finTopEgresos" style="font-size:12px"></div></div>
+      <div class="card"><h4 style="margin-bottom:8px">Top Categorías Ingresos (Mes)</h4><div id="finTopIngresos" style="font-size:12px"></div></div>
+    </div>
+    <div class="card"><h4 style="margin-bottom:8px">Últimos 10 movimientos</h4><div id="finUltimos" style="font-size:12px"></div></div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div id="tabFinIngresos" class="hidden">
+    <div class="card" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <input type="date" id="finFiltroDesde" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><input type="date" id="finFiltroHasta" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+      <button onclick="cargarFinanzas()" style="background:#0ea5e9;color:white;padding:6px 12px;border:none;border-radius:6px">Filtrar</button>
+      <span id="finFiltroIngresosTotal" style="margin-left:auto;font-weight:bold;color:#22c55e"></span>
+    </div>
+    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Fecha</th><th style="padding:8px;border:1px solid #1f2937">Categoría</th><th style="padding:8px;border:1px solid #1f2937">Descripción</th><th style="padding:8px;border:1px solid #1f2937">Método</th><th style="padding:8px;border:1px solid #1f2937;text-align:right">Monto</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaFinIngresos"></tbody></table></div>
+  </div>
+
+  <!-- EGRESOS -->
+  <div id="tabFinEgresos" class="hidden">
+    <div class="card" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <input type="date" id="finFiltroDesdeE" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><input type="date" id="finFiltroHastaE" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+      <button onclick="cargarFinanzas()" style="background:#0ea5e9;color:white;padding:6px 12px;border:none;border-radius:6px">Filtrar</button>
+      <span id="finFiltroEgresosTotal" style="margin-left:auto;font-weight:bold;color:#ef4444"></span>
+    </div>
+    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Fecha</th><th style="padding:8px;border:1px solid #1f2937">Categoría</th><th style="padding:8px;border:1px solid #1f2937">Descripción</th><th style="padding:8px;border:1px solid #1f2937">Método</th><th style="padding:8px;border:1px solid #1f2937;text-align:right">Monto</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaFinEgresos"></tbody></table></div>
+  </div>
+
+  <!-- CAJA -->
+  <div id="tabFinCaja" class="hidden">
+    <div class="card"><h4 style="margin-bottom:12px">Flujo de Caja - Últimos 30 días</h4><div id="finFlujoCaja" style="font-size:12px"></div></div>
+  </div>
+</div>
+
+<!-- Modal Finanza UNICO -->
+<div id="modalFinanza" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:480px">
+    <h3 id="tituloModalFinanza" style="margin-bottom:12px">Nuevo Movimiento</h3>
+    <input type="hidden" id="finId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px">Tipo *</label><select id="finTipo" onchange="cambiarCategoriasFin()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="ingreso">💰 Ingreso</option><option value="egreso">💸 Egreso</option></select></div>
+      <div><label style="font-size:11px">Fecha</label><input type="date" id="finFecha" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px">Categoría *</label><select id="finCategoria" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
+      <div><label style="font-size:11px">Método Pago</label><select id="finMetodo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="cheque">Cheque</option><option value="credito">Crédito</option><option value="mixto">Mixto</option></select></div>
+    </div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">Descripción *</label><input type="text" id="finDescripcion" placeholder="Ej: Venta mostrador, Compra Acodike 20 garrafas, Sueldo Juan, Combustible" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Monto *</label><input type="number" id="finMonto" min="0" step="0.01" placeholder="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px;font-size:18px;font-weight:bold"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalFinanza()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarFinanza()" style="padding:8px 14px;background:#16a34a;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
 </div>
   
@@ -842,6 +913,112 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });  
     
+
+// --- FINANZAS EMPRESA COMPLETA ---
+const CATEGORIAS_FIN = {
+  ingreso: ['Venta Mostrador','Venta Camioneta (APP)','Venta Fraccionado','Cobranza Cliente','Aporte Capital','Otro Ingreso'],
+  egreso: ['Compra Gas (Acodike/Riogas)','Flete Proveedor','Sueldos','Combustible','Mantenimiento Vehículo','Alquiler','Servicios (UTE/【entity-ANTEL¦canonical_name=ANTEL】)','Impuestos (DGI/BPS)','Repuestos','Publicidad','Viáticos','Comisión','Otro Egreso']
+};
+
+function cambiarCategoriasFin(){
+  const tipo = document.getElementById('finTipo').value;
+  const sel = document.getElementById('finCategoria');
+  const cats = CATEGORIAS_FIN[tipo] || [];
+  sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+function cambiarTabFinanzas(t){
+  document.getElementById('tabFinResumen').classList.add('hidden');
+  document.getElementById('tabFinIngresos').classList.add('hidden');
+  document.getElementById('tabFinEgresos').classList.add('hidden');
+  document.getElementById('tabFinCaja').classList.add('hidden');
+  ['btnFinResumen','btnFinIngresos','btnFinEgresos','btnFinCaja'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; } });
+  if(t==='resumen'){ document.getElementById('tabFinResumen').classList.remove('hidden'); document.getElementById('btnFinResumen').style.background='#0ea5e9'; document.getElementById('btnFinResumen').style.color='white'; }
+  if(t==='ingresos'){ document.getElementById('tabFinIngresos').classList.remove('hidden'); document.getElementById('btnFinIngresos').style.background='#0ea5e9'; document.getElementById('btnFinIngresos').style.color='white'; }
+  if(t==='egresos'){ document.getElementById('tabFinEgresos').classList.remove('hidden'); document.getElementById('btnFinEgresos').style.background='#0ea5e9'; document.getElementById('btnFinEgresos').style.color='white'; }
+  if(t==='caja'){ document.getElementById('tabFinCaja').classList.remove('hidden'); document.getElementById('btnFinCaja').style.background='#0ea5e9'; document.getElementById('btnFinCaja').style.color='white'; }
+}
+
+async function cargarFinanzas(){
+  try{
+    const r = await fetch(`${API}?table=finanzas`,{cache:'no-store'});
+    const j = await r.json();
+    finanzasCache = j.data || [];
+    
+    const hoy = new Date(); const mes = hoy.getMonth(); const anio = hoy.getFullYear();
+    const delMes = finanzasCache.filter(f=>{ const d=new Date(f.fecha); return d.getMonth()===mes && d.getFullYear()===anio; });
+    
+    const ingresosMes = delMes.filter(f=>f.tipo==='ingreso').reduce((s,f)=>s+(parseFloat(f.monto)||0),0);
+    const egresosMes = delMes.filter(f=>f.tipo==='egreso').reduce((s,f)=>s+(parseFloat(f.monto)||0),0);
+    const balanceMes = ingresosMes - egresosMes;
+    const margen = ingresosMes>0 ? ((balanceMes/ingresosMes)*100).toFixed(1) : 0;
+    const cajaTotal = finanzasCache.reduce((s,f)=> f.tipo==='ingreso' ? s+(parseFloat(f.monto)||0) : s-(parseFloat(f.monto)||0),0);
+
+    document.getElementById('finTotalIngresos').textContent = '$'+ingresosMes.toLocaleString();
+    document.getElementById('finTotalEgresos').textContent = '$'+egresosMes.toLocaleString();
+    document.getElementById('finBalance').textContent = '$'+balanceMes.toLocaleString();
+    document.getElementById('finBalance').style.color = balanceMes>=0 ? '#22c55e' : '#ef4444';
+    document.getElementById('finBalancePct').textContent = margen+'% margen';
+    document.getElementById('finCajaTotal').textContent = '$'+cajaTotal.toLocaleString();
+    document.getElementById('finCountIngresos').textContent = delMes.filter(f=>f.tipo==='ingreso').length+' mov.';
+    document.getElementById('finCountEgresos').textContent = delMes.filter(f=>f.tipo==='egreso').length+' mov.';
+
+    // Top categorías
+    const topE = {}; delMes.filter(f=>f.tipo==='egreso').forEach(f=>{ topE[f.categoria]=(topE[f.categoria]||0)+(parseFloat(f.monto)||0); });
+    const topI = {}; delMes.filter(f=>f.tipo==='ingreso').forEach(f=>{ topI[f.categoria]=(topI[f.categoria]||0)+(parseFloat(f.monto)||0); });
+    document.getElementById('finTopEgresos').innerHTML = Object.entries(topE).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:4px;background:#0f172a;border-radius:4px;margin-bottom:4px"><span>${k}</span><b style="color:#ef4444">$${v}</b></div>`).join('') || '<span style="color:#64748b">Sin egresos</span>';
+    document.getElementById('finTopIngresos').innerHTML = Object.entries(topI).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:4px;background:#0f172a;border-radius:4px;margin-bottom:4px"><span>${k}</span><b style="color:#22c55e">$${v}</b></div>`).join('') || '<span style="color:#64748b">Sin ingresos</span>';
+
+    document.getElementById('finUltimos').innerHTML = finanzasCache.slice(0,10).map(f=>`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px;border-left:3px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><span>${(f.fecha||'').substring(0,10)} - ${f.categoria} - ${f.descripcion||''}</span><b style="color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">${f.tipo==='ingreso'?'+': '-'}$${f.monto}</b></div>`).join('') || 'Sin movimientos';
+
+    // Tablas ingresos/egresos con filtro fecha
+    const desde = document.getElementById('finFiltroDesde')?.value; const hasta = document.getElementById('finFiltroHasta')?.value;
+    let fIng = finanzasCache.filter(f=>f.tipo==='ingreso');
+    let fEgr = finanzasCache.filter(f=>f.tipo==='egreso');
+    if(desde){ fIng=fIng.filter(f=> new Date(f.fecha)>=new Date(desde)); fEgr=fEgr.filter(f=> new Date(f.fecha)>=new Date(desde)); }
+    if(hasta){ fIng=fIng.filter(f=> new Date(f.fecha)<=new Date(hasta+'T23:59:59')); fEgr=fEgr.filter(f=> new Date(f.fecha)<=new Date(hasta+'T23:59:59')); }
+
+    document.getElementById('tablaFinIngresos').innerHTML = fIng.map(f=>`<tr><td style="padding:6px;border:1px solid #1f2937">${(f.fecha||'').substring(0,10)}</td><td style="padding:6px;border:1px solid #1f2937">${f.categoria}</td><td style="padding:6px;border:1px solid #1f2937">${f.descripcion||''}</td><td style="padding:6px;border:1px solid #1f2937">${f.metodo_pago||''}</td><td style="padding:6px;border:1px solid #1f2937;text-align:right;color:#22c55e;font-weight:bold">$${f.monto}</td><td style="padding:6px;border:1px solid #1f2937"><button onclick="eliminarFinanza(${f.id})" style="background:#ef4444;color:white;padding:2px 6px;border:none;border-radius:4px">X</button></td></tr>`).join('') || '<tr><td colspan="6" style="padding:12px;text-align:center;color:#64748b">Sin ingresos</td></tr>';
+    document.getElementById('tablaFinEgresos').innerHTML = fEgr.map(f=>`<tr><td style="padding:6px;border:1px solid #1f2937">${(f.fecha||'').substring(0,10)}</td><td style="padding:6px;border:1px solid #1f2937">${f.categoria}</td><td style="padding:6px;border:1px solid #1f2937">${f.descripcion||''}</td><td style="padding:6px;border:1px solid #1f2937">${f.metodo_pago||''}</td><td style="padding:6px;border:1px solid #1f2937;text-align:right;color:#ef4444;font-weight:bold">$${f.monto}</td><td style="padding:6px;border:1px solid #1f2937"><button onclick="eliminarFinanza(${f.id})" style="background:#ef4444;color:white;padding:2px 6px;border:none;border-radius:4px">X</button></td></tr>`).join('') || '<tr><td colspan="6" style="padding:12px;text-align:center;color:#64748b">Sin egresos</td></tr>';
+
+    const totFIng = fIng.reduce((s,f)=>s+(parseFloat(f.monto)||0),0); const totFEgr = fEgr.reduce((s,f)=>s+(parseFloat(f.monto)||0),0);
+    if(document.getElementById('finFiltroIngresosTotal')) document.getElementById('finFiltroIngresosTotal').textContent = 'Total $'+totFIng;
+    if(document.getElementById('finFiltroEgresosTotal')) document.getElementById('finFiltroEgresosTotal').textContent = 'Total $'+totFEgr;
+
+    // Flujo caja 30 días
+    const flujo = {}; for(let i=29;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const key=d.toISOString().split('T')[0]; flujo[key]={ing:0, egr:0}; }
+    finanzasCache.forEach(f=>{ const key=(f.fecha||'').toString().split('T')[0]; if(flujo[key]){ if(f.tipo==='ingreso') flujo[key].ing+=(parseFloat(f.monto)||0); else flujo[key].egr+=(parseFloat(f.monto)||0); } });
+    document.getElementById('finFlujoCaja').innerHTML = Object.entries(flujo).map(([k,v])=>{ const bal=v.ing-v.egr; return `<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:4px;margin-bottom:2px"><span>${k}</span><span style="color:#22c55e">+$${v.ing}</span><span style="color:#ef4444">-$${v.egr}</span><b style="color:${bal>=0?'#22c55e':'#ef4444'}">$${bal}</b></div>`; }).join('');
+
+  }catch(e){ console.error('finanzas error',e); }
+}
+
+function abrirModalFinanza(){
+  document.getElementById('finId').value=''; document.getElementById('finDescripcion').value=''; document.getElementById('finMonto').value='';
+  document.getElementById('finFecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('tituloModalFinanza').textContent='Nuevo Movimiento';
+  cambiarCategoriasFin();
+  document.getElementById('modalFinanza').classList.remove('hidden'); document.getElementById('modalFinanza').style.display='flex';
+}
+function cerrarModalFinanza(){ const m=document.getElementById('modalFinanza'); m.classList.add('hidden'); m.style.display='none'; }
+
+async function guardarFinanza(){
+  const tipo = document.getElementById('finTipo').value;
+  const categoria = document.getElementById('finCategoria').value;
+  const descripcion = document.getElementById('finDescripcion').value.trim();
+  const monto = parseFloat(document.getElementById('finMonto').value)||0;
+  const metodo_pago = document.getElementById('finMetodo').value;
+  const fecha = document.getElementById('finFecha').value;
+  if(!descripcion) return alert('Descripción obligatoria');
+  if(monto<=0) return alert('Monto debe ser >0');
+  try{
+    await fetch(`${API}?table=finanzas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tipo, categoria, descripcion, monto, metodo_pago, fecha})});
+    cerrarModalFinanza(); cargarFinanzas(); cargarResumen();
+  }catch(e){ alert('Error '+e.message); }
+}
+async function eliminarFinanza(id){ if(!confirm('¿Borrar movimiento?')) return; try{ await fetch(`${API}?table=finanzas&id=${id}`,{method:'DELETE'}); cargarFinanzas(); }catch(e){ alert(e.message); } }
+
+
     
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
