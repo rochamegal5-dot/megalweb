@@ -55,6 +55,23 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
+<!-- GPS -->
+<div id="view-gps" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <h3 style="font-weight:900">📍 GPS - Flota Rocha</h3>
+    <div style="display:flex;gap:6px">
+      <button onclick="cambiarTabGps('vivo')" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">VIVO</button>
+      <button onclick="cambiarTabGps('historico')" style="padding:8px 12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">HISTÓRICO</button>
+    </div>
+  </div>
+  <div id="gpsVivoTab">
+    <div class="card" style="padding:8px"><div id="gpsMap" style="height:500px;width:100%;border-radius:12px"></div></div>
+  </div>
+  <div id="gpsHistTab" class="hidden">
+    <div class="card" style="padding:8px"><div id="gpsMapHist" style="height:500px;width:100%;border-radius:12px"></div></div>
+  </div>
+</div>  
+
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
 const API='/api/postgres';
@@ -111,7 +128,52 @@ async function cargarResumen(){
   document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
  }catch(e){ console.log('resumen error',e); }
 }
-    
+
+function cambiarTabGps(t){
+  document.getElementById('gpsVivoTab').classList.add('hidden');
+  document.getElementById('gpsHistTab').classList.add('hidden');
+  if(t==='vivo') document.getElementById('gpsVivoTab').classList.remove('hidden');
+  else document.getElementById('gpsHistTab').classList.remove('hidden');
+  setTimeout(()=>{if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize();},200);
+}
+
+function initGpsMaps(){
+  try{
+    if(!gpsMap){
+      gpsMap=L.map('gpsMap').setView([-34.48,-54.33],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMap);
+    }
+    if(!gpsMapHist){
+      gpsMapHist=L.map('gpsMapHist').setView([-34.48,-54.33],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMapHist);
+    }
+    setTimeout(()=>{if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize();},300);
+  }catch(e){ console.log('gps init',e); }
+}
+
+async function cargarGpsVivo(){
+  try{
+    const r=await fetch(API+'?table=gps_locations',{cache:'no-store'});
+    const j=await r.json();
+    const pts=j.data||[];
+    if(gpsMap){
+      gpsMap.eachLayer(l=>{if(l instanceof L.Marker) gpsMap.removeLayer(l);});
+      pts.slice(0,30).forEach(p=>{
+        const lat=parseFloat(p.lat||p.latitude);
+        const lng=parseFloat(p.lng||p.longitude);
+        if(!lat||!lng) return;
+        L.marker([lat,lng]).addTo(gpsMap).bindPopup((p.repartidor||'')+' '+(p.fecha||'').substring(11,19));
+      });
+      if(pts[0]){
+        const la=parseFloat(pts[0].lat||pts[0].latitude);
+        const ln=parseFloat(pts[0].lng||pts[0].longitude);
+        if(la&&ln) gpsMap.setView([la,ln],14);
+      }
+    }
+    if(gpsPoll) clearInterval(gpsPoll);
+    gpsPoll=setInterval(cargarGpsVivo,7000);
+  }catch(e){ console.log('gps vivo',e); }
+}
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
 
