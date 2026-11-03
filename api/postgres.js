@@ -1,32 +1,40 @@
 import { neon } from '@neondatabase/serverless';
+
 export default async function handler(req, res){
-  const sql = neon(process.env.DATABASE_URL);
-  const { table } = req.query;
-  
   try{
-    // CREAR TABLAS SI NO EXISTEN - ESTO ARREGLA EL 500
-    await sql`CREATE TABLE IF NOT EXISTS gps_locations (id TEXT PRIMARY KEY, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, repartidor TEXT, fecha TIMESTAMP DEFAULT NOW())`;
-    await sql`CREATE TABLE IF NOT EXISTS finanzas (id SERIAL PRIMARY KEY, tipo TEXT, categoria TEXT, descripcion TEXT, monto NUMERIC, metodo_pago TEXT, fecha TIMESTAMP DEFAULT NOW())`;
-    await sql`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, nombre TEXT, llenas INT DEFAULT 0, vacias INT DEFAULT 0, kilos_en_uso DOUBLE PRECISION DEFAULT 0)`;
-    await sql`CREATE TABLE IF NOT EXISTS ventas (id SERIAL PRIMARY KEY, producto_id TEXT, cliente_nombre TEXT, cantidad INT, total NUMERIC, flete NUMERIC, pago TEXT, tipo_cliente TEXT, modo TEXT, fecha TIMESTAMP DEFAULT NOW())`;
-    await sql`CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, rut TEXT, direccion TEXT)`;
-    await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT)`;
-    await sql`CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT, tipo TEXT)`;
-    await sql`CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT)`;
+    if(!process.env.DATABASE_URL){
+      return res.status(500).json({error:'DATABASE_URL no configurado'});
+    }
+    const sql = neon(process.env.DATABASE_URL);
+    const { table, id } = req.query;
+
+    // Crear tablas - una por una con try catch para no romper si ya existe
+    try{ await sql`CREATE TABLE IF NOT EXISTS gps_locations (id TEXT PRIMARY KEY, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, repartidor TEXT, fecha TIMESTAMP DEFAULT NOW())`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS finanzas (id SERIAL PRIMARY KEY, tipo TEXT, categoria TEXT, descripcion TEXT, monto NUMERIC, metodo_pago TEXT, fecha TIMESTAMP DEFAULT NOW())`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, nombre TEXT, llenas INT DEFAULT 0, vacias INT DEFAULT 0, kilos_en_uso DOUBLE PRECISION DEFAULT 0)`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS ventas (id SERIAL PRIMARY KEY, producto_id TEXT, cliente_nombre TEXT, cantidad INT, total NUMERIC, flete NUMERIC, pago TEXT, tipo_cliente TEXT, modo TEXT, fecha TIMESTAMP DEFAULT NOW())`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, rut TEXT, direccion TEXT)`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT)`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT, tipo TEXT)`; }catch(e){}
+    try{ await sql`CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT)`; }catch(e){}
 
     if(req.method==='GET'){
-      if(!table){ return res.json({data:[STRIPPED] }
-      const data = await sql.query(`SELECT * FROM ${table} ORDER BY fecha DESC LIMIT 500`, []);
+      if(!table) return res.json({data:[STRIPPED]
+      // Validar nombre de tabla para seguridad
+      const tablasPermitidas = ['gps_locations','finanzas','deposito','ventas','proveedores','productos','clientes','repartidores'];
+      if(!tablasPermitidas.includes(table)) return res.json({data:[STRIPPED]
+      const data = await sql.unsafe(`SELECT * FROM ${table} ORDER BY fecha DESC LIMIT 500`);
       return res.json({data});
     }
     
     if(req.method==='POST'){
       const body = req.body;
+      
       if(table==='deposito'){
         if(body.accion==='ingreso_gas'){
           const ex = await sql`SELECT * FROM deposito WHERE producto_id=${body.producto_id}`;
           if(ex.length>0){
-            await sql`UPDATE deposito SET llenas=llenas+${body.llenas||0}, vacias=vacias+${body.vacias||0}, kilos_en_uso=${body.kilos_en_uso||ex[0].kilos_en_uso} WHERE producto_id=${body.producto_id}`;
+            await sql`UPDATE deposito SET llenas=llenas+${body.llenas||0}, vacias=vacias+${body.vacias||0} WHERE producto_id=${body.producto_id}`;
           } else {
             await sql`INSERT INTO deposito (producto_id, nombre, llenas, vacias, kilos_en_uso) VALUES (${body.producto_id}, ${body.producto_id}, ${body.llenas||0}, ${body.vacias||0}, ${body.kilos_en_uso||0})`;
           }
@@ -37,7 +45,11 @@ export default async function handler(req, res){
           return res.json({ok:true});
         }
         if(body.accion==='actualizar_stock'){
-          await sql`UPDATE deposito SET llenas=${body.llenas}, vacias=${body.vacias}, kilos_en_uso=${body.kilos_en_uso||0} WHERE producto_id=${body.producto_id}`;
+          if(body.kilos_en_uso!==undefined){
+            await sql`UPDATE deposito SET llenas=${body.llenas}, vacias=${body.vacias}, kilos_en_uso=${body.kilos_en_uso} WHERE producto_id=${body.producto_id}`;
+          } else {
+            await sql`UPDATE deposito SET llenas=${body.llenas}, vacias=${body.vacias} WHERE producto_id=${body.producto_id}`;
+          }
           return res.json({ok:true});
         }
         if(body.accion==='balance_inicial'){
@@ -47,7 +59,7 @@ export default async function handler(req, res){
         if(body.accion==='venta_fraccionada'){
           const ex = await sql`SELECT * FROM deposito WHERE producto_id='43.5'`;
           const actual = parseFloat(ex[0]?.kilos_en_uso||0);
-          if(actual < body.kilos) return res.json({error:'No hay kilos suficientes. Quedan '+actual});
+          if(actual < body.kilos) return res.json({error:'No hay kilos. Quedan '+actual});
           const restante = actual - body.kilos;
           await sql`UPDATE deposito SET kilos_en_uso=${restante} WHERE producto_id='43.5'`;
           await sql`INSERT INTO ventas (producto_id, cliente_nombre, cantidad, total, flete, pago, fecha) VALUES ('fraccionado', ${body.cliente_nombre}, ${body.kilos}, ${body.kilos*150}, 0, 'contado', NOW())`;
@@ -55,15 +67,13 @@ export default async function handler(req, res){
         }
       }
       
-      // INSERT GENERICO PARA TODAS LAS TABLAS
       if(table==='finanzas'){
         await sql`INSERT INTO finanzas (tipo, categoria, descripcion, monto, metodo_pago, fecha) VALUES (${body.tipo}, ${body.categoria}, ${body.descripcion}, ${body.monto}, ${body.metodo_pago}, NOW())`;
         return res.json({ok:true});
       }
       if(table==='ventas'){
         await sql`INSERT INTO ventas (producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, fecha) VALUES (${body.producto_id}, ${body.cliente_nombre}, ${body.cantidad||1}, ${body.total}, ${body.flete||0}, ${body.pago}, ${body.tipo_cliente}, ${body.modo}, NOW())`;
-        // descuenta stock
-        await sql`UPDATE deposito SET llenas=GREATEST(0,llenas-1), vacias=vacias+1 WHERE producto_id=${body.producto_id}`;
+        try{ await sql`UPDATE deposito SET llenas=GREATEST(0,llenas-1), vacias=vacias+1 WHERE producto_id=${body.producto_id}`; }catch(e){}
         return res.json({ok:true});
       }
       if(table==='proveedores'){
@@ -91,14 +101,15 @@ export default async function handler(req, res){
     }
 
     if(req.method==='DELETE'){
-      const id = req.query.id;
-      await sql.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+      const tablasPermitidas = ['gps_locations','finanzas','deposito','ventas','proveedores','productos','clientes','repartidores'];
+      if(!tablasPermitidas.includes(table)) return res.status(400).json({error:'tabla no permitida'});
+      await sql.unsafe(`DELETE FROM ${table} WHERE id = $1`, [id]);
       return res.json({ok:true});
     }
 
     return res.json({data:[STRIPPED]
   }catch(e){
-    console.error(e);
-    return res.status(500).json({error:e.message});
+    console.error('API ERROR:', e);
+    return res.status(500).json({error:e.message, stack:e.stack});
   }
 }
