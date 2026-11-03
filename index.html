@@ -207,8 +207,6 @@ async function cargarGpsVivo(){
 
 
 // --- REPARTIDORES ---
-let repCache = [];
-
 async function cargarRepartidores(){
   try{
     const r = await fetch(`${API}?table=repartidores`);
