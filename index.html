@@ -1583,82 +1583,102 @@ function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartid
 function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 
 // ===== FIX SELECT VENTA VACIO =====
+// ===== FIX SELECT VENTA VACIO - FINAL MEGAL - NO BORRAR =====
+const PRODUCTOS_MEGAL_DEFAULT = [
+  {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750, kg:11},
+  {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850, kg:13},
+  {id:'45', nombre:'Garrafa 45kg', tipo:'gas', precio_compra:2000, precio_venta:2800, kg:45},
+  {id:'FRACC_1', nombre:'Fraccionado 1kg (tubo 43.5)', tipo:'fraccionado', precio_compra:0, precio_venta:160, kg:1},
+  {id:'FRACC_1.5', nombre:'Fraccionado 1.5kg', tipo:'fraccionado', precio_compra:0, precio_venta:240, kg:1.5},
+  {id:'FRACC_2', nombre:'Fraccionado 2kg', tipo:'fraccionado', precio_compra:0, precio_venta:320, kg:2},
+  {id:'FRACC_2.5', nombre:'Fraccionado 2.5kg', tipo:'fraccionado', precio_compra:0, precio_venta:400, kg:2.5},
+  {id:'FRACC_3', nombre:'Fraccionado 3kg', tipo:'fraccionado', precio_compra:0, precio_venta:480, kg:3},
+];
+
 async function cargarProductosParaVentas(){
   try{
-    // Intenta cargar de API
     const r=await fetch(API+'?table=productos',{cache:'no-store'});
     const j=await r.json();
     let lista=j.data||[];
-    
-    // Si API no devuelve nada, usa defaults Megal
-    if(!lista.length){
-      lista=[
-        {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750},
-        {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850},
-        {id:'45', nombre:'Garrafa 45kg', tipo:'gas', precio_compra:2000, precio_venta:2800},
-        {id:'REGULADOR', nombre:'Regulador', tipo:'otro', precio_compra:300, precio_venta:600}
-      ];
-    }
+    if(!lista.length) lista=PRODUCTOS_MEGAL_DEFAULT;
     productosCache=lista;
 
-    const sel=document.getElementById('ventaProducto');
-    if(!sel) { console.error('No existe #ventaProducto en HTML'); return; }
+    // LLENA LOS 2 SELECTS QUE EXISTEN EN DISTINTAS VERSIONES
+    ['ventaProducto','vmProducto'].forEach(idSel=>{
+      const sel=document.getElementById(idSel);
+      if(!sel) return;
+      sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>{
+        const venta=parseFloat(p.precio_venta)||0;
+        const nombre=p.nombre||p.id;
+        return `<option value="${p.id}" data-precio="${venta}" data-nombre="${nombre}" data-kg="${p.kg||p.id}">${p.id} - ${nombre} ($${venta})</option>`;
+      }).join('');
+    });
 
-    sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>{
-      const venta=parseFloat(p.precio_venta)||0;
-      return `<option value="${p.id}" data-precio="${venta}" data-nombre="${p.nombre}" data-kg="${p.id}">${p.id} - ${p.nombre} ($${venta})</option>`;
-    }).join('');
+    // listener para auto-precio
+    ['ventaProducto','vmProducto'].forEach(idSel=>{
+      const sel=document.getElementById(idSel);
+      if(!sel || sel.dataset.listener) return;
+      sel.dataset.listener='1';
+      sel.addEventListener('change', ()=>{
+        const opt=sel.selectedOptions[0];
+        const precio=opt?.dataset?.precio||0;
+        const precioInput=document.getElementById('ventaPrecio')||document.getElementById('vmPrecio');
+        if(precioInput && precio>0){ precioInput.value=precio; calcularTotalMostrador(); }
+        actualizarPrecioMostrador?.();
+      });
+    });
 
-    console.log('✅ Productos cargados en venta:', lista.length);
-    
-    // También carga proveedores si existen
-    const selProv=document.getElementById('prodProveedor');
-    if(selProv && typeof provCache!=='undefined' && provCache.length){
-      selProv.innerHTML='<option value="">-- Sin proveedor --</option>'+provCache.map(pr=>`<option value="${pr.id}">${pr.nombre}</option>`).join('');
-    }
+    console.log('✅ Productos cargados en ventas:', lista.length);
   }catch(e){
-    console.error('Error cargando productos para ventas', e);
-    // Fallback duro por si falla fetch
-    const sel=document.getElementById('ventaProducto');
-    if(sel){
-      sel.innerHTML=`
-        <option value="">-- Seleccione --</option>
-        <option value="11" data-precio="750">11 - Garrafa 11kg ($750)</option>
-        <option value="13" data-precio="850">13 - Garrafa 13kg ($850)</option>
-        <option value="45" data-precio="2800">45 - Garrafa 45kg ($2800)</option>
-        <option value="REGULADOR" data-precio="600">REGULADOR - Regulador ($600)</option>
-      `;
-    }
+    console.error('Error cargando productos', e);
+    // fallback duro
+    productosCache=PRODUCTOS_MEGAL_DEFAULT;
+    ['ventaProducto','vmProducto'].forEach(idSel=>{
+      const sel=document.getElementById(idSel);
+      if(sel){
+        sel.innerHTML='<option value="">-- Seleccione --</option>' + PRODUCTOS_MEGAL_DEFAULT.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta}">${p.id} - ${p.nombre} ($${p.precio_venta})</option>`).join('');
+      }
+    });
   }
 }
 
-// Sobrescribe las 2 funciones viejas por esta unica que si funciona
-function cargarProductos(){ cargarProductosParaVentas(); }
-function cargarProductosCatalogo(){ cargarProductosParaVentas(); }
-
-// Cuando cambia producto, auto-carga precio
-function setupVentaProductoListener(){
-  const sel=document.getElementById('ventaProducto');
-  const precioInput=document.getElementById('ventaPrecio');
-  if(!sel) return;
-  sel.addEventListener('change', ()=>{
-    const opt=sel.selectedOptions[0];
-    if(!opt || !opt.dataset) return;
-    const precio=opt.dataset.precio||0;
-    if(precioInput && precio>0){
-      precioInput.value=precio;
-      if(typeof calcularTotalMostrador==='function') calcularTotalMostrador();
-    }
-  });
+// Sobrescribe las viejas para que no pisen
+function cargarProductos(){ return cargarProductosParaVentas(); }
+function cargarProductosCatalogo(){ 
+  cargarProductosParaVentas(); 
+  // también render tabla si existe
+  if(typeof renderProductosTabla==='function' && productosCache.length){
+    try{ renderProductosTabla(productosCache); }catch(_){}
+  }
 }
 
-// Llamar al cargar
-const originalCargarResumen = typeof cargarResumen==='function' ? cargarResumen : ()=>{};
-async function cargarTodo(){
-  try{ await cargarProductosParaVentas(); }catch(e){}
-  try{ originalCargarResumen(); }catch(e){}
-  setupVentaProductoListener();
-}    
+// FIX FLETE $150 + MOSTRAR VENTAS
+const _mostrarSeccionOrig = mostrarSeccion;
+mostrarSeccion = function(id,btn){
+  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
+  const el=document.getElementById('view-'+id);
+  if(el) el.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(id==='resumen') cargarResumen();
+  if(id==='stock'){ cargarStock(); cambiarTabStock('gas'); }
+  if(id==='finanzas') cargarFinanzas();
+  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},150); }
+  if(id==='productos') cargarProductosCatalogo();
+  if(id==='clientes') cargarClientes();
+  if(id==='proveedores') cargarProveedores();
+  if(id==='repartidores') cargarRepartidores();
+  if(id==='ventas'){ cargarProductosParaVentas(); cambiarTabVentas('mostrador'); }
+  if(id==='camaras') cargarCamaras();
+  if(id==='marketing'){ cambiarTabMarketing('campanas'); cargarMarketing(); }
+}
+
+// Cerrar modales que faltaban
+function cerrarModalProducto(){ const m=document.getElementById('modalProducto'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalProveedor(){ const m=document.getElementById('modalProveedor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalCliente(){ const m=document.getElementById('modalCliente'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
     
     // ================= FINAL DEL SCRIPT - NO BORRAR =================
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1667,6 +1687,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(f) f.value=hoy;
   try{ cargarResumen(); }catch(e){}
 });
+
+
 </script>
 </body>
 </html>
