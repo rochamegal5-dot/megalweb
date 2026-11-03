@@ -71,6 +71,28 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div class="card" style="padding:8px"><div id="gpsMapHist" style="height:500px;width:100%;border-radius:12px"></div></div>
   </div>
 </div>  
+<!-- REPARTIDOR -->
+  <div id="view-repartidores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>🛵 Repartidores</h3>
+    <button onclick="abrirModalRepartidor()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nuevo Repartidor</button>
+  </div>
+  <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Teléfono</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
+    <tbody id="tablaRepartidores"><tr><td colspan="3" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- Modal Repartidor -->
+<div id="modalRepartidor" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
+    <h3 id="tituloModalRep" style="margin-bottom:12px">Nuevo Repartidor</h3>
+    <input type="hidden" id="repId">
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre *</label><input type="text" id="repNombre" placeholder="Ej: Juan" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Teléfono</label><input type="text" id="repTelefono" placeholder="Ej: 099..." style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalRepartidor()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarRepartidor()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
+  </div>
+</div>
 
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
@@ -97,7 +119,7 @@ function mostrarSeccion(id,btn){
 // ================= FIN PRINCIPIO =================
 
 // ================= AQUÍ VAN TUS MÓDULOS =================
-
+//<!-- RESUMEN -->
 async function cargarResumen(){
  try{
   const hoy=new Date().toISOString().split('T')[0];
@@ -128,7 +150,7 @@ async function cargarResumen(){
   document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
  }catch(e){ console.log('resumen error',e); }
 }
-
+//<!-- GPS -->
 function cambiarTabGps(t){
   console.log('cambiando a',t);
   const vivo = document.getElementById('gpsVivoTab');
@@ -184,6 +206,64 @@ async function cargarGpsVivo(){
    
 
 
+// --- REPARTIDORES ---
+let repCache = [];
+
+async function cargarRepartidores(){
+  try{
+    const r = await fetch(`${API}?table=repartidores`);
+    const j = await r.json();
+    repCache = j.data || [];
+    const tbody = document.getElementById('tablaRepartidores');
+    const sel = document.getElementById('selRepartidor');
+    const histSel = document.getElementById('histRepartidorId');
+    const ventaSel = document.getElementById('ventaRepartidor');
+    
+    if(!repCache.length){
+      if(tbody) tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#64748b;text-align:center">Sin repartidores - Agregá el primero</td></tr>';
+    } else {
+      if(tbody) tbody.innerHTML = repCache.map(rep => `
+        <tr>
+          <td style="padding:8px;border:1px solid #1f2937">${rep.nombre}</td>
+          <td style="padding:8px;border:1px solid #1f2937">${rep.telefono||'-'}</td>
+          <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarRepartidor('${rep.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarRepartidor('${rep.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">Borrar</button></td>
+        </tr>`).join('');
+    }
+    // Llenar selects donde se usa repartidor
+    const options = '<option value="">-- Todos --</option>' + repCache.map(rep => `<option value="${rep.id}">${rep.nombre}</option>`).join('');
+    const options2 = '<option value="">-- Seleccione Repartidor --</option>' + repCache.map(rep => `<option value="${rep.id}">${rep.nombre}</option>`).join('');
+    if(sel) sel.innerHTML = options;
+    if(histSel) histSel.innerHTML = options2;
+    if(ventaSel) ventaSel.innerHTML = options2;
+    if(document.getElementById('headerStatus')) document.getElementById('headerStatus').textContent = `Conectado - ${repCache.length} repartidores`;
+  }catch(e){ console.error('rep error', e); }
+}
+
+function abrirModalRepartidor(){
+  document.getElementById('repId').value=''; document.getElementById('repNombre').value=''; document.getElementById('repTelefono').value='';
+  document.getElementById('tituloModalRep').textContent='Nuevo Repartidor';
+  document.getElementById('modalRepartidor').classList.remove('hidden');
+  document.getElementById('modalRepartidor').style.display='flex';
+}
+function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); m.classList.add('hidden'); m.style.display='none'; }
+function editarRepartidor(id){
+  const rep = repCache.find(r=>r.id===id); if(!rep) return;
+  document.getElementById('repId').value=rep.id; document.getElementById('repNombre').value=rep.nombre; document.getElementById('repTelefono').value=rep.telefono||'';
+  document.getElementById('tituloModalRep').textContent='Editar Repartidor';
+  document.getElementById('modalRepartidor').classList.remove('hidden'); document.getElementById('modalRepartidor').style.display='flex';
+}
+async function guardarRepartidor(){
+  const id = document.getElementById('repId').value || 'rep_'+Date.now();
+  const nombre = document.getElementById('repNombre').value.trim();
+  const telefono = document.getElementById('repTelefono').value.trim();
+  if(!nombre) return alert('Nombre obligatorio');
+  try{
+    await fetch(`${API}?table=repartidores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, nombre, telefono})});
+    cerrarModalRepartidor(); cargarRepartidores();
+  }catch(e){ alert('Error: '+e.message); }
+}
+async function eliminarRepartidor(id){ if(!confirm('¿Borrar repartidor?')) return; try{ await fetch(`${API}?table=repartidores&id=${id}`,{method:'DELETE'}); cargarRepartidores(); }catch(e){ alert(e.message); } }
+  
 
 
 // Ej: cargarResumen(), cargarStock(), etc.
