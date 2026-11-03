@@ -675,7 +675,19 @@ async function cargarFinanzas(){
     let html='<table><tr style="background:#0f172a"><th>Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
     finanzasCache.forEach(f=>{ const monto=parseFloat(f.monto)||0; if(f.tipo==='ingreso') totIng+=monto; else if(f.tipo!=='cierre') totEgr+=monto; if(f.categoria==='flete') totFlete+=monto; porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto; porCat[f.categoria]=(porCat[f.categoria]||0)+monto; const hora=(f.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><td>${hora}</td><td>${f.tipo}</td><td>${f.descripcion||f.categoria}</td><td style="font-weight:900;color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">$${monto}</td></tr>`; });
     ventas.forEach(v=>{ const m=parseFloat(v.total)||0; const fl=parseFloat(v.flete)||0; totIng+=m; totFlete+=fl; porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m; porCat['venta_gas']=(porCat['venta_gas']||0)+m; const h2=(v.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td>${h2}</td><td>venta</td><td>${v.producto_id||''} ${v.cliente_nombre||''}</td><td style="font-weight:900;color:#22c55e">$${m} (f
-  
+
+
+  document.addEventListener('DOMContentLoaded',()=>{
+  const hoy=new Date().toISOString().split('T')[0];
+  const fFecha=document.getElementById('finFecha'); 
+  if(fFecha) fFecha.value=hoy;
+  cargarResumen();
+  const rt=document.getElementById('ventaTipoCliente'); 
+  if(rt) actualizarReglaFlete();
+  const rc=document.getElementById('ventaProducto'); 
+  if(rc) calcularTotalMostrador();
+});
+
 </script>
 </body>
 </html>
