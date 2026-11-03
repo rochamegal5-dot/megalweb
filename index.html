@@ -140,7 +140,28 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
+ <!-- PROVEEDORES -->    
+<div id="view-proveedores" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>🏭 Proveedores</h3>
+    <button onclick="abrirModalProveedor()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nuevo Proveedor</button>
+  </div>
+  <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Teléfono</th><th style="padding:8px;border:1px solid #1f2937">RUT</th><th style="padding:8px;border:1px solid #1f2937">Dirección</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
+    <tbody id="tablaProveedores"><tr><td colspan="5" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
+  </table></div>
+</div>
 
+<div id="modalProveedor" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:450px">
+    <h3 id="tituloModalProv" style="margin-bottom:12px">Nuevo Proveedor</h3>
+    <input type="hidden" id="provId">
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre *</label><input type="text" id="provNombre" placeholder="Acodike, Riogas, etc" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div><label style="font-size:11px">Teléfono</label><input type="text" id="provTelefono" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div><div><label style="font-size:11px">RUT</label><input type="text" id="provRut" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Dirección</label><input type="text" id="provDireccion" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalProveedor()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarProveedor()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
+  </div>
+</div>
 
 
   
@@ -413,6 +434,53 @@ async function guardarCliente(){
   }catch(e){ alert('Error: '+e.message); }
 }
 async function eliminarCliente(id){ if(!confirm('¿Borrar cliente?')) return; try{ await fetch(`${API}?table=clientes&id=${id}`,{method:'DELETE'}); cargarClientes(); }catch(e){ alert(e.message); } }    
+
+// --- PROVEEDORES ---
+async function cargarProveedores(){
+  try{
+    const r = await fetch(`${API}?table=proveedores`,{cache:'no-store'});
+    const j = await r.json();
+    provCache = j.data || [];
+    const tbody = document.getElementById('tablaProveedores');
+    if(!provCache.length){
+      if(tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:12px;color:#64748b;text-align:center">Sin proveedores</td></tr>';
+    } else {
+      if(tbody) tbody.innerHTML = provCache.map(p => `
+        <tr>
+          <td style="padding:8px;border:1px solid #1f2937"><b>${p.nombre}</b></td>
+          <td style="padding:8px;border:1px solid #1f2937">${p.telefono||'-'}</td>
+          <td style="padding:8px;border:1px solid #1f2937">${p.rut||'-'}</td>
+          <td style="padding:8px;border:1px solid #1f2937">${p.direccion||'-'}</td>
+          <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProveedor('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarProveedor('${p.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">Borrar</button></td>
+        </tr>`).join('');
+    }
+  }catch(e){ console.error('proveedores error',e); }
+}
+function abrirModalProveedor(){
+  document.getElementById('provId').value=''; document.getElementById('provNombre').value=''; document.getElementById('provTelefono').value=''; document.getElementById('provRut').value=''; document.getElementById('provDireccion').value='';
+  document.getElementById('tituloModalProv').textContent='Nuevo Proveedor';
+  document.getElementById('modalProveedor').classList.remove('hidden'); document.getElementById('modalProveedor').style.display='flex';
+}
+function cerrarModalProveedor(){ const m=document.getElementById('modalProveedor'); m.classList.add('hidden'); m.style.display='none'; }
+function editarProveedor(id){
+  const p = provCache.find(x=>x.id===id); if(!p) return;
+  document.getElementById('provId').value=p.id; document.getElementById('provNombre').value=p.nombre||''; document.getElementById('provTelefono').value=p.telefono||''; document.getElementById('provRut').value=p.rut||''; document.getElementById('provDireccion').value=p.direccion||'';
+  document.getElementById('tituloModalProv').textContent='Editar Proveedor';
+  document.getElementById('modalProveedor').classList.remove('hidden'); document.getElementById('modalProveedor').style.display='flex';
+}
+async function guardarProveedor(){
+  const id = document.getElementById('provId').value || 'prov_'+Date.now();
+  const nombre = document.getElementById('provNombre').value.trim();
+  const telefono = document.getElementById('provTelefono').value.trim();
+  const rut = document.getElementById('provRut').value.trim();
+  const direccion = document.getElementById('provDireccion').value.trim();
+  if(!nombre) return alert('Nombre obligatorio');
+  try{
+    await fetch(`${API}?table=proveedores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, nombre, telefono, rut, direccion})});
+    cerrarModalProveedor(); cargarProveedores();
+  }catch(e){ alert('Error: '+e.message); }
+}
+async function eliminarProveedor(id){ if(!confirm('¿Borrar proveedor?')) return; try{ await fetch(`${API}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }catch(e){ alert(e.message); } }
     
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
