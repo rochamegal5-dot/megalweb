@@ -128,21 +128,32 @@ async function cargarResumen(){
   document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
  }catch(e){ console.log('resumen error',e); }
 }
+
 function cambiarTabGps(t){
+  console.log('cambiando a',t);
   const vivo = document.getElementById('gpsVivoTab');
   const hist = document.getElementById('gpsHistTab');
+  const btnV = document.getElementById('btnGpsVivo');
+  const btnH = document.getElementById('btnGpsHist');
+  
   if(t==='vivo'){
     vivo.classList.remove('hidden');
     hist.classList.add('hidden');
+    btnV.style.background='#0ea5e9'; btnV.style.color='white';
+    btnH.style.background='#1f2937'; btnH.style.color='#94a3b8';
+    setTimeout(()=>{ if(gpsMap) gpsMap.invalidateSize(); },100);
   } else {
     hist.classList.remove('hidden');
     vivo.classList.add('hidden');
+    btnH.style.background='#0ea5e9'; btnH.style.color='white';
+    btnV.style.background='#1f2937'; btnV.style.color='#94a3b8';
+    // Si el mapa histórico nunca se creó, crealo ahora
+    if(!gpsMapHist){
+      gpsMapHist=L.map('gpsMapHist').setView([-34.48,-54.33],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMapHist);
+    }
+    setTimeout(()=>{ gpsMapHist.invalidateSize(); },150);
   }
-  // fuerza a leaflet a recalcular el tamaño después de mostrar
-  setTimeout(()=>{
-    if(t==='vivo' && gpsMap){ gpsMap.invalidateSize(); }
-    if(t==='historico' && gpsMapHist){ gpsMapHist.invalidateSize(); }
-  },250);
 }
 
 function initGpsMaps(){
@@ -151,12 +162,7 @@ function initGpsMaps(){
       gpsMap=L.map('gpsMap').setView([-34.48,-54.33],13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMap);
     }
-    if(!gpsMapHist){
-      gpsMapHist=L.map('gpsMapHist').setView([-34.48,-54.33],13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(gpsMapHist);
-    }
-    setTimeout(()=>{if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize();},300);
-  }catch(e){ console.log('gps init',e); }
+  }catch(e){ console.log('init vivo',e); }
 }
 
 async function cargarGpsVivo(){
@@ -165,23 +171,21 @@ async function cargarGpsVivo(){
     const j=await r.json();
     const pts=j.data||[];
     if(gpsMap){
-      gpsMap.eachLayer(l=>{if(l instanceof L.Marker) gpsMap.removeLayer(l);});
+      gpsMap.eachLayer(l=>{ if(l instanceof L.Marker) gpsMap.removeLayer(l); });
       pts.slice(0,30).forEach(p=>{
         const lat=parseFloat(p.lat||p.latitude);
         const lng=parseFloat(p.lng||p.longitude);
         if(!lat||!lng) return;
         L.marker([lat,lng]).addTo(gpsMap).bindPopup((p.repartidor||'')+' '+(p.fecha||'').substring(11,19));
       });
-      if(pts[0]){
-        const la=parseFloat(pts[0].lat||pts[0].latitude);
-        const ln=parseFloat(pts[0].lng||pts[0].longitude);
-        if(la&&ln) gpsMap.setView([la,ln],14);
-      }
     }
-    if(gpsPoll) clearInterval(gpsPoll);
-    gpsPoll=setInterval(cargarGpsVivo,7000);
-  }catch(e){ console.log('gps vivo',e); }
-}
+  }catch(e){ console.log('gps vivo error',e); }
+}    
+   
+
+
+
+
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
 
