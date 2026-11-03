@@ -94,6 +94,29 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
+ <!-- PRODUCTO --> 
+ <div id="view-productos" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>📦 Productos</h3>
+    <button onclick="abrirModalProducto()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nuevo Producto</button>
+  </div>
+  <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">ID / Código</th><th style="padding:8px;border:1px solid #1f2937">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Tipo</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
+    <tbody id="tablaProductos"><tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- Modal Producto -->
+<div id="modalProducto" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
+    <h3 id="tituloModalProd" style="margin-bottom:12px">Nuevo Producto</h3>
+    <input type="hidden" id="prodId">
+    <div style="margin-bottom:10px"><label style="font-size:11px">ID / Código * (ej: 11, 13, 45, 43.5)</label><input type="text" id="prodCodigo" placeholder="11" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre</label><input type="text" id="prodNombre" placeholder="Garrafa 13kg" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="gas">GAS</option><option value="tubo">TUBO 43.5</option><option value="otro">OTROS</option></select></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalProducto()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarProducto()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
+  </div>
+</div> 
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
 const API='/api/postgres';
@@ -263,7 +286,54 @@ async function guardarRepartidor(){
 async function eliminarRepartidor(id){ if(!confirm('¿Borrar repartidor?')) return; try{ await fetch(`${API}?table=repartidores&id=${id}`,{method:'DELETE'}); cargarRepartidores(); }catch(e){ alert(e.message); } }
   
 
-
+// --- PRODUCTOS ---
+async function cargarProductosCatalogo(){
+  try{
+    const r = await fetch(`${API}?table=productos`,{cache:'no-store'});
+    const j = await r.json();
+    productosCache = j.data || [];
+    const tbody = document.getElementById('tablaProductos');
+    const selVenta = document.getElementById('ventaProducto');
+    
+    if(!productosCache.length){
+      if(tbody) tbody.innerHTML = '<tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Sin productos - Agregá 11, 13, 45, 43.5</td></tr>';
+    } else {
+      if(tbody) tbody.innerHTML = productosCache.map(p => `
+        <tr>
+          <td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b></td>
+          <td style="padding:8px;border:1px solid #1f2937">${p.nombre||'-'}</td>
+          <td style="padding:8px;border:1px solid #1f2937">${p.tipo||'gas'}</td>
+          <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProducto('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarProducto('${p.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">Borrar</button></td>
+        </tr>`).join('');
+    }
+    if(selVenta){
+      selVenta.innerHTML = '<option value="">-- Seleccione --</option>' + productosCache.map(p=>`<option value="${p.id}">${p.id} - ${p.nombre}</option>`).join('');
+    }
+  }catch(e){ console.error('productos error',e); }
+}
+function abrirModalProducto(){
+  document.getElementById('prodId').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; document.getElementById('prodTipo').value='gas';
+  document.getElementById('tituloModalProd').textContent='Nuevo Producto';
+  document.getElementById('modalProducto').classList.remove('hidden'); document.getElementById('modalProducto').style.display='flex';
+}
+function cerrarModalProducto(){ const m=document.getElementById('modalProducto'); m.classList.add('hidden'); m.style.display='none'; }
+function editarProducto(id){
+  const p = productosCache.find(x=>x.id===id); if(!p) return;
+  document.getElementById('prodId').value=p.id; document.getElementById('prodCodigo').value=p.id; document.getElementById('prodNombre').value=p.nombre||''; document.getElementById('prodTipo').value=p.tipo||'gas';
+  document.getElementById('tituloModalProd').textContent='Editar Producto';
+  document.getElementById('modalProducto').classList.remove('hidden'); document.getElementById('modalProducto').style.display='flex';
+}
+async function guardarProducto(){
+  const codigo = document.getElementById('prodCodigo').value.trim();
+  const nombre = document.getElementById('prodNombre').value.trim() || codigo;
+  const tipo = document.getElementById('prodTipo').value;
+  if(!codigo) return alert('Código obligatorio');
+  try{
+    await fetch(`${API}?table=productos`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo})});
+    cerrarModalProducto(); cargarProductosCatalogo();
+  }catch(e){ alert('Error: '+e.message); }
+}
+async function eliminarProducto(id){ if(!confirm('¿Borrar producto '+id+'?')) return; try{ await fetch(`${API}?table=productos&id=${id}`,{method:'DELETE'}); cargarProductosCatalogo(); }catch(e){ alert(e.message); } }
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
 
