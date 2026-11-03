@@ -767,9 +767,12 @@ async function guardarProducto(){
   if(precio_venta<=0) return alert('Precio venta debe ser >0');
   if(precio_compra>precio_venta){ if(!confirm(`Atención: Comprás a $${precio_compra} y vendés a $${precio_venta} (pérdida de $${precio_venta-precio_compra}). ¿Guardar igual?`)) return; }
   await fetch(API+'?table=productos',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo, precio_compra, precio_venta, proveedor_id, stock_minimo})}); 
-  cerrarModalProducto(); 
-  cargarProductosCatalogo(); 
-  cargarStock();
+ try{ cerrarModalProducto(); }catch(e){ 
+  const m=document.getElementById('modalProducto');
+  if(m){ m.classList.add('hidden'); m.style.display='none'; }
+}
+cargarProductosCatalogo(); 
+if(typeof cargarStock === 'function') cargarStock();
 }
 
 // Auto-cargar precio en ventas
@@ -1378,7 +1381,19 @@ function enviarMktMasivo(){
   const prev=document.getElementById('mktPreviewEnvio'); if(prev) prev.innerHTML=`✅ Simulado: se enviaría <b>"${msg}"</b> a <b>${cant} clientes</b> del segmento <b>${seg}</b>`;
   const nid='mkt_'+Date.now(); marketingCache.push({id:nid, nombre:'Masivo '+seg, tipo:'whatsapp', estado:'activa', descripcion:msg, presupuesto:0, conversiones:0}); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing();
 }
-
+    
+// FIX - Esta función faltaba y por eso rompía guardarProducto y el botón Cancelar
+function cerrarModalProducto(){
+  const m=document.getElementById('modalProducto');
+  if(m){ 
+    m.classList.add('hidden'); 
+    m.style.display='none'; 
+  }
+}
+function cerrarModalProveedor(){ const m=document.getElementById('modalProveedor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalCliente(){ const m=document.getElementById('modalCliente'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 // ================= FINAL DEL SCRIPT - NO BORRAR =================
 document.addEventListener('DOMContentLoaded',()=>{
   const hoy=new Date().toISOString().split('T')[0];
