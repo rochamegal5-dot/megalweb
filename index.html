@@ -1549,7 +1549,86 @@ function cerrarModalProveedor(){ const m=document.getElementById('modalProveedor
 function cerrarModalCliente(){ const m=document.getElementById('modalCliente'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-// ================= FINAL DEL SCRIPT - NO BORRAR =================
+
+// ===== FIX SELECT VENTA VACIO =====
+async function cargarProductosParaVentas(){
+  try{
+    // Intenta cargar de API
+    const r=await fetch(API+'?table=productos',{cache:'no-store'});
+    const j=await r.json();
+    let lista=j.data||[];
+    
+    // Si API no devuelve nada, usa defaults Megal
+    if(!lista.length){
+      lista=[
+        {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750},
+        {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850},
+        {id:'45', nombre:'Garrafa 45kg', tipo:'gas', precio_compra:2000, precio_venta:2800},
+        {id:'REGULADOR', nombre:'Regulador', tipo:'otro', precio_compra:300, precio_venta:600}
+      ];
+    }
+    productosCache=lista;
+
+    const sel=document.getElementById('ventaProducto');
+    if(!sel) { console.error('No existe #ventaProducto en HTML'); return; }
+
+    sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>{
+      const venta=parseFloat(p.precio_venta)||0;
+      return `<option value="${p.id}" data-precio="${venta}" data-nombre="${p.nombre}" data-kg="${p.id}">${p.id} - ${p.nombre} ($${venta})</option>`;
+    }).join('');
+
+    console.log('✅ Productos cargados en venta:', lista.length);
+    
+    // También carga proveedores si existen
+    const selProv=document.getElementById('prodProveedor');
+    if(selProv && typeof provCache!=='undefined' && provCache.length){
+      selProv.innerHTML='<option value="">-- Sin proveedor --</option>'+provCache.map(pr=>`<option value="${pr.id}">${pr.nombre}</option>`).join('');
+    }
+  }catch(e){
+    console.error('Error cargando productos para ventas', e);
+    // Fallback duro por si falla fetch
+    const sel=document.getElementById('ventaProducto');
+    if(sel){
+      sel.innerHTML=`
+        <option value="">-- Seleccione --</option>
+        <option value="11" data-precio="750">11 - Garrafa 11kg ($750)</option>
+        <option value="13" data-precio="850">13 - Garrafa 13kg ($850)</option>
+        <option value="45" data-precio="2800">45 - Garrafa 45kg ($2800)</option>
+        <option value="REGULADOR" data-precio="600">REGULADOR - Regulador ($600)</option>
+      `;
+    }
+  }
+}
+
+// Sobrescribe las 2 funciones viejas por esta unica que si funciona
+function cargarProductos(){ cargarProductosParaVentas(); }
+function cargarProductosCatalogo(){ cargarProductosParaVentas(); }
+
+// Cuando cambia producto, auto-carga precio
+function setupVentaProductoListener(){
+  const sel=document.getElementById('ventaProducto');
+  const precioInput=document.getElementById('ventaPrecio');
+  if(!sel) return;
+  sel.addEventListener('change', ()=>{
+    const opt=sel.selectedOptions[0];
+    if(!opt || !opt.dataset) return;
+    const precio=opt.dataset.precio||0;
+    if(precioInput && precio>0){
+      precioInput.value=precio;
+      if(typeof calcularTotalMostrador==='function') calcularTotalMostrador();
+    }
+  });
+}
+
+// Llamar al cargar
+const originalCargarResumen = typeof cargarResumen==='function' ? cargarResumen : ()=>{};
+async function cargarTodo(){
+  try{ await cargarProductosParaVentas(); }catch(e){}
+  try{ originalCargarResumen(); }catch(e){}
+  setupVentaProductoListener();
+}    
+    
+    // ================= FINAL DEL SCRIPT - NO BORRAR =================
 document.addEventListener('DOMContentLoaded',()=>{
   const hoy=new Date().toISOString().split('T')[0];
   const f=document.getElementById('finFecha');
