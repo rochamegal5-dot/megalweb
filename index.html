@@ -56,66 +56,6 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
-
-<div id="view-gps" class="view-section hidden">
-  <div id="gpsVivoTab"><div class="card" style="padding:8px"><div id="gpsMap"></div></div></div>
-  <div id="gpsHistTab" class="hidden"><div class="card" style="padding:8px"><div id="gpsMapHist"></div></div></div>
-</div>
-
-<div id="view-repartidores" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-weight:900">🛵 Repartidores</h3><button onclick="abrirNuevoRepartidor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button></div>
-  <div class="card">
-    <div id="formRepartidor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px"><input type="hidden" id="repIdEdit"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><input id="repNombre" placeholder="Nombre ej: Juan"><input id="repTelefono" placeholder="Tel 09..."></div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="guardarRepartidor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="document.getElementById('formRepartidor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div>
-    <table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>Acc</th></tr></thead><tbody id="tablaRepartidores"><tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
-  </div>
-</div>
-
-<div id="view-productos" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3 style="font-weight:900">📦 Productos - Catálogo</h3><p style="font-size:11px;color:#94a3b8">Sin cantidades - el stock está en Depósito</p></div><button onclick="abrirNuevoProductoCatalogo()" style="background:#38bdf8;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">➕ Nuevo Producto</button></div>
-  <div class="card">
-    <div id="formProducto" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:16px">
-      <h4 id="tituloFormProd">Nuevo Producto</h4><input type="hidden" id="prodIdEditando">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-        <div><label style="font-size:11px">Código *</label><input id="prodCodigo" placeholder="VALVULA-13" style="width:100%"></div>
-        <div><label style="font-size:11px">Nombre *</label><input id="prodNombre" placeholder="Válvula 13kg" style="width:100%"></div>
-        <div><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%"><option value="garrafa">Garrafa</option><option value="tubo">Tubo</option><option value="valvula">Válvula</option><option value="regulador">Regulador</option><option value="otro">Otro</option></select></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarProductoCatalogo()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px">Guardar</button><button onclick="cancelarEdicionProd()" style="padding:10px;background:#475569;color:white;border:none;border-radius:10px">Cancelar</button></div>
-    </div>
-    <table><thead><tr style="background:#0f172a"><th>Código</th><th>Nombre</th><th>Tipo</th><th>Acc</th></tr></thead><tbody id="tablaProductos"><tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
-  </div>
-</div>
-
-<div id="view-clientes" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><h3 style="font-weight:900">👥 Clientes - Rocha</h3><div style="display:flex;gap:8px"><button onclick="document.getElementById('inputImportClientes').click()" style="background:#25D366;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">📥 Importar .vcf</button><button onclick="abrirNuevoCliente()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo</button><input id="inputImportClientes" type="file" accept=".vcf,.csv,.txt" style="display:none" onchange="importarClientesWhatsApp(event)"></div></div>
-  <div class="card"><input id="buscadorClientes" placeholder="Buscar nombre o teléfono..." oninput="filtrarClientes()" style="width:100%;margin-bottom:12px"><table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>Dirección</th><th>Tipo</th><th>Acc</th></tr></thead><tbody id="tablaClientes"><tr><td colspan="5" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table></div>
-</div>
-
-<div id="view-proveedores" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-    <h3 style="font-weight:900">🏭 Proveedores - Gas</h3>
-    <button onclick="abrirNuevoProveedor()" style="background:#38bdf8;color:#000;padding:8px 12px;border:none;border-radius:8px;font-weight:900">➕ Nuevo Proveedor</button>
-  </div>
-  <div class="card">
-    <div id="formProveedor" class="hidden" style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px">
-      <input type="hidden" id="provIdEdit">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label style="font-size:11px">Nombre *</label><input id="provNombre" placeholder="Ej: 【entity-Petrobras¦canonical_name=Petrobras】" style="width:100%"></div>
-        <div><label style="font-size:11px">Teléfono</label><input id="provTelefono" placeholder="Ej: 098..." style="width:100%"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-        <div><label style="font-size:11px">RUT (opcional)</label><input id="provRut" placeholder="RUT" style="width:100%"></div>
-        <div><label style="font-size:11px">Dirección</label><input id="provDireccion" placeholder="Dirección" style="width:100%"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="guardarProveedor()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button>
-        <button onclick="document.getElementById('formProveedor').classList.add('hidden')" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button>
-      </div>
-    </div>
-    <table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>RUT</th><th>Acc</th></tr></thead><tbody id="tablaProveedores"><tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
-  </div>
-</div>
-////
 <div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <h3 style="font-weight:900">📦 Stock - Depósito</h3>
@@ -145,97 +85,6 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
  
 
-<div id="view-ventas" class="view-section hidden">
-  <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button id="btnTabMostrador" onclick="cambiarTabVentas('mostrador')" style="flex:1;padding:12px;background:#0ea5e9;color:white;font-weight:900;border:none;border-radius:10px">🛒 MOSTRADOR</button>
-    <button id="btnTabCamioneta" onclick="cambiarTabVentas('camioneta')" style="flex:1;padding:12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:10px">🚚 CAMIONETA APP</button>
-  </div>
-  <div id="tab-ventas-mostrador">
-    <div class="card">
-      <h3 style="font-weight:900">💰 Venta Mostrador - Rocha</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
-        <div>
-          <label style="font-size:11px">Tipo Cliente</label>
-          <select id="ventaTipoCliente" onchange="actualizarReglaFlete()" style="width:100%">
-            <option value="consumidor_final">Consumidor Final</option>
-            <option value="mides">MIDES</option>
-            <option value="comercio">Comercio</option>
-            <option value="retira">Retira en Local</option>
-          </select>
-          <input id="ventaCliente" placeholder="Nombre cliente" style="width:100%;margin-top:6px">
-        </div>
-        <div>
-          <label style="font-size:11px">Producto</label>
-          <select id="ventaProducto" onchange="onProductoChange()" style="width:100%">
-            <option value="11">11kg - $800</option>
-            <option value="13">13kg - $950</option>
-            <option value="45">45kg - $3500</option>
-            <option value="fraccionado">FRACCIONADO 1-3kg (usa tubo 43.5)</option>
-          </select>
-          <div id="boxFraccionado" class="hidden" style="margin-top:6px;display:flex;gap:6px;align-items:center">
-            <select id="ventaKilos" onchange="calcularTotalMostrador()" style="flex:1"><option value="1">1 kg</option><option value="2">2 kg</option><option value="3">3 kg</option></select>
-            <span id="stockTuboInfo" style="font-size:11px;color:#f59e0b"></span>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:11px">Pago / Modo</label>
-          <select id="ventaPago" style="width:100%"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option></select>
-          <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-top:6px">
-            <select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%"><option value="retira">Retira</option><option value="domicilio">Domicilio</option></select>
-            <input id="ventaFlete" type="number" value="0" style="width:100%">
-          </div>
-        </div>
-      </div>
-      <div id="reglaFleteInfo" style="margin-top:10px;padding:8px;background:#0f172a;border-radius:8px;font-size:12px;color:#f59e0b">REGLA: Seleccioná cliente</div>
-      <div style="margin-top:12px;background:#0f172a;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:#94a3b8">Total:</span><b id="ventaTotal" style="font-size:28px;color:#22c55e">$0</b>
-      </div>
-      <button onclick="registrarVentaMostrador()" style="width:100%;margin-top:12px;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:10px;font-size:16px">✅ REGISTRAR VENTA</button>
-    </div>
-    <div class="card"><h4 style="font-weight:900">📋 Ventas Hoy - Mostrador</h4><div id="ventasHoyTabla" style="margin-top:8px;font-size:12px">Cargando...</div></div>
-  </div>
-  <div id="tab-ventas-camioneta" class="hidden">
-    <div class="card"><h4>🚚 Ventas Camioneta - Informe APP</h4><p style="font-size:11px;color:#94a3b8">Ventas que vienen de la APP del repartidor.</p><div id="informeCamionetaList" style="margin-top:10px;color:#94a3b8">Conectando APP...</div></div>
-  </div>
-</div>
-
-<div id="view-finanzas" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div><h3 style="font-weight:900">📊 Finanzas - Megal Rocha</h3><p style="font-size:11px;color:#94a3b8">Caja diaria, ingresos, egresos, fletes, cierres</p></div>
-    <div style="display:flex;gap:8px">
-      <button onclick="abrirModalFinanza('ingreso')" style="background:#22c55e;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💰 Ingreso</button>
-      <button onclick="abrirModalFinanza('egreso')" style="background:#ef4444;color:white;padding:10px 14px;border:none;border-radius:10px;font-weight:900">💸 Egreso</button>
-      <button onclick="hacerCierreCaja()" style="background:#f59e0b;color:#000;padding:10px 14px;border:none;border-radius:10px;font-weight:900">🔒 Cierre Caja</button>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">INGRESOS HOY</p><b id="finIngresos" style="font-size:20px;color:#22c55e">$0</b></div>
-    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">EGRESOS HOY</p><b id="finEgresos" style="font-size:20px;color:#ef4444">$0</b></div>
-    <div class="card" style="text-align:center;padding:12px"><p style="font-size:10px;color:#94a3b8">FLETES HOY</p><b id="finFletes" style="font-size:20px;color:#38bdf8">$0</b></div>
-    <div class="card" style="text-align:center;padding:12px;background:#22c55e20;border:2px solid #22c55e"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="finBalance" style="font-size:22px;color:#22c55e">$0</b></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <div class="card">
-      <h4 style="font-weight:900">💵 Movimientos Hoy</h4>
-      <div style="display:flex;gap:6px;margin:10px 0">
-        <input type="date" id="finFecha">
-        <button onclick="cargarFinanzas()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px">Buscar</button>
-      </div>
-      <div id="tablaFinanzas" style="max-height:400px;overflow:auto;font-size:11px">Cargando...</div>
-    </div>
-    <div class="card">
-      <h4 style="font-weight:900">📦 Resumen por Método</h4><div id="resumenMetodo" style="margin-top:10px"></div>
-      <h4 style="font-weight:900;margin-top:16px">📊 Por Categoría</h4><div id="resumenCategoria" style="margin-top:10px"></div>
-    </div>
-  </div>
-</div>
-
-</div> <!-- FIN .main - ESTE ES EL CIERRE QUE TE FALTABA -->
-
-<!-- MODALES FUERA DEL MAIN - NO TOCAR, VAN ACÁ -->
-<div id="modalCliente" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:500px"><h3 id="tituloCliente">Nuevo Cliente</h3><input type="hidden" id="cliIdEdit"><div style="display:grid;gap:10px;margin-top:12px"><input id="cliNombre" placeholder="Nombre *"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="cliTelefono" placeholder="Tel 098..."><select id="cliTipo"><option value="particular">Particular</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div><input id="cliDireccion" placeholder="Dirección"></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="guardarCliente()" style="flex:1;padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Guardar</button><button onclick="cerrarCliente()" style="padding:10px;background:#475569;color:white;border:none;border-radius:8px">Cancelar</button></div></div></div>
-
-<div id="modalFinanza" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px"><div class="card" style="width:100%;max-width:450px"><h3 id="tituloFinanza">Nuevo Movimiento</h3><div style="display:grid;gap:10px;margin-top:12px"><select id="finTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select
 
 
 <script>
@@ -259,6 +108,34 @@ function mostrarSeccion(id,btn){
   if(id==='ventas'){ cambiarTabVentas('mostrador'); }
 }
 
+  async function cargarResumen(){
+ try{
+  const hoy=new Date().toISOString().split('T')[0];
+  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); 
+  const jV=await rV.json(); 
+  const ventas=(jV.data||[]);
+  const ventasHoy=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
+  const totHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
+  const fleteHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.flete)||0),0);
+  const el1=document.getElementById('resVentasHoy'); if(el1) el1.textContent='$'+totHoy;
+  const el2=document.getElementById('resVentasCount'); if(el2) el2.textContent=ventasHoy.length+' ventas';
+  const el3=document.getElementById('resCajaHoy'); if(el3) el3.textContent='$'+totHoy;
+  const el4=document.getElementById('resFletesHoy'); if(el4) el4.textContent='Fletes $'+fleteHoy;
+
+  const rD=await fetch(API+'?table=deposito',{cache:'no-store'}); 
+  const jD=await rD.json(); 
+  const dep=jD.data||[];
+  const totLlenas=dep.reduce((s,d)=>s+(parseInt(d.llenas)||0),0);
+  const d11=dep.find(d=>String(d.producto_id)==='11'); 
+  const d13=dep.find(d=>String(d.producto_id)==='13'); 
+  const d45=dep.find(d=>String(d.producto_id)==='45');
+  const el5=document.getElementById('resStockTotal'); if(el5) el5.textContent=totLlenas+' llenas';
+  const el6=document.getElementById('resStockDetalle'); if(el6) el6.textContent=`11:${d11?.llenas||0} | 13:${d13?.llenas||0} | 45:${d45?.llenas||0}`;
+
+  let h=''; ventas.slice(0,5).forEach(v=>{ h+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${(v.fecha||'').substring(11,16)} ${v.cliente_nombre||''} ${v.producto_id}</span><b>$${v.total}</b></div>`; });
+  const el7=document.getElementById('resUltimasVentas'); if(el7) el7.innerHTML=h||'Sin ventas';
+ }catch(e){ console.log('resumen error',e); }
+}
  
 function cambiarTabStock(tab){
   ['Gas','43','Otros','Ingreso'].forEach(t=>{
