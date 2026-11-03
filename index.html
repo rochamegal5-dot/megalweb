@@ -37,6 +37,8 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 <button class="tab" onclick="mostrarSeccion('stock',this)">📦 Stock</button>
 <button class="tab" onclick="mostrarSeccion('ventas',this)">💰 Ventas</button>
 <button class="tab" onclick="mostrarSeccion('finanzas',this)">📊 Finanzas</button>
+<button class="tab nav-btn" onclick="mostrarSeccion('camaras',this)">📹 Cámaras</button>
+<button class="tab nav-btn" onclick="mostrarSeccion('marketing',this)">📢 Marketing</button>
 <div id="headerStatus" style="margin-top:auto;font-size:11px;color:#22c55e">● Conectado Postgres</div>
 </div>
 
@@ -360,12 +362,77 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalFinanza()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarFinanza()" style="padding:8px 14px;background:#16a34a;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
 </div>
+
+<!-- CAMARAS -->
+<div id="view-camaras" class="view-section hidden">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <h3>📹 Cámaras - Monitoreo</h3>
+    <button onclick="abrirModalCamara()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nueva Cámara</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px" id="gridCamaras">
+    <div class="card" style="color:#64748b;text-align:center">Sin cámaras - Agregá la primera (ej: Mostrador, Depósito, Camioneta)</div>
+  </div>
+</div>
+
+<div id="modalCamara" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:450px">
+    <h3 id="tituloModalCamara" style="margin-bottom:12px">Nueva Cámara</h3>
+    <input type="hidden" id="camId">
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre * (Ej: Mostrador, Depósito, Entrada)</label><input type="text" id="camNombre" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">URL Stream / IP / RTSP (o YouTube / MJPEG)</label><input type="text" id="camUrl" placeholder="http://192.168.1.10/stream o https://..." style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Ubicación</label><input type="text" id="camUbicacion" placeholder="Local, Depósito, Camioneta 1" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalCamara()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarCamara()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
+  </div>
+</div>
+
+
+ <!-- MARKETING --> 
+<div id="view-marketing" class="view-section hidden">
+  <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="btnMktCamp" onclick="cambiarTabMarketing('campanas')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📢 Campañas</button>
+    <button id="btnMktClientes" onclick="cambiarTabMarketing('clientes')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">👥 Segmentos</button>
+    <button id="btnMktPromo" onclick="cambiarTabMarketing('promos')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🏷️ Promos</button>
+    <button onclick="abrirModalMarketing()" style="background:#16a34a;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold;margin-left:auto">+ Nueva Campaña</button>
+  </div>
+
+  <div id="tabMktCampanas" class="card">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+      <div class="card" style="text-align:center;border-left:4px solid #0ea5e9"><p style="font-size:11px;color:#94a3b8">CAMPAÑAS ACTIVAS</p><b id="mktActivas" style="font-size:22px">0</b></div>
+      <div class="card" style="text-align:center;border-left:4px solid #22c55e"><p style="font-size:11px;color:#94a3b8">CLIENTES ALCANZADOS</p><b id="mktAlcance" style="font-size:22px">0</b></div>
+      <div class="card" style="text-align:center;border-left:4px solid #f59e0b"><p style="font-size:11px;color:#94a3b8">CONVERSIONES</p><b id="mktConv" style="font-size:22px">0</b></div>
+    </div>
+    <div id="listaCampanas" style="display:grid;gap:8px"></div>
+  </div>
+
+  <div id="tabMktClientes" class="hidden">
+    <div class="card"><h4 style="margin-bottom:8px">Segmentos de Clientes (desde tabla Clientes)</h4><div id="mktSegmentos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div></div>
+    <div class="card"><h4 style="margin-bottom:8px">Enviar WhatsApp Masivo (simulado)</h4><div style="display:flex;gap:8px"><select id="mktSegmentoSel" style="flex:1;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><option value="todos">Todos</option><option value="consumidor_final">Consumidor Final</option><option value="comercio">Comercios</option><option value="mides">MIDES</option></select><input type="text" id="mktMensaje" placeholder="Mensaje promo: Ej: ¡Garrafa 13kg a $XXX hoy!" style="flex:2;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><button onclick="enviarMktMasivo()" style="background:#22c55e;color:white;padding:8px 14px;border:none;border-radius:6px;font-weight:bold">Enviar</button></div><div id="mktPreviewEnvio" style="margin-top:8px;font-size:11px;color:#94a3b8"></div></div>
+  </div>
+
+  <div id="tabMktPromos" class="hidden">
+    <div class="card"><h4>Promos Activas - Generador rápido</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div><label style="font-size:11px">Producto</label><select id="promoProducto" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></select></div><div><label style="font-size:11px">Descuento %</label><input type="number" id="promoDesc" value="10" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div></div><button onclick="generarPromo()" style="background:#f59e0b;color:black;padding:8px 14px;border:none;border-radius:8px;font-weight:bold;margin-top:8px;width:100%">Generar Texto Promo</button><div id="promoTexto" style="margin-top:8px;background:#0f172a;padding:12px;border-radius:8px;font-size:13px;color:#e2e8f0"></div></div>
+  </div>
+</div>
+
+<div id="modalMarketing" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:480px">
+    <h3 style="margin-bottom:12px">Nueva Campaña Marketing</h3>
+    <input type="hidden" id="mktId">
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre Campaña *</label><input type="text" id="mktNombre" placeholder="Ej: Promo Invierno 13kg" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div><label style="font-size:11px">Tipo</label><select id="mktTipo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="whatsapp">WhatsApp</option><option value="facebook">Facebook</option><option value="instagram">Instagram</option><option value="volante">Volante</option><option value="radio">Radio</option></select></div><div><label style="font-size:11px">Estado</label><select id="mktEstado" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="activa">Activa</option><option value="programada">Programada</option><option value="finalizada">Finalizada</option></select></div></div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">Mensaje / Descripción</label><textarea id="mktDesc" rows="3" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></textarea></div>
+    <div style="margin-bottom:14px"><label style="font-size:11px">Presupuesto $</label><input type="number" id="mktPresu" value="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalMarketing()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarMarketing()" style="padding:8px 14px;background:#16a34a;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
+  </div>
+</div>
+  
   
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
 const API='/api/postgres';
 let gpsMap=null,gpsMapHist=null,gpsPoll=null,tubo43Cache=null;
-let finanzasCache=[],provCache=[],repCache=[],clientesCache=[];
+let finanzasCache=[],provCache=[],repCache=[],clientesCache=[],productosCache=[],depositoCache=[],camarasCache=[],marketingCache=[];
+
 
 function mostrarSeccion(id,btn){
   document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
@@ -382,6 +449,8 @@ function mostrarSeccion(id,btn){
   if(id==='proveedores') cargarProveedores();
   if(id==='repartidores') cargarRepartidores();
   if(id==='ventas'){ cambiarTabVentas('mostrador'); }
+  if(id==='camaras') cargarCamaras();
+  if(id==='marketing'){ cambiarTabMarketing('campanas'); cargarMarketing(); }
 }
 // ================= FIN PRINCIPIO =================
 
@@ -1019,7 +1088,93 @@ async function guardarFinanza(){
 async function eliminarFinanza(id){ if(!confirm('¿Borrar movimiento?')) return; try{ await fetch(`${API}?table=finanzas&id=${id}`,{method:'DELETE'}); cargarFinanzas(); }catch(e){ alert(e.message); } }
 
 
-    
+ // --- CAMARAS ---
+let camarasCache = [];
+async function cargarCamaras(){
+  try{
+    const r = await fetch(`${API}?table=camaras`,{cache:'no-store'}).catch(()=>({json:()=>({data:[STRIPPED]
+    const j = await r.json().catch(()=>({data:[STRIPPED]
+    camarasCache = j.data || JSON.parse(localStorage.getItem('megal_camaras')||'[]');
+    const grid = document.getElementById('gridCamaras');
+    if(!grid) return;
+    if(!camarasCache.length){ grid.innerHTML='<div class="card" style="color:#64748b;text-align:center">Sin cámaras - Agregá Mostrador, Depósito, etc</div>'; return; }
+    grid.innerHTML = camarasCache.map(c=>`
+      <div class="card" style="padding:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>${c.nombre}</b><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${c.ubicacion||''}</span></div>
+        <div style="background:#000;border-radius:8px;height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          ${c.url && c.url.startsWith('http') ? `<img src="${c.url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=color:#64748b>Sin señal - ${c.url}</span>'">` : `<span style="color:#64748b">📹 ${c.nombre}<br><small>${c.url||'Sin URL'}</small><br><small>Ideal: poné IP local o link MJPEG</small></span>`}
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px"><button onclick="editarCamara('${c.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;flex:1">Editar</button><button onclick="eliminarCamara('${c.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button><button onclick="window.open('${c.url}','_blank')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:4px;flex:1">Abrir</button></div>
+      </div>`).join('');
+  }catch(e){ console.error('cam error',e); }
+}
+function abrirModalCamara(){ document.getElementById('camId').value=''; document.getElementById('camNombre').value=''; document.getElementById('camUrl').value=''; document.getElementById('camUbicacion').value=''; document.getElementById('tituloModalCamara').textContent='Nueva Cámara'; document.getElementById('modalCamara').classList.remove('hidden'); document.getElementById('modalCamara').style.display='flex'; }
+function cerrarModalCamara(){ const m=document.getElementById('modalCamara'); m.classList.add('hidden'); m.style.display='none'; }
+function editarCamara(id){ const c=camarasCache.find(x=>x.id===id); if(!c) return; document.getElementById('camId').value=c.id; document.getElementById('camNombre').value=c.nombre; document.getElementById('camUrl').value=c.url||''; document.getElementById('camUbicacion').value=c.ubicacion||''; document.getElementById('tituloModalCamara').textContent='Editar Cámara'; document.getElementById('modalCamara').classList.remove('hidden'); document.getElementById('modalCamara').style.display='flex'; }
+async function guardarCamara(){
+  const id=document.getElementById('camId').value||'cam_'+Date.now();
+  const nombre=document.getElementById('camNombre').value.trim(); const url=document.getElementById('camUrl').value.trim(); const ubicacion=document.getElementById('camUbicacion').value.trim();
+  if(!nombre) return alert('Nombre obligatorio');
+  const obj={id,nombre,url,ubicacion};
+  try{ await fetch(`${API}?table=camaras`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(obj)}); }catch(_){ }
+  let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); arr=arr.filter(x=>x.id!==id); arr.push(obj); localStorage.setItem('megal_camaras',JSON.stringify(arr));
+  cerrarModalCamara(); cargarCamaras();
+}
+async function eliminarCamara(id){ if(!confirm('¿Borrar cámara?')) return; try{ await fetch(`${API}?table=camaras&id=${id}`,{method:'DELETE'}); }catch(_){ } let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); arr=arr.filter(x=>x.id!==id); localStorage.setItem('megal_camaras',JSON.stringify(arr)); cargarCamaras(); }
+
+// --- MARKETING ---
+let marketingCache = JSON.parse(localStorage.getItem('megal_marketing')||'[]');
+function cambiarTabMarketing(t){
+  document.getElementById('tabMktCampanas').classList.add('hidden'); document.getElementById('tabMktClientes').classList.add('hidden'); document.getElementById('tabMktPromos').classList.add('hidden');
+  document.getElementById('btnMktCamp').style.background='#1f2937'; document.getElementById('btnMktCamp').style.color='#94a3b8';
+  document.getElementById('btnMktClientes').style.background='#1f2937'; document.getElementById('btnMktClientes').style.color='#94a3b8';
+  document.getElementById('btnMktPromo').style.background='#1f2937'; document.getElementById('btnMktPromo').style.color='#94a3b8';
+  if(t==='campanas'){ document.getElementById('tabMktCampanas').classList.remove('hidden'); document.getElementById('btnMktCamp').style.background='#0ea5e9'; document.getElementById('btnMktCamp').style.color='white'; }
+  if(t==='clientes'){ document.getElementById('tabMktClientes').classList.remove('hidden'); document.getElementById('btnMktClientes').style.background='#0ea5e9'; document.getElementById('btnMktClientes').style.color='white'; cargarSegmentosMkt(); }
+  if(t==='promos'){ document.getElementById('tabMktPromos').classList.remove('hidden'); document.getElementById('btnMktPromo').style.background='#0ea5e9'; document.getElementById('btnMktPromo').style.color='white'; cargarProductosEnPromo(); }
+}
+function cargarProductosEnPromo(){
+  const sel=document.getElementById('promoProducto');
+  if(sel && productosCache){ sel.innerHTML=productosCache.map(p=>`<option value="${p.id}">${p.id} - ${p.nombre}</option>`).join(''); }
+}
+async function cargarMarketing(){
+  marketingCache = JSON.parse(localStorage.getItem('megal_marketing')||'[]');
+  const lista=document.getElementById('listaCampanas'); if(!lista) return;
+  document.getElementById('mktActivas').textContent=marketingCache.filter(m=>m.estado==='activa').length;
+  document.getElementById('mktAlcance').textContent=clientesCache.length||0;
+  const conv=marketingCache.reduce((s,m)=>s+(parseInt(m.conversiones)||0),0); document.getElementById('mktConv').textContent=conv;
+  if(!marketingCache.length){ lista.innerHTML='<div class="card" style="color:#64748b">Sin campañas - Creá la primera promo</div>'; return; }
+  lista.innerHTML=marketingCache.map(m=>`<div class="card" style="border-left:4px solid ${m.estado==='activa'?'#22c55e':m.estado==='programada'?'#f59e0b':'#64748b'}"><div style="display:flex;justify-content:space-between"><b>${m.nombre}</b><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${m.tipo} - ${m.estado}</span></div><div style="font-size:12px;margin-top:4px;color:#94a3b8">${m.descripcion||''}</div><div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px"><span>Presu: $${m.presupuesto||0}</span><div><button onclick="editarMarketing('${m.id}')" style="background:#334155;color:white;padding:2px 6px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarMarketing('${m.id}')" style="background:#ef4444;color:white;padding:2px 6px;border:none;border-radius:4px">X</button></div></div></div>`).join('');
+}
+function cargarSegmentosMkt(){
+  const cont=document.getElementById('mktSegmentos'); if(!cont) return;
+  const porTipo={}; clientesCache.forEach(c=>{ const t=c.tipo||'consumidor_final'; porTipo[t]=(porTipo[t]||0)+1; });
+  cont.innerHTML=Object.entries(porTipo).map(([k,v])=>`<div class="card" style="text-align:center"><b style="font-size:20px">${v}</b><br><span style="font-size:11px;color:#94a3b8">${k}</span></div>`).join('') || '<span style="color:#64748b">Sin clientes cargados</span>';
+  document.getElementById('mktPreviewEnvio').textContent=`Se enviaría a ${clientesCache.length} clientes (simulado)`;
+}
+function abrirModalMarketing(){ document.getElementById('mktId').value=''; document.getElementById('mktNombre').value=''; document.getElementById('mktDesc').value=''; document.getElementById('mktPresu').value=0; document.getElementById('modalMarketing').classList.remove('hidden'); document.getElementById('modalMarketing').style.display='flex'; }
+function cerrarModalMarketing(){ const m=document.getElementById('modalMarketing'); m.classList.add('hidden'); m.style.display='none'; }
+function editarMarketing(id){ const m=marketingCache.find(x=>x.id===id); if(!m) return; document.getElementById('mktId').value=m.id; document.getElementById('mktNombre').value=m.nombre; document.getElementById('mktTipo').value=m.tipo; document.getElementById('mktEstado').value=m.estado; document.getElementById('mktDesc').value=m.descripcion; document.getElementById('mktPresu').value=m.presupuesto||0; document.getElementById('modalMarketing').classList.remove('hidden'); document.getElementById('modalMarketing').style.display='flex'; }
+function guardarMarketing(){
+  const id=document.getElementById('mktId').value||'mkt_'+Date.now();
+  const obj={id, nombre:document.getElementById('mktNombre').value.trim(), tipo:document.getElementById('mktTipo').value, estado:document.getElementById('mktEstado').value, descripcion:document.getElementById('mktDesc').value.trim(), presupuesto:parseFloat(document.getElementById('mktPresu').value)||0, conversiones:0};
+  if(!obj.nombre) return alert('Nombre obligatorio');
+  marketingCache=marketingCache.filter(x=>x.id!==id); marketingCache.push(obj); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache));
+  cerrarModalMarketing(); cargarMarketing();
+}
+function eliminarMarketing(id){ if(!confirm('¿Borrar campaña?')) return; marketingCache=marketingCache.filter(x=>x.id!==id); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing(); }
+function enviarMktMasivo(){
+  const seg=document.getElementById('mktSegmentoSel').value; const msg=document.getElementById('mktMensaje').value.trim();
+  if(!msg) return alert('Escribí mensaje');
+  let cant=clientesCache.length; if(seg!=='todos') cant=clientesCache.filter(c=>(c.tipo||'consumidor_final')===seg).length;
+  document.getElementById('mktPreviewEnvio').innerHTML=`✅ Simulado: se enviaría <b>"${msg}"</b> a <b>${cant} clientes</b> del segmento <b>${seg}</b> vía WhatsApp (integrar con API real después)`;
+  const id='mkt_'+Date.now(); marketingCache.push({id, nombre:'Masivo '+seg, tipo:'whatsapp', estado:'activa', descripcion:msg, presupuesto:0, conversiones:0}); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing();
+}
+function generarPromo(){
+  const prod=document.getElementById('promoProducto').value; const desc=document.getElementById('promoDesc').value;
+  const texto=`🔥 ¡PROMO MEGAL! 🔥\nGarrafa ${prod} con ${desc}% OFF solo hoy\n📍 Rocha - Envío $120\n📲 Pedí por WhatsApp\n⏰ ¡Hasta agotar stock!`;
+  document.getElementById('promoTexto').innerText=texto;
+}   
 // Ej: cargarResumen(), cargarStock(), etc.
 // Los vas pegando uno abajo del otro
 
