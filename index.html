@@ -97,31 +97,66 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
  <!-- PRODUCTO --> 
- <div id="view-productos" class="view-section hidden">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-    <h3>📦 Productos</h3>
-    <button onclick="abrirModalProducto()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nuevo Producto</button>
+<div id="view-productos" class="view-section hidden" style="padding:16px">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <h3>📦 Productos - Compra / Venta / Ganancia</h3>
+    <div style="display:flex;gap:8px">
+      <span id="productosStats" style="font-size:11px;color:#94a3b8;background:#0f172a;padding:6px 10px;border-radius:6px"></span>
+      <button onclick="abrirModalProducto()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">+ Nuevo Producto</button>
+    </div>
   </div>
-  <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px">
-    <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">ID / Código</th><th style="padding:8px;border:1px solid #1f2937">Nombre</th><th style="padding:8px;border:1px solid #1f2937">Tipo</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
-    <tbody id="tablaProductos"><tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
-  </table></div>
+
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="buscarProducto" oninput="filtrarProductos()" placeholder="Buscar código o nombre..." style="flex:1;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:white">
+      <select id="filtroTipoProd" onchange="filtrarProductos()" style="padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+        <option value="">Todos</option><option value="gas">GAS</option><option value="tubo">TUBO 43.5</option><option value="otro">OTROS</option>
+      </select>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#0f172a">
+      <th style="padding:8px;border:1px solid #1f2937">ID</th>
+      <th style="padding:8px;border:1px solid #1f2937">Nombre</th>
+      <th style="padding:8px;border:1px solid #1f2937">Tipo</th>
+      <th style="padding:8px;border:1px solid #1f2937;text-align:right">Compra</th>
+      <th style="padding:8px;border:1px solid #1f2937;text-align:right">Venta</th>
+      <th style="padding:8px;border:1px solid #1f2937;text-align:right">Ganancia</th>
+      <th style="padding:8px;border:1px solid #1f2937">Margen</th>
+      <th style="padding:8px;border:1px solid #1f2937">Acc</th>
+    </tr></thead><tbody id="tablaProductos"></tbody></table>
+  </div>
 </div>
 
-<!-- Modal Producto -->
-<div id="modalProducto" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
-    <h3 id="tituloModalProd" style="margin-bottom:12px">Nuevo Producto</h3>
+  <div id="modalProducto" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:480px">
+    <h3 id="tituloModalProd">Nuevo Producto</h3>
     <input type="hidden" id="prodId">
-    <div style="margin-bottom:10px"><label style="font-size:11px">ID / Código * (ej: 11, 13, 45, 43.5)</label><input type="text" id="prodCodigo" placeholder="11" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre</label><input type="text" id="prodNombre" placeholder="Garrafa 13kg" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-    <div style="margin-bottom:14px"><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="gas">GAS</option><option value="tubo">TUBO 43.5</option><option value="otro">OTROS</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
+      <div><label style="font-size:11px">ID / Código *</label><input type="text" id="prodCodigo" placeholder="Ej: 13, 11, 45, REGULADOR" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+      <div><label style="font-size:11px">Tipo</label><select id="prodTipo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="gas">GAS 11/13/45</option><option value="tubo">TUBO 43.5</option><option value="otro">OTROS / ACCESORIO</option></select></div>
+    </div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">Nombre</label><input type="text" id="prodNombre" placeholder="Ej: Garrafa 13kg Megal" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    
+    <div style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:10px;border:1px solid #334155">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label style="font-size:11px;color:#94a3b8">💸 Precio Compra *</label><input type="number" id="prodCompra" min="0" step="1" placeholder="Ej: 600" oninput="calcularGananciaProd()" style="width:100%;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px;font-weight:bold"></div>
+        <div><label style="font-size:11px;color:#22c55e">💰 Precio Venta *</label><input type="number" id="prodVenta" min="0" step="1" placeholder="Ej: 850" oninput="calcularGananciaProd()" style="width:100%;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px;font-weight:bold;font-size:16px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div style="text-align:center;background:#1e293b;padding:8px;border-radius:6px"><p style="font-size:10px;color:#94a3b8">GANANCIA $</p><b id="prodGananciaTexto" style="color:#22c55e;font-size:18px">$0</b></div>
+        <div style="text-align:center;background:#1e293b;padding:8px;border-radius:6px"><p style="font-size:10px;color:#94a3b8">MARGEN %</p><b id="prodMargenTexto" style="color:#0ea5e9;font-size:18px">0%</b></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div><label style="font-size:11px">Proveedor</label><select id="prodProveedor" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="">-- Sin proveedor --</option></select></div>
+      <div><label style="font-size:11px">Stock Mínimo</label><input type="number" id="prodStockMin" min="0" value="2" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    </div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalProducto()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarProducto()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
-</div> 
+</div>
 
-
-  <!-- clientes -->
+  <!-- CLIENTES -->
   <div id="view-clientes" class="view-section hidden" style="padding:16px">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h3>👥 Clientes - WhatsApp Sync</h3>
@@ -635,53 +670,118 @@ async function eliminarRepartidor(id){ if(!confirm('¿Borrar repartidor?')) retu
   
 
 // --- PRODUCTOS ---
-async function cargarProductosCatalogo(){
-  try{
-    const r = await fetch(`${API}?table=productos`,{cache:'no-store'});
-    const j = await r.json();
-    productosCache = j.data || [];
-    const tbody = document.getElementById('tablaProductos');
-    const selVenta = document.getElementById('ventaProducto');
-    
-    if(!productosCache.length){
-      if(tbody) tbody.innerHTML = '<tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Sin productos - Agregá 11, 13, 45, 43.5</td></tr>';
-    } else {
-      if(tbody) tbody.innerHTML = productosCache.map(p => `
-        <tr>
-          <td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b></td>
-          <td style="padding:8px;border:1px solid #1f2937">${p.nombre||'-'}</td>
-          <td style="padding:8px;border:1px solid #1f2937">${p.tipo||'gas'}</td>
-          <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProducto('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarProducto('${p.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">Borrar</button></td>
-        </tr>`).join('');
-    }
-    if(selVenta){
-      selVenta.innerHTML = '<option value="">-- Seleccione --</option>' + productosCache.map(p=>`<option value="${p.id}">${p.id} - ${p.nombre}</option>`).join('');
-    }
-  }catch(e){ console.error('productos error',e); }
+let productosCacheFiltrado = [];
+
+async function cargarProductosCatalogo(){ 
+  try{ 
+    const r=await fetch(API+'?table=productos',{cache:'no-store'}); 
+    const j=await r.json(); 
+    productosCache=j.data||[]; 
+    productosCacheFiltrado=[...productosCache];
+    renderProductosTabla(productosCache);
+    const selVenta=document.getElementById('ventaProducto'); 
+    if(selVenta){ selVenta.innerHTML='<option value="">-- Seleccione --</option>'+productosCache.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre} ($${p.precio_venta||0})</option>`).join(''); }
+    const selProv=document.getElementById('prodProveedor'); if(selProv && provCache.length){ selProv.innerHTML='<option value="">-- Sin proveedor --</option>'+provCache.map(pr=>`<option value="${pr.id}">${pr.nombre}</option>`).join(''); }
+    const stats=document.getElementById('productosStats'); if(stats){ const promMargen=productosCache.length? (productosCache.reduce((s,p)=>{ const c=parseFloat(p.precio_compra)||0; const v=parseFloat(p.precio_venta)||0; const m=c>0?((v-c)/v*100):0; return s+m; },0)/productosCache.length).toFixed(1):0; stats.textContent=`${productosCache.length} productos | Margen prom: ${promMargen}%`; }
+  }catch(e){ console.error(e); } 
 }
-function abrirModalProducto(){
-  document.getElementById('prodId').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; document.getElementById('prodTipo').value='gas';
-  document.getElementById('tituloModalProd').textContent='Nuevo Producto';
-  document.getElementById('modalProducto').classList.remove('hidden'); document.getElementById('modalProducto').style.display='flex';
+
+function renderProductosTabla(lista){
+  const tbody=document.getElementById('tablaProductos'); if(!tbody) return;
+  if(!lista.length){ tbody.innerHTML='<tr><td colspan="8" style="padding:12px;color:#64748b;text-align:center">Sin productos</td></tr>'; return; }
+  tbody.innerHTML=lista.map(p=>{
+    const compra=parseFloat(p.precio_compra)||0;
+    const venta=parseFloat(p.precio_venta)||0;
+    const gan=venta-compra;
+    const margen=venta>0?((gan/venta)*100).toFixed(1):0;
+    const colorMargen=margen>=30?'#22c55e':margen>=15?'#f59e0b':'#ef4444';
+    return `<tr style="${gan<0?'background:rgba(239,68,68,0.1)':''}">
+      <td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b></td>
+      <td style="padding:8px;border:1px solid #1f2937">${p.nombre||'-'}<br><span style="font-size:10px;color:#64748b">Prov: ${p.proveedor_id||'-'} | Min: ${p.stock_minimo||2}</span></td>
+      <td style="padding:8px;border:1px solid #1f2937"><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${p.tipo||'gas'}</span></td>
+      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#94a3b8">$${compra}</td>
+      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#22c55e;font-weight:bold">$${venta}</td>
+      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:${gan>=0?'#22c55e':'#ef4444'};font-weight:bold">$${gan}</td>
+      <td style="padding:8px;border:1px solid #1f2937;text-align:center"><b style="color:${colorMargen}">${margen}%</b></td>
+      <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProducto('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarProducto('${p.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button></td>
+    </tr>`;
+  }).join('');
 }
-function cerrarModalProducto(){ const m=document.getElementById('modalProducto'); m.classList.add('hidden'); m.style.display='none'; }
-function editarProducto(id){
-  const p = productosCache.find(x=>x.id===id); if(!p) return;
-  document.getElementById('prodId').value=p.id; document.getElementById('prodCodigo').value=p.id; document.getElementById('prodNombre').value=p.nombre||''; document.getElementById('prodTipo').value=p.tipo||'gas';
-  document.getElementById('tituloModalProd').textContent='Editar Producto';
-  document.getElementById('modalProducto').classList.remove('hidden'); document.getElementById('modalProducto').style.display='flex';
+
+function filtrarProductos(){
+  const q=(document.getElementById('buscarProducto').value||'').toLowerCase();
+  const tipo=document.getElementById('filtroTipoProd').value;
+  let f=productosCache;
+  if(q) f=f.filter(p=> (p.id||'').toLowerCase().includes(q) || (p.nombre||'').toLowerCase().includes(q));
+  if(tipo) f=f.filter(p=> (p.tipo||'gas')===tipo);
+  renderProductosTabla(f);
 }
-async function guardarProducto(){
-  const codigo = document.getElementById('prodCodigo').value.trim();
-  const nombre = document.getElementById('prodNombre').value.trim() || codigo;
-  const tipo = document.getElementById('prodTipo').value;
+
+function calcularGananciaProd(){
+  const compra=parseFloat(document.getElementById('prodCompra').value)||0;
+  const venta=parseFloat(document.getElementById('prodVenta').value)||0;
+  const gan=venta-compra;
+  const margen=venta>0?((gan/venta)*100):0;
+  const gEl=document.getElementById('prodGananciaTexto'); if(gEl){ gEl.textContent='$'+gan; gEl.style.color=gan>=0?'#22c55e':'#ef4444'; }
+  const mEl=document.getElementById('prodMargenTexto'); if(mEl){ mEl.textContent=margen.toFixed(1)+'%'; mEl.style.color=margen>=30?'#22c55e':margen>=15?'#f59e0b':'#ef4444'; }
+}
+
+function abrirModalProducto(){ 
+  document.getElementById('prodId').value=''; 
+  document.getElementById('prodCodigo').value=''; 
+  document.getElementById('prodNombre').value=''; 
+  document.getElementById('prodTipo').value='gas';
+  document.getElementById('prodCompra').value=''; 
+  document.getElementById('prodVenta').value='';
+  document.getElementById('prodProveedor').value='';
+  document.getElementById('prodStockMin').value=2;
+  calcularGananciaProd();
+  document.getElementById('modalProducto').classList.remove('hidden'); 
+  document.getElementById('modalProducto').style.display='flex'; 
+}
+
+function editarProducto(id){ 
+  const p=productosCache.find(x=>x.id===id); if(!p) return; 
+  document.getElementById('prodId').value=p.id; 
+  document.getElementById('prodCodigo').value=p.id; 
+  document.getElementById('prodNombre').value=p.nombre||''; 
+  document.getElementById('prodTipo').value=p.tipo||'gas';
+  document.getElementById('prodCompra').value=p.precio_compra||0;
+  document.getElementById('prodVenta').value=p.precio_venta||0;
+  document.getElementById('prodProveedor').value=p.proveedor_id||'';
+  document.getElementById('prodStockMin').value=p.stock_minimo||2;
+  calcularGananciaProd();
+  document.getElementById('modalProducto').classList.remove('hidden'); 
+  document.getElementById('modalProducto').style.display='flex'; 
+}
+
+async function guardarProducto(){ 
+  const codigo=document.getElementById('prodCodigo').value.trim(); 
+  const nombre=document.getElementById('prodNombre').value.trim()||codigo; 
+  const tipo=document.getElementById('prodTipo').value;
+  const precio_compra=parseFloat(document.getElementById('prodCompra').value)||0;
+  const precio_venta=parseFloat(document.getElementById('prodVenta').value)||0;
+  const proveedor_id=document.getElementById('prodProveedor').value;
+  const stock_minimo=parseInt(document.getElementById('prodStockMin').value)||2;
   if(!codigo) return alert('Código obligatorio');
-  try{
-    await fetch(`${API}?table=productos`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo})});
-    cerrarModalProducto(); cargarProductosCatalogo();
-  }catch(e){ alert('Error: '+e.message); }
+  if(precio_venta<=0) return alert('Precio venta debe ser >0');
+  if(precio_compra>precio_venta){ if(!confirm(`Atención: Comprás a $${precio_compra} y vendés a $${precio_venta} (pérdida de $${precio_venta-precio_compra}). ¿Guardar igual?`)) return; }
+  await fetch(API+'?table=productos',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo, precio_compra, precio_venta, proveedor_id, stock_minimo})}); 
+  cerrarModalProducto(); 
+  cargarProductosCatalogo(); 
+  cargarStock();
 }
-async function eliminarProducto(id){ if(!confirm('¿Borrar producto '+id+'?')) return; try{ await fetch(`${API}?table=productos&id=${id}`,{method:'DELETE'}); cargarProductosCatalogo(); }catch(e){ alert(e.message); } }
+
+// Auto-cargar precio en ventas
+document.addEventListener('change', (e)=>{
+  if(e.target.id==='ventaProducto'){
+    const opt=e.target.selectedOptions[0];
+    const precio=opt?.dataset?.precio||0;
+    const precioInput=document.getElementById('ventaPrecio');
+    if(precioInput && precio>0){ precioInput.value=precio; calcularTotalMostrador(); }
+  }
+});
+
 
 // --- CLIENTES ---
 let clientesImportTemp = [];
