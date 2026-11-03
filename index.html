@@ -41,3 +41,92 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
 <div class="main">
+<!-- RESUMEN -->
+<div id="view-resumen" class="view-section">
+  <div class="card">
+    <h3 style="font-weight:900">📊 Resumen - Rocha</h3>
+    <p style="font-size:11px;color:#94a3b8">Megal Gas - Base Postgres Neon</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px">
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">VENTAS HOY</p><b id="resVentasHoy" style="font-size:20px;color:#22c55e">$0</b><p style="font-size:10px" id="resVentasCount">0 ventas</p></div>
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">STOCK LLENAS</p><b id="resStockTotal" style="font-size:20px">0</b><p style="font-size:10px" id="resStockDetalle">11:0 | 13:0 | 45:0</p></div>
+      <div class="card" style="margin:0;text-align:center"><p style="font-size:10px;color:#94a3b8">BALANCE CAJA</p><b id="resCajaHoy" style="font-size:20px">$0</b><p style="font-size:10px;color:#38bdf8" id="resFletesHoy">Fletes $0</p></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h4>📋 Últimas Ventas</h4><div id="resUltimasVentas" style="font-size:11px;margin-top:8px">Cargando...</div></div>
+  </div>
+</div>
+
+  <script>
+// ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
+const API='/api/postgres';
+let gpsMap=null,gpsMapHist=null,gpsPoll=null,tubo43Cache=null;
+let finanzasCache=[],provCache=[],repCache=[],clientesCache=[];
+
+function mostrarSeccion(id,btn){
+  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
+  const el=document.getElementById('view-'+id);
+  if(el) el.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(id==='resumen') cargarResumen();
+  if(id==='stock'){ cargarStock(); cambiarTabStock('gas'); }
+  if(id==='finanzas') cargarFinanzas();
+  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},150); }
+  if(id==='productos') cargarProductosCatalogo();
+  if(id==='clientes') cargarClientes();
+  if(id==='proveedores') cargarProveedores();
+  if(id==='repartidores') cargarRepartidores();
+  if(id==='ventas'){ cambiarTabVentas('mostrador'); }
+}
+// ================= FIN PRINCIPIO =================
+
+// ================= AQUÍ VAN TUS MÓDULOS =================
+
+async function cargarResumen(){
+ try{
+  const hoy=new Date().toISOString().split('T')[0];
+  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); 
+  const jV=await rV.json(); 
+  const ventas=(jV.data||[]);
+  const ventasHoy=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
+  const totHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
+  const fleteHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.flete)||0),0);
+  document.getElementById('resVentasHoy').textContent='$'+totHoy;
+  document.getElementById('resVentasCount').textContent=ventasHoy.length+' ventas';
+  document.getElementById('resCajaHoy').textContent='$'+totHoy;
+  document.getElementById('resFletesHoy').textContent='Fletes $'+fleteHoy;
+  
+  const rD=await fetch(API+'?table=deposito',{cache:'no-store'}); 
+  const jD=await rD.json(); 
+  const dep=jD.data||[];
+  const totLlenas=dep.reduce((s,d)=>s+(parseInt(d.llenas)||0),0);
+  const d11=dep.find(d=>String(d.producto_id)==='11'); 
+  const d13=dep.find(d=>String(d.producto_id)==='13'); 
+  const d45=dep.find(d=>String(d.producto_id)==='45');
+  document.getElementById('resStockTotal').textContent=totLlenas+' llenas';
+  document.getElementById('resStockDetalle').textContent='11:'+(d11?.llenas||0)+' | 13:'+(d13?.llenas||0)+' | 45:'+(d45?.llenas||0);
+  let h=''; 
+  ventas.slice(0,5).forEach(v=>{ 
+    h+='<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>'+(v.fecha||'').substring(11,16)+' '+(v.cliente_nombre||'')+' '+v.producto_id+'</span><b>$'+v.total+'</b></div>'; 
+  });
+  document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
+ }catch(e){ console.log('resumen error',e); }
+}
+    
+// Ej: cargarResumen(), cargarStock(), etc.
+// Los vas pegando uno abajo del otro
+
+// ================= FINAL DEL SCRIPT - NO BORRAR =================
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy=new Date().toISOString().split('T')[0];
+  const f=document.getElementById('finFecha');
+  if(f) f.value=hoy;
+  cargarResumen();
+  const a=document.getElementById('ventaTipoCliente');
+  if(a) actualizarReglaFlete();
+  const b=document.getElementById('ventaProducto');
+  if(b) calcularTotalMostrador();
+});
+// ================= FIN SCRIPT =================
+</script>
+</body>
+</html>
