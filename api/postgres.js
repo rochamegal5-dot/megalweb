@@ -15,7 +15,11 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS gps_locations (id TEXT PRIMARY KEY, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, repartidor TEXT, fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS puntos_ref (id TEXT PRIMARY KEY, nombre TEXT, lat DOUBLE PRECISION, lng DOUBLE PRECISION)`;
     await sql`CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT)`;
-    await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT DEFAULT 'gas')`;
+    await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT DEFAULT 'gas', precio_compra DOUBLE PRECISION DEFAULT 0, precio_venta DOUBLE PRECISION DEFAULT 0, proveedor_id TEXT, stock_minimo INTEGER DEFAULT 2)`;
+    await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_venta DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS proveedor_id TEXT`;
+    await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS stock_minimo INTEGER DEFAULT 2`;
     await sql`CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT, tipo TEXT DEFAULT 'consumidor_final')`;
     await sql`CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, rut TEXT, direccion TEXT)`;
     await sql`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, kilos_en_uso DOUBLE PRECISION DEFAULT 0)`;
