@@ -115,7 +115,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <table><thead><tr style="background:#0f172a"><th>Nombre</th><th>Tel</th><th>RUT</th><th>Acc</th></tr></thead><tbody id="tablaProveedores"><tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr></tbody></table>
   </div>
 </div>
-
+////
 <div id="view-stock" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <h3 style="font-weight:900">📦 Stock - Depósito</h3>
@@ -127,11 +127,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <button id="tabStockOtros" onclick="cambiarTabStock('otros')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">🔧 OTROS</button>
     <button id="tabStockIngreso" onclick="cambiarTabStock('ingreso')" style="flex:1;padding:10px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">🚚 INGRESO</button>
   </div>
-  <div id="stockTabGas"><div id="stockContentGas"></div></div>
-  <div id="stockTab43" class="hidden"><div id="stockContent43"></div></div>
-  <div id="stockTabOtros" class="hidden"><div id="stockContentOtros"></div></div>
+  <div id="stockTabGas"><div id="stockContentGas">Cargando...</div></div>
+  <div id="stockTab43" class="hidden"><div id="stockContent43">Cargando...</div></div>
+  <div id="stockTabOtros" class="hidden"><div id="stockContentOtros">Cargando...</div></div>
   <div id="stockTabIngreso" class="hidden">
-    <div class="card"><h4>🚚 Ingreso Mercadería - Camión Proveedor</h4>
+    <div class="card">
+      <h4>🚚 Ingreso Mercadería - Camión Proveedor</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
         <select id="ingProducto"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg</option></select>
         <input id="ingLlenas" type="number" placeholder="Llenas que trae">
@@ -142,6 +143,7 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     </div>
   </div>
 </div>
+ 
 
 <div id="view-ventas" class="view-section hidden">
   <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -257,355 +259,7 @@ function mostrarSeccion(id,btn){
   if(id==='ventas'){ cambiarTabVentas('mostrador'); }
 }
 
-function cambiarTabStock(tab){
-  document.getElementById('stockTabGas').classList.add('hidden');
-  document.getElementById('stockTab43').classList.add('hidden');
-  document.getElementById('stockTabOtros').classList.add('hidden');
-  document.getElementById('stockTabIngreso').classList.add('hidden');
-  document.getElementById('tabStockGas').style.background='#1f2937';
-  document.getElementById('tabStock43').style.background='#1f2937';
-  document.getElementById('tabStockOtros').style.background='#1f2937';
-  document.getElementById('tabStockIngreso').style.background='#1f2937';
-  
-  if(tab==='gas'){ document.getElementById('stockTabGas').classList.remove('hidden'); document.getElementById('tabStockGas').style.background='#0ea5e9'; }
-  if(tab==='tubo43'){ document.getElementById('stockTab43').classList.remove('hidden'); document.getElementById('tabStock43').style.background='#f59e0b'; document.getElementById('tabStock43').style.color='#000'; }
-  if(tab==='otros'){ document.getElementById('stockTabOtros').classList.remove('hidden'); document.getElementById('tabStockOtros').style.background='#0ea5e9'; }
-  if(tab==='ingreso'){ document.getElementById('stockTabIngreso').classList.remove('hidden'); document.getElementById('tabStockIngreso').style.background='#22c55e'; document.getElementById('tabStockIngreso').style.color='#000'; }
-}
-
-async function cargarStock(){
-  const r=await fetch(API+'?table=deposito'); const j=await r.json(); const dep=j.data||[];
-  const gas=dep.filter(d=>['11','13','45'].includes(String(d.producto_id)));
-  const tubo43=dep.find(d=>String(d.producto_id)==='43.5');
-  const otros=dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
-  
-  // TAB GAS
-  let hGas='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Llenas</th><th>Vacias</th><th>Cambio</th><th>Acc</th></tr>';
-  gas.forEach(d=>{ hGas+=`<tr><td>${d.producto_id}</td><td>${d.nombre||''}</td><td style="color:#22c55e;font-weight:900">${d.llenas||0}</td><td>${d.vacias||0}</td><td>${d.cambio||0}</td><td><button onclick="abrirEditarStock('${d.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
-  hGas+='</table>';
-  document.getElementById('stockContentGas').innerHTML=hGas;
-
-  // TAB 43.5
-  if(tubo43){
-    const kilos=parseFloat(tubo43.kilos_en_uso)||0; const porc=Math.max(5,(kilos/43.5*100)).toFixed(0); const color=kilos>20?'#22c55e':kilos>5?'#f59e0b':'#ef4444';
-    document.getElementById('stockContent43').innerHTML=`<div style="background:#0f172a;padding:16px;border-radius:12px;border:3px solid ${color}"><b style="color:${color};font-size:18px">🔥 TUBO 43.5 MADRE: ${kilos.toFixed(1)} / 43.5 kg (${porc}%)</b><div style="background:#334155;height:24px;border-radius:12px;margin-top:12px"><div style="width:${porc}%;height:100%;background:${color};border-radius:12px"></div></div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>Llenas: ${tubo43.llenas||0}</div><div>Vacias: ${tubo43.vacias||0}</div></div><button onclick="iniciarNuevoTubo43()" style="width:100%;margin-top:12px;padding:12px;background:${color};color:#000;font-weight:900;border:none;border-radius:8px">🔄 Iniciar Nuevo Tubo 43.5kg Lleno</button></div>`;
-  } else {
-    document.getElementById('stockContent43').innerHTML='<div class="card" style="border-color:#ef4444">No hay tubo 43.5 - Crealo en Ingreso</div>';
-  }
-
-  // TAB OTROS
-  let hOtros='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Stock</th><th>Acc</th></tr>';
-  otros.forEach(o=>{ hOtros+=`<tr><td>${o.producto_id}</td><td>${o.nombre||''}</td><td>${o.llenas||0}</td><td><button onclick="abrirEditarStock('${o.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
-  hOtros+='</table>';
-  document.getElementById('stockContentOtros').innerHTML=hOtros;
-}
-
-async function guardarIngresoGas(){
-  const prod=document.getElementById('ingProducto').value;
-  const llenas=parseInt(document.getElementById('ingLlenas').value)||0;
-  const vacias=parseInt(document.getElementById('ingVacias').value)||0;
-  const remito=document.getElementById('ingRemito').value;
-  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas', producto_id:prod, llenas, vacias, remito})});
-  alert('Ingreso guardado'); cargarStock(); cambiarTabStock('gas');
-}
-let tubo43Cache=null;
-
-function cambiarTabVentas(tab){
-  document.getElementById('tab-ventas-mostrador').classList.add('hidden');
-  document.getElementById('tab-ventas-camioneta').classList.add('hidden');
-  document.getElementById('btnTabMostrador').style.background='#1f2937';
-  document.getElementById('btnTabCamioneta').style.background='#1f2937';
-  document.getElementById('btnTabMostrador').style.color='#94a3b8';
-  document.getElementById('btnTabCamioneta').style.color='#94a3b8';
-  if(tab==='mostrador'){ document.getElementById('tab-ventas-mostrador').classList.remove('hidden'); document.getElementById('btnTabMostrador').style.background='#0ea5e9'; document.getElementById('btnTabMostrador').style.color='white'; cargarVentasHoy(); cargarStockTubo43(); }
-  if(tab==='camioneta'){ document.getElementById('tab-ventas-camioneta').classList.remove('hidden'); document.getElementById('btnTabCamioneta').style.background='#f59e0b'; document.getElementById('btnTabCamioneta').style.color='#000'; }
-}
-
-async function cargarStockTubo43(){
-  try{ const r=await fetch(API+'?table=deposito'); const j=await r.json(); const dep=(j.data||[]).find(d=>String(d.producto_id)==='43.5'); tubo43Cache=dep; const info=document.getElementById('stockTuboInfo'); if(info&&dep) info.textContent=`Tubo: ${parseFloat(dep.kilos_en_uso||0).toFixed(1)}kg`; }catch(e){}
-}
-
-function onProductoChange(){
-  const prod=document.getElementById('ventaProducto').value;
-  const box=document.getElementById('boxFraccionado');
-  if(prod==='fraccionado') box.classList.remove('hidden'); else box.classList.add('hidden');
-  calcularTotalMostrador();
-}
-
-function actualizarReglaFlete(){
-  const tipoCli=document.getElementById('ventaTipoCliente').value;
-  const modo=document.getElementById('ventaModo').value;
-  const fleteInput=document.getElementById('ventaFlete');
-  const info=document.getElementById('reglaFleteInfo');
-  if(tipoCli==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Retira en local = SIN FLETE (obligatorio)'; }
-  else if(tipoCli==='comercio'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Comercio = NUNCA flete'; }
-  else if((tipoCli==='consumidor_final'||tipoCli==='mides') && modo==='domicilio'){ fleteInput.disabled=false; if(parseInt(fleteInput.value||0)===0) fleteInput.value=120; info.textContent='REGLA: Consumidor Final / MIDES a domicilio = FLETE $120 OBLIGATORIO (editable)'; }
-  else if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='Retira = sin flete'; }
-  else { fleteInput.disabled=false; info.textContent='Domicilio - flete opcional'; }
-  calcularTotalMostrador();
-}
-
-function calcularTotalMostrador(){
-  const prod=document.getElementById('ventaProducto').value;
-  const precios={'11':800,'13':950,'45':3500,'fraccionado':150};
-  let base=precios[prod]||0;
-  if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; base=kg*precios.fraccionado; }
-  const flete=parseInt(document.getElementById('ventaFlete').value)||0;
-  document.getElementById('ventaTotal').textContent='$'+(base+flete);
-}
-
-async function registrarVentaMostrador(){
-  const prod=document.getElementById('ventaProducto').value;
-  const cliente=document.getElementById('ventaCliente').value||'Cliente Mostrador';
-  const tipoCli=document.getElementById('ventaTipoCliente').value;
-  const modo=document.getElementById('ventaModo').value;
-  const pago=document.getElementById('ventaPago').value;
-  const flete=parseInt(document.getElementById('ventaFlete').value)||0;
-  const total=parseInt(document.getElementById('ventaTotal').textContent.replace('$',''))||0;
-
-  if(prod==='fraccionado'){
-    const kg=parseInt(document.getElementById('ventaKilos').value)||1;
-    if(!confirm(`Vender ${kg}kg fraccionado a ${cliente} por $${total}?`)) return;
-    const r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada', kilos:kg, cliente_nombre:cliente})});
-    const j=await r.json(); if(j.error){ alert(j.error); return; }
-    alert(`✅ Vendido ${kg}kg. Quedan ${parseFloat(j.restante||0).toFixed(1)}kg`);
-  } else {
-    if(!confirm(`Vender ${prod} a ${cliente} total $${total}?`)) return;
-    await fetch(API+'?table=ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto_id:prod, cliente_nombre:cliente, cantidad:1, total, flete, pago, tipo_cliente:tipoCli, modo})});
-  }
-  document.getElementById('ventaCliente').value=''; cargarVentasHoy(); cargarStockTubo43();
-}
-
-async function cargarVentasHoy(){
-  const el=document.getElementById('ventasHoyTabla'); if(!el) return; el.innerHTML='Cargando...';
-  try{ const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); const v=j.data||[]; if(!v.length){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; }
-    let h='<table><tr style="background:#0f172a"><th>Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>';
-    v.forEach(row=>{ const hora=(row.fecha||row.created_at||'').toString().substring(11,19); h+=`<tr><td>${hora}</td><td>${row.cliente_nombre||''} (${row.tipo_cliente||''})</td><td>${row.producto_id||''}</td><td style="font-weight:900">$${row.total||0}</td></tr>`; });
-    h+='</table>'; el.innerHTML=h;
-  }catch(e){ el.innerHTML='Error: '+e.message; }
-}
-
-let finanzasCache=[];
-
-async function cargarFinanzas(){
-  let fecha=document.getElementById('finFecha').value;
-  if(!fecha){ const hoy=new Date(); fecha=hoy.toISOString().split('T')[0]; document.getElementById('finFecha').value=fecha; }
-  const el=document.getElementById('tablaFinanzas');
-  if(el) el.innerHTML='Cargando...';
-  try{
-    // Crea tabla si no existe (evita el 500)
-    const r=await fetch(API+'?table=finanzas&fecha='+fecha,{cache:'no-store'});
-    const j=await r.json();
-    finanzasCache=j.data||[];
-
-    const rV=await fetch(API+'?table=ventas',{cache:'no-store'});
-    const jV=await rV.json();
-    const ventas=(jV.data||[]).filter(v=> (v.fecha||'').toString().split('T')[0]===fecha);
-
-    let totIng=0, totEgr=0, totFlete=0;
-    let porMetodo={}; let porCat={};
-    let html='<table><tr style="background:#0f172a"><th>Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
-
-    finanzasCache.forEach(f=>{
-      const monto=parseFloat(f.monto)||0;
-      if(f.tipo==='ingreso') totIng+=monto; else if(f.tipo!=='cierre') totEgr+=monto;
-      if(f.categoria==='flete') totFlete+=monto;
-      porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto;
-      porCat[f.categoria]=(porCat[f.categoria]||0)+monto;
-      const hora=(f.fecha||'').toString().substring(11,19);
-      html+=`<tr style="border-left:4px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><td>${hora}</td><td>${f.tipo}</td><td>${f.descripcion||f.categoria}</td><td style="font-weight:900;color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">$${monto}</td></tr>`;
-    });
-
-    ventas.forEach(v=>{
-      const m=parseFloat(v.total)||0; const fl=parseFloat(v.flete)||0;
-      totIng+=m; totFlete+=fl;
-      porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m;
-      porCat['venta_gas']=(porCat['venta_gas']||0)+m;
-      const h2=(v.fecha||'').toString().substring(11,19);
-      html+=`<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td>${h2}</td><td>venta</td><td>${v.producto_id||''} ${v.cliente_nombre||''}</td><td style="font-weight:900;color:#22c55e">$${m} (flete $${fl})</td></tr>`;
-    });
-
-    html+='</table>';
-    if(el) el.innerHTML=html;
-    document.getElementById('finIngresos').textContent='$'+totIng;
-    document.getElementById('finEgresos').textContent='$'+totEgr;
-    document.getElementById('finFletes').textContent='$'+totFlete;
-    document.getElementById('finBalance').textContent='$'+(totIng-totEgr);
-
-    let rm=document.getElementById('resumenMetodo'); let hr=''; for(let met in porMetodo){ hr+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${met}</span><b>$${porMetodo[met]}</b></div>`; } if(rm) rm.innerHTML=hr;
-    let rc=document.getElementById('resumenCategoria'); let hc=''; for(let cat in porCat){ hc+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${cat}</span><b>$${porCat[cat]}</b></div>`; } if(rc) rc.innerHTML=hc;
-
-  }catch(e){ if(el) el.innerHTML='Error: '+e.message+'<br>¿Creaste la tabla finanzas en Neon?'; }
-}
-
-function abrirModalFinanza(tipo){
-  document.getElementById('modalFinanza').classList.remove('hidden');
-  document.getElementById('finTipo').value=tipo;
-  document.getElementById('tituloFinanza').textContent=tipo==='ingreso'?'💰 Nuevo Ingreso':'💸 Nuevo Egreso';
-}
-function cerrarModalFinanza(){ document.getElementById('modalFinanza').classList.add('hidden'); }
-
-async function guardarFinanza(){
-  const tipo=document.getElementById('finTipo').value;
-  const monto=parseFloat(document.getElementById('finMonto').value)||0;
-  if(!monto){ alert('Monto'); return; }
-  const payload={ tipo, categoria:document.getElementById('finCategoria').value, descripcion:document.getElementById('finDesc').value, monto, metodo_pago:document.getElementById('finMetodo').value, fecha:new Date().toISOString() };
-  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  cerrarModalFinanza(); cargarFinanzas();
-  document.getElementById('finMonto').value=''; document.getElementById('finDesc').value='';
-}
-
-async function hacerCierreCaja(){
-  const fecha=document.getElementById('finFecha').value||new Date().toISOString().split('T')[0];
-  if(!confirm('¿Cerrar caja del '+fecha+'?')) return;
-  const ing=document.getElementById('finIngresos').textContent;
-  const egr=document.getElementById('finEgresos').textContent;
-  const bal=document.getElementById('finBalance').textContent;
-  await fetch(API+'?table=finanzas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'cierre', categoria:'cierre_caja', descripcion:`Cierre caja ${fecha} Ing:${ing} Egr:${egr} Bal:${bal}`, monto:parseFloat(bal.replace('$',''))||0, fecha:new Date().toISOString()})});
-  alert('✅ Caja cerrada: '+bal);
-}
-let provCache=[];
-
-async function cargarProveedores(){
-  const tbody=document.getElementById('tablaProveedores');
-  if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr>';
-  try{
-    const r=await fetch(API+'?table=proveedores',{cache:'no-store'});
-    const j=await r.json();
-    provCache=j.data||[];
-    if(!provCache.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Sin proveedores - Agregá el primero</td></tr>'; return; }
-    let h='';
-    provCache.forEach(p=>{
-      const idSafe=String(p.id||p.nombre).replace(/'/g,'');
-      h+=`<tr><td style="font-weight:700">${p.nombre||''}</td><td>${p.telefono||''}</td><td style="font-size:10px">${p.rut||''}</td><td><button onclick="editarProveedor('${idSafe}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarProveedor('${idSafe}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`;
-    });
-    tbody.innerHTML=h;
-  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="color:#ef4444">Error: ${e.message}</td></tr>`; }
-}
-
-function abrirNuevoProveedor(){
-  document.getElementById('formProveedor').classList.remove('hidden');
-  document.getElementById('provIdEdit').value='';
-  document.getElementById('provNombre').value='';
-  document.getElementById('provTelefono').value='';
-  document.getElementById('provRut').value='';
-  document.getElementById('provDireccion').value='';
-}
-
-async function guardarProveedor(){
-  const id=document.getElementById('provIdEdit').value;
-  const nombre=document.getElementById('provNombre').value.trim();
-  if(!nombre){ alert('Nombre obligatorio'); return; }
-  const payload={
-    id: id || nombre.toUpperCase().replace(/\s+/g,'-'),
-    nombre: nombre,
-    telefono: document.getElementById('provTelefono').value,
-    rut: document.getElementById('provRut').value,
-    direccion: document.getElementById('provDireccion').value
-  };
-  await fetch(API+'?table=proveedores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  document.getElementById('formProveedor').classList.add('hidden');
-  cargarProveedores();
-}
-
-function editarProveedor(id){
-  const p=provCache.find(x=> String(x.id)===String(id) || String(x.nombre)===String(id));
-  if(!p) return;
-  document.getElementById('formProveedor').classList.remove('hidden');
-  document.getElementById('provIdEdit').value=p.id;
-  document.getElementById('provNombre').value=p.nombre||'';
-  document.getElementById('provTelefono').value=p.telefono||'';
-  document.getElementById('provRut').value=p.rut||'';
-  document.getElementById('provDireccion').value=p.direccion||'';
-}
-
-async function eliminarProveedor(id){
-  if(!confirm('¿Eliminar proveedor '+id+'?')) return;
-  await fetch(API+'?table=proveedores&id='+encodeURIComponent(id),{method:'DELETE'});
-  cargarProveedores();
-}
-
-async function cargarResumen(){
- try{
-  const hoy=new Date().toISOString().split('T')[0];
-  const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); 
-  const jV=await rV.json(); 
-  const ventas=(jV.data||[]);
-  const ventasHoy=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
-  const totHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
-  const fleteHoy=ventasHoy.reduce((s,v)=>s+(parseFloat(v.flete)||0),0);
-  const el1=document.getElementById('resVentasHoy'); if(el1) el1.textContent='$'+totHoy;
-  const el2=document.getElementById('resVentasCount'); if(el2) el2.textContent=ventasHoy.length+' ventas';
-  const el3=document.getElementById('resCajaHoy'); if(el3) el3.textContent='$'+totHoy;
-  const el4=document.getElementById('resFletesHoy'); if(el4) el4.textContent='Fletes $'+fleteHoy;
-
-  const rD=await fetch(API+'?table=deposito',{cache:'no-store'}); 
-  const jD=await rD.json(); 
-  const dep=jD.data||[];
-  const totLlenas=dep.reduce((s,d)=>s+(parseInt(d.llenas)||0),0);
-  const d11=dep.find(d=>String(d.producto_id)==='11'); 
-  const d13=dep.find(d=>String(d.producto_id)==='13'); 
-  const d45=dep.find(d=>String(d.producto_id)==='45');
-  const el5=document.getElementById('resStockTotal'); if(el5) el5.textContent=totLlenas+' llenas';
-  const el6=document.getElementById('resStockDetalle'); if(el6) el6.textContent=`11:${d11?.llenas||0} | 13:${d13?.llenas||0} | 45:${d45?.llenas||0}`;
-
-  let h=''; ventas.slice(0,5).forEach(v=>{ h+=`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:6px;margin-bottom:4px"><span>${(v.fecha||'').substring(11,16)} ${v.cliente_nombre||''} ${v.producto_id}</span><b>$${v.total}</b></div>`; });
-  const el7=document.getElementById('resUltimasVentas'); if(el7) el7.innerHTML=h||'Sin ventas';
- }catch(e){ console.log('resumen error',e); }
-}
-
-
-async function cargarProductosCatalogo(){
-  const tbody=document.getElementById('tablaProductos'); if(!tbody) return;
-  tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Cargando...</td></tr>';
-  try{ const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); const data=j.data||[];
-    if(!data.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center">Sin productos</td></tr>'; return; }
-    tbody.innerHTML=''; data.forEach(p=>{
-      const id=String(p.id).replace(/'/g,''); const nomSafe=String(p.nombre||'').replace(/'/g,'');
-      const tr=document.createElement('tr'); tr.innerHTML=`<td style="font-weight:900">${p.id}</td><td>${p.nombre}</td><td style="text-align:center">${p.tipo||''}</td><td style="text-align:center"><button onclick="editarProductoCatalogo('${id}')" style="background:#eab308;color:#000;padding:6px 10px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarProductoCatalogo('${id}','${nomSafe}')" style="background:#dc2626;color:white;padding:6px 10px;border:none;border-radius:6px">X</button></td>`; tbody.appendChild(tr);
-    });
-  }catch(e){ tbody.innerHTML=`<tr><td colspan="4" style="color:#ef4444">${e.message}</td></tr>`; }
-}
-function abrirNuevoProductoCatalogo(){ document.getElementById('formProducto').classList.remove('hidden'); document.getElementById('tituloFormProd').textContent='Nuevo'; document.getElementById('prodIdEditando').value=''; document.getElementById('prodCodigo').value=''; document.getElementById('prodNombre').value=''; }
-function cancelarEdicionProd(){ document.getElementById('formProducto').classList.add('hidden'); }
-async function guardarProductoCatalogo(){ const idEdit=document.getElementById('prodIdEditando').value.trim(); const codigo=document.getElementById('prodCodigo').value.trim().toUpperCase().replace(/\s+/g,'-'); const nombre=document.getElementById('prodNombre').value.trim(); if(!codigo||!nombre){ alert('Código y nombre'); return; } await fetch(API+'?table=productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:idEdit||codigo, nombre, tipo:document.getElementById('prodTipo').value})}); cancelarEdicionProd(); cargarProductosCatalogo(); }
-async function editarProductoCatalogo(id){ const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); const row=(j.data||[]).find(x=>String(x.id)===String(id)); if(!row) return; document.getElementById('formProducto').classList.remove('hidden'); document.getElementById('prodIdEditando').value=row.id; document.getElementById('prodCodigo').value=row.id; document.getElementById('prodNombre').value=row.nombre||''; document.getElementById('prodTipo').value=row.tipo||'otro'; document.getElementById('tituloFormProd').textContent='Editar '+row.nombre; }
-async function eliminarProductoCatalogo(id,nombre){ if(!confirm('Eliminar '+nombre+'?')) return; await fetch(API+'?table=productos&id='+encodeURIComponent(id),{method:'DELETE'}); cargarProductosCatalogo(); }
-
-let clientesCache=[];
-async function cargarClientes(){ const tbody=document.getElementById('tablaClientes'); if(!tbody) return; tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center">Cargando...</td></tr>'; try{ const r=await fetch(API+'?table=clientes',{cache:'no-store'}); const j=await r.json(); clientesCache=j.data||[]; renderTablaClientes(clientesCache); }catch(e){ tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444">${e.message}</td></tr>`; } }
-function renderTablaClientes(lista){ const tbody=document.getElementById('tablaClientes'); if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center">Sin clientes</td></tr>'; return; } let h=''; lista.forEach(c=>{ const id=String(c.id||c.telefono||'').replace(/'/g,''); const nom=(c.nombre||'').replace(/</g,''); h+=`<tr><td style="font-weight:700">${nom}</td><td><a href="https://wa.me/${(c.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:#25D366">${c.telefono||''}</a></td><td>${c.direccion||''}</td><td>${c.tipo||''}</td><td><button onclick="editarCliente('${id}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarCliente('${id}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`; }); tbody.innerHTML=h; }
-function filtrarClientes(){ const q=(document.getElementById('buscadorClientes').value||'').toLowerCase(); if(!q) return renderTablaClientes(clientesCache); const f=clientesCache.filter(c=> (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').includes(q)); renderTablaClientes(f); }
-function abrirNuevoCliente(){ document.getElementById('modalCliente').classList.remove('hidden'); document.getElementById('tituloCliente').textContent='Nuevo Cliente'; document.getElementById('cliIdEdit').value=''; document.getElementById('cliNombre').value=''; document.getElementById('cliTelefono').value=''; document.getElementById('cliDireccion').value=''; }
-function cerrarCliente(){ document.getElementById('modalCliente').classList.add('hidden'); }
-async function guardarCliente(){ const idEdit=document.getElementById('cliIdEdit').value.trim(); const nombre=document.getElementById('cliNombre').value.trim(); const tel=document.getElementById('cliTelefono').value.trim(); if(!nombre){ alert('Nombre'); return; } const payload={id:idEdit||tel||Date.now().toString(36), nombre, telefono:tel, direccion:document.getElementById('cliDireccion').value, tipo:document.getElementById('cliTipo').value}; await fetch(API+'?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cerrarCliente(); cargarClientes(); }
-async function editarCliente(id){ const c=clientesCache.find(x=> String(x.id)===String(id) || String(x.telefono)===String(id)); if(!c) return; abrirNuevoCliente(); document.getElementById('cliIdEdit').value=c.id; document.getElementById('cliNombre').value=c.nombre||''; document.getElementById('cliTelefono').value=c.telefono||''; document.getElementById('cliDireccion').value=c.direccion||''; document.getElementById('cliTipo').value=c.tipo||'particular'; document.getElementById('tituloCliente').textContent='Editar '+c.nombre; }
-async function eliminarCliente(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=clientes&id='+encodeURIComponent(id),{method:'DELETE'}); cargarClientes(); }
-async function importarClientesWhatsApp(e){ const file=e.target.files[0]; if(!file) return; const text=await file.text(); const lines=text.split('\n'); let importados=[]; let cur={}; lines.forEach(l=>{ l=l.trim(); if(l.startsWith('BEGIN:VCARD')) cur={}; if(l.startsWith('FN:')) cur.nombre=l.substring(3); if(l.startsWith('TEL')){ const parts=l.split(':'); cur.telefono=parts[1]||''; } if(l.startsWith('END:VCARD')){ if(cur.nombre&&cur.telefono){ importados.push({id:cur.telefono.replace(/\D/g,''), nombre:cur.nombre, telefono:cur.telefono, tipo:'particular'}); } cur={}; } }); if(!importados.length){ alert('No se pudo leer VCF'); return; } if(!confirm(`Importar ${importados.length} contactos?`)) return; for(let k=0;k<importados.length;k++){ await fetch(API+'?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(importados[k])}); } alert('Importados '+importados.length); cargarClientes(); }
-
-let repCache=[];
-async function cargarRepartidores(){ const tbody=document.getElementById('tablaRepartidores'); if(!tbody) return; tbody.innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center">Cargando...</td></tr>'; try{ const r=await fetch(API+'?table=repartidores',{cache:'no-store'}); const j=await r.json(); repCache=j.data||[]; let h=''; repCache.forEach(p=>{ h+=`<tr><td style="font-weight:700">${p.nombre||''}</td><td>${p.telefono||''}</td><td><button onclick="editarRepartidor('${p.id||p.nombre}')" style="background:#eab308;color:#000;padding:4px 8px;border:none;border-radius:6px">Editar</button> <button onclick="eliminarRepartidor('${p.id||p.nombre}')" style="background:#dc2626;color:white;padding:4px 8px;border:none;border-radius:6px">X</button></td></tr>`; }); tbody.innerHTML=h||'<tr><td colspan="3" style="text-align:center">Sin repartidores</td></tr>'; }catch(e){ tbody.innerHTML=`<tr><td colspan="3" style="color:#ef4444">${e.message}</td></tr>`; } }
-function abrirNuevoRepartidor(){ document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=''; document.getElementById('repNombre').value=''; }
-async function guardarRepartidor(){ const id=document.getElementById('repIdEdit').value; const nombre=document.getElementById('repNombre').value.trim(); if(!nombre){ alert('Nombre'); return; } await fetch(API+'?table=repartidores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id||nombre, nombre, telefono:document.getElementById('repTelefono').value})}); document.getElementById('formRepartidor').classList.add('hidden'); cargarRepartidores(); }
-function editarRepartidor(id){ const p=repCache.find(x=> String(x.id)===String(id)||String(x.nombre)===String(id)); if(!p) return; document.getElementById('formRepartidor').classList.remove('hidden'); document.getElementById('repIdEdit').value=p.id; document.getElementById('repNombre').value=p.nombre; document.getElementById('repTelefono').value=p.telefono||''; }
-async function eliminarRepartidor(id){ if(!confirm('Eliminar?')) return; await fetch(API+'?table=repartidores&id='+encodeURIComponent(id),{method:'DELETE'}); cargarRepartidores(); }
-
-  
-function initGpsMaps(){ /* tu lógica */ }
-function cargarGpsVivo(){ /* tu lógica */ }
-/////
-<script>
-const API='/api/postgres';
-let gpsMap=null, gpsMapHist=null, gpsPoll=null;
-let tubo43Cache=null;
-let finanzasCache=[];
-let provCache=[];
-let repCache=[];
-let clientesCache=[];
-
-
-
+ 
 function cambiarTabStock(tab){
   ['Gas','43','Otros','Ingreso'].forEach(t=>{
     const tabEl=document.getElementById('stockTab'+t);
@@ -621,60 +275,78 @@ function cambiarTabStock(tab){
 
 async function cargarStock(){
   try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); const dep=j.data||[];
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); 
+    const j=await r.json(); 
+    const dep=j.data||[];
     const gas=dep.filter(d=>['11','13','45'].includes(String(d.producto_id)));
     const tubo43=dep.find(d=>String(d.producto_id)==='43.5');
     const otros=dep.filter(d=>!['11','13','43.5','45'].includes(String(d.producto_id)));
+
     let hGas='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Llenas</th><th>Vacias</th><th>Cambio</th><th>Acc</th></tr>';
     gas.forEach(d=>{ hGas+=`<tr><td>${d.producto_id}</td><td>${d.nombre||''}</td><td style="color:#22c55e;font-weight:900">${d.llenas||0}</td><td>${d.vacias||0}</td><td>${d.cambio||0}</td><td><button onclick="abrirEditarStock('${d.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
-    hGas+='</table>'; if(!gas.length) hGas='<p style="padding:10px;color:#94a3b8">Sin stock gas. Usá Ingreso o Balance.</p>'+hGas;
-    const elGas=document.getElementById('stockContentGas'); if(elGas) elGas.innerHTML=hGas;
+    hGas+='</table>'; 
+    if(!gas.length) hGas='<p style="padding:10px;color:#94a3b8">Sin stock gas. Usa Ingreso o Balance.</p>'+hGas;
+    document.getElementById('stockContentGas').innerHTML=hGas;
+
     if(tubo43){
-      const kilos=parseFloat(tubo43.kilos_en_uso)||0; const porc=Math.min(100,Math.max(5,(kilos/43.5*100))).toFixed(0); const color=kilos>20?'#22c55e':kilos>5?'#f59e0b':'#ef4444';
-      const el43=document.getElementById('stockContent43');
-      if(el43) el43.innerHTML=`<div style="background:#0f172a;padding:16px;border-radius:12px;border:3px solid ${color}"><b style="color:${color};font-size:18px">🔥 TUBO 43.5 MADRE: ${kilos.toFixed(1)} / 43.5 kg (${porc}%)</b><div style="background:#334155;height:24px;border-radius:12px;margin-top:12px"><div style="width:${porc}%;height:100%;background:${color};border-radius:12px"></div></div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>Llenas: ${tubo43.llenas||0}</div><div>Vacias: ${tubo43.vacias||0}</div></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="iniciarNuevoTubo43()" style="flex:1;padding:12px;background:${color};color:#000;font-weight:900;border:none;border-radius:8px">🔄 Nuevo Tubo Lleno</button><button onclick="abrirEditarStock('43.5')" style="padding:12px;background:#334155;color:white;border:none;border-radius:8px">Editar</button></div></div>`;
+      const kilos=parseFloat(tubo43.kilos_en_uso)||0; 
+      const porc=Math.min(100,Math.max(5,(kilos/43.5*100))).toFixed(0); 
+      const color=kilos>20?'#22c55e':kilos>5?'#f59e0b':'#ef4444';
+      document.getElementById('stockContent43').innerHTML=`<div style="background:#0f172a;padding:16px;border-radius:12px;border:3px solid ${color}"><b style="color:${color};font-size:18px">🔥 TUBO 43.5 MADRE: ${kilos.toFixed(1)} / 43.5 kg (${porc}%)</b><div style="background:#334155;height:24px;border-radius:12px;margin-top:12px"><div style="width:${porc}%;height:100%;background:${color};border-radius:12px"></div></div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>Llenas: ${tubo43.llenas||0}</div><div>Vacias: ${tubo43.vacias||0}</div></div><div style="display:flex;gap:8px;margin-top:12px"><button onclick="iniciarNuevoTubo43()" style="flex:1;padding:12px;background:${color};color:#000;font-weight:900;border:none;border-radius:8px">🔄 Nuevo Tubo Lleno</button><button onclick="abrirEditarStock('43.5')" style="padding:12px;background:#334155;color:white;border:none;border-radius:8px">Editar</button></div></div>`;
     } else {
-      const el43=document.getElementById('stockContent43'); if(el43) el43.innerHTML='<div class="card" style="border-color:#ef4444">No hay tubo 43.5<br><br><button onclick="guardarIngresoGas43()" style="padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Crear tubo 43.5 inicial</button></div>';
+      document.getElementById('stockContent43').innerHTML='<div class="card" style="border-color:#ef4444">No hay tubo 43.5<br><br><button onclick="guardarIngresoGas43()" style="padding:10px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px">Crear tubo 43.5 inicial</button></div>';
     }
+
     let hOtros='<table><tr style="background:#0f172a"><th>ID</th><th>Nombre</th><th>Stock</th><th>Acc</th></tr>';
     otros.forEach(o=>{ hOtros+=`<tr><td>${o.producto_id}</td><td>${o.nombre||''}</td><td>${o.llenas||0}</td><td><button onclick="abrirEditarStock('${o.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:6px">Editar</button></td></tr>`; });
-    hOtros+='</table>'; const elOtros=document.getElementById('stockContentOtros'); if(elOtros) elOtros.innerHTML=hOtros;
-  }catch(e){ const el=document.getElementById('stockContentGas'); if(el) el.innerHTML='Error: '+e.message; }
+    hOtros+='</table>'; 
+    document.getElementById('stockContentOtros').innerHTML=hOtros;
+  }catch(e){ document.getElementById('stockContentGas').innerHTML='Error: '+e.message; }
 }
-async function guardarIngresoGas(){ const prod=document.getElementById('ingProducto').value; const llenas=parseInt(document.getElementById('ingLlenas').value)||0; const vacias=parseInt(document.getElementById('ingVacias').value)||0; const remito=document.getElementById('ingRemito').value; if(!llenas&&!vacias){alert('Ingresá llenas o vacias');return;} await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:prod,llenas,vacias,remito})}); alert('Ingreso guardado'); cargarStock(); cambiarTabStock('gas'); }
-async function guardarIngresoGas43(){ await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:'43.5',llenas:1,vacias:0,kilos_en_uso:43.5})}); alert('Tubo 43.5 creado'); cargarStock(); }
-async function iniciarNuevoTubo43(){ if(!confirm('¿Iniciar nuevo tubo 43.5 lleno (43.5kg)?')) return; await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'iniciar_tubo_43'})}); cargarStock(); }
-async function abrirEditarStock(pid){ const depRes=await fetch(API+'?table=deposito',{cache:'no-store'}); const depJson=await depRes.json(); const cur=(depJson.data||[]).find(d=>String(d.producto_id)===String(pid)); const defLlenas=cur?.llenas||0; const defVacias=cur?.vacias||0; const nuevo=prompt('Llenas para '+pid+':',defLlenas); if(nuevo===null) return; const vac=prompt('Vacias para '+pid+':',defVacias); if(vac===null) return; let payload={accion:'actualizar_stock',producto_id:pid,llenas:parseInt(nuevo)||0,vacias:parseInt(vac)||0}; if(pid==='43.5'){ const kilos=prompt('Kilos en uso (0-43.5):',cur?.kilos_en_uso||'43.5'); if(kilos!==null) payload.kilos_en_uso=parseFloat(kilos)||0; } await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); cargarStock(); }
-async function abrirBalanceInicial(){ const prod=prompt('Producto ID (11,13,45,43.5, OTROS):','11'); if(!prod) return; const llenas=parseInt(prompt('Llenas iniciales:','0'))||0; const vacias=parseInt(prompt('Vacias iniciales:','0'))||0; const kilos=prod==='43.5'?parseFloat(prompt('Kilos en uso:','43.5'))||43.5:0; await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial',producto_id:prod,llenas,vacias,kilos_en_uso:kilos})}); cargarStock(); }
 
-function cambiarTabVentas(tab){
-  document.getElementById('tab-ventas-mostrador').classList.add('hidden');
-  document.getElementById('tab-ventas-camioneta').classList.add('hidden');
-  document.getElementById('btnTabMostrador').style.background='#1f2937';
-  document.getElementById('btnTabCamioneta').style.background='#1f2937';
-  document.getElementById('btnTabMostrador').style.color='#94a3b8';
-  document.getElementById('btnTabCamioneta').style.color='#94a3b8';
-  if(tab==='mostrador'){ document.getElementById('tab-ventas-mostrador').classList.remove('hidden'); document.getElementById('btnTabMostrador').style.background='#0ea5e9'; document.getElementById('btnTabMostrador').style.color='white'; cargarVentasHoy(); cargarStockTubo43(); }
-  if(tab==='camioneta'){ document.getElementById('tab-ventas-camioneta').classList.remove('hidden'); document.getElementById('btnTabCamioneta').style.background='#f59e0b'; document.getElementById('btnTabCamioneta').style.color='#000'; }
+async function guardarIngresoGas(){ 
+  const prod=document.getElementById('ingProducto').value; 
+  const llenas=parseInt(document.getElementById('ingLlenas').value)||0; 
+  const vacias=parseInt(document.getElementById('ingVacias').value)||0; 
+  const remito=document.getElementById('ingRemito').value; 
+  if(!llenas&&!vacias){alert('Ingresa llenas o vacias');return;} 
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:prod,llenas,vacias,remito})}); 
+  alert('Ingreso guardado'); cargarStock(); cambiarTabStock('gas'); 
 }
-async function cargarStockTubo43(){ try{ const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); const dep=(j.data||[]).find(d=>String(d.producto_id)==='43.5'); tubo43Cache=dep; const info=document.getElementById('stockTuboInfo'); if(info&&dep) info.textContent=`Tubo: ${parseFloat(dep.kilos_en_uso||0).toFixed(1)}kg`; }catch(e){} }
-function onProductoChange(){ const prod=document.getElementById('ventaProducto').value; const box=document.getElementById('boxFraccionado'); if(prod==='fraccionado') box.classList.remove('hidden'); else box.classList.add('hidden'); calcularTotalMostrador(); }
-function actualizarReglaFlete(){ const tipoCli=document.getElementById('ventaTipoCliente').value; const modo=document.getElementById('ventaModo').value; const fleteInput=document.getElementById('ventaFlete'); const info=document.getElementById('reglaFleteInfo'); if(!fleteInput||!info) return; if(tipoCli==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Retira en local = SIN FLETE'; } else if(tipoCli==='comercio'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='REGLA: Comercio = NUNCA flete'; } else if((tipoCli==='consumidor_final'||tipoCli==='mides') && modo==='domicilio'){ fleteInput.disabled=false; if(parseInt(fleteInput.value||0)===0) fleteInput.value=120; info.textContent='REGLA: Final/MIDES domicilio = FLETE $120 OBLIGATORIO'; } else if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; info.textContent='Retira = sin flete'; } else { fleteInput.disabled=false; info.textContent='Domicilio - flete opcional'; } calcularTotalMostrador(); }
-function calcularTotalMostrador(){ const prod=document.getElementById('ventaProducto').value; const precios={'11':800,'13':950,'45':3500,'fraccionado':150}; let base=precios[prod]||0; if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; base=kg*precios.fraccionado; } const flete=parseInt(document.getElementById('ventaFlete')?.value)||0; const el=document.getElementById('ventaTotal'); if(el) el.textContent='$'+(base+flete); }
-async function registrarVentaMostrador(){ const prod=document.getElementById('ventaProducto').value; const cliente=document.getElementById('ventaCliente').value||'Cliente Mostrador'; const tipoCli=document.getElementById('ventaTipoCliente').value; const modo=document.getElementById('ventaModo').value; const pago=document.getElementById('ventaPago').value; const flete=parseInt(document.getElementById('ventaFlete').value)||0; const total=parseInt((document.getElementById('ventaTotal').textContent||'0').replace('$',''))||0; if(prod==='fraccionado'){ const kg=parseInt(document.getElementById('ventaKilos').value)||1; if(!confirm(`Vender ${kg}kg fraccionado a ${cliente} por $${total}?`)) return; const r=await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'venta_fraccionada',kilos:kg,cliente_nombre:cliente})}); const j=await r.json(); if(j.error){ alert(j.error); return; } alert(`✅ Vendido ${kg}kg. Quedan ${parseFloat(j.restante||0).toFixed(1)}kg`); } else { if(!confirm(`Vender ${prod} a ${cliente} total $${total}?`)) return; await fetch(API+'?table=ventas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({producto_id:prod,cliente_nombre:cliente,cantidad:1,total,flete,pago,tipo_cliente:tipoCli,modo})}); } document.getElementById('ventaCliente').value=''; cargarVentasHoy(); cargarStockTubo43(); cargarResumen(); }
-async function cargarVentasHoy(){ const el=document.getElementById('ventasHoyTabla'); if(!el) return; el.innerHTML='Cargando...'; try{ const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); const v=j.data||[]; if(!v.length){ el.innerHTML='<i style="color:#64748b">Sin ventas hoy</i>'; return; } let h='<table><tr style="background:#0f172a"><th>Hora</th><th>Cliente</th><th>Prod</th><th>Total</th></tr>'; v.forEach(row=>{ const hora=(row.fecha||row.created_at||'').toString().substring(11,19); h+=`<tr><td>${hora}</td><td>${row.cliente_nombre||''} (${row.tipo_cliente||''})</td><td>${row.producto_id||''}</td><td style="font-weight:900">$${row.total||0}</td></tr>`; }); h+='</table>'; el.innerHTML=h; }catch(e){ el.innerHTML='Error: '+e.message; } }
+async function guardarIngresoGas43(){ 
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'ingreso_gas',producto_id:'43.5',llenas:1,vacias:0,kilos_en_uso:43.5})}); 
+  alert('Tubo 43.5 creado'); cargarStock(); 
+}
+async function iniciarNuevoTubo43(){ 
+  if(!confirm('¿Iniciar nuevo tubo 43.5 lleno (43.5kg)?')) return; 
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'iniciar_tubo_43'})}); 
+  cargarStock(); 
+}
+async function abrirEditarStock(pid){ 
+  const depRes=await fetch(API+'?table=deposito',{cache:'no-store'}); 
+  const depJson=await depRes.json(); 
+  const cur=(depJson.data||[]).find(d=>String(d.producto_id)===String(pid)); 
+  const defLlenas=cur?.llenas||0; const defVacias=cur?.vacias||0; 
+  const nuevo=prompt('Llenas para '+pid+':',defLlenas); if(nuevo===null) return; 
+  const vac=prompt('Vacias para '+pid+':',defVacias); if(vac===null) return; 
+  let payload={accion:'actualizar_stock',producto_id:pid,llenas:parseInt(nuevo)||0,vacias:parseInt(vac)||0}; 
+  if(pid==='43.5'){ const kilos=prompt('Kilos en uso (0-43.5):',cur?.kilos_en_uso||'43.5'); if(kilos!==null) payload.kilos_en_uso=parseFloat(kilos)||0; } 
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); 
+  cargarStock(); 
+}
+async function abrirBalanceInicial(){ 
+  const prod=prompt('Producto ID (11,13,45,43.5, OTROS):','11'); if(!prod) return; 
+  const llenas=parseInt(prompt('Llenas iniciales:','0'))||0; 
+  const vacias=parseInt(prompt('Vacias iniciales:','0'))||0; 
+  const kilos=prod==='43.5'?parseFloat(prompt('Kilos en uso:','43.5'))||43.5:0; 
+  await fetch(API+'?table=deposito',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'balance_inicial',producto_id:prod,llenas,vacias,kilos_en_uso:kilos})}); 
+  cargarStock(); 
+}
 
-async function cargarFinanzas(){
-  let fecha=document.getElementById('finFecha')?.value;
-  if(!fecha){ const hoy=new Date(); fecha=hoy.toISOString().split('T')[0]; const elF=document.getElementById('finFecha'); if(elF) elF.value=fecha; }
-  const el=document.getElementById('tablaFinanzas'); if(el) el.innerHTML='Cargando...';
-  try{
-    const r=await fetch(API+'?table=finanzas&fecha='+fecha,{cache:'no-store'}); const j=await r.json(); finanzasCache=j.data||[];
-    const rV=await fetch(API+'?table=ventas',{cache:'no-store'}); const jV=await rV.json(); const ventas=(jV.data||[]).filter(v=> (v.fecha||'').toString().split('T')[0]===fecha);
-    let totIng=0, totEgr=0, totFlete=0; let porMetodo={}; let porCat={};
-    let html='<table><tr style="background:#0f172a"><th>Hora</th><th>Tipo</th><th>Desc</th><th>Monto</th></tr>';
-    finanzasCache.forEach(f=>{ const monto=parseFloat(f.monto)||0; if(f.tipo==='ingreso') totIng+=monto; else if(f.tipo!=='cierre') totEgr+=monto; if(f.categoria==='flete') totFlete+=monto; porMetodo[f.metodo_pago||'contado']=(porMetodo[f.metodo_pago||'contado']||0)+monto; porCat[f.categoria]=(porCat[f.categoria]||0)+monto; const hora=(f.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid ${f.tipo==='ingreso'?'#22c55e':'#ef4444'}"><td>${hora}</td><td>${f.tipo}</td><td>${f.descripcion||f.categoria}</td><td style="font-weight:900;color:${f.tipo==='ingreso'?'#22c55e':'#ef4444'}">$${monto}</td></tr>`; });
-    ventas.forEach(v=>{ const m=parseFloat(v.total)||0; const fl=parseFloat(v.flete)||0; totIng+=m; totFlete+=fl; porMetodo[v.pago||'contado']=(porMetodo[v.pago||'contado']||0)+m; porCat['venta_gas']=(porCat['venta_gas']||0)+m; const h2=(v.fecha||'').toString().substring(11,19); html+=`<tr style="border-left:4px solid #22c55e;background:#22c55e10"><td>${h2}</td><td>venta</td><td>${v.producto_id||''} ${v.cliente_nombre||''}</td><td style="font-weight:900;color:#22c55e">$${m} (f
+
+
+
+
 
 
   document.addEventListener('DOMContentLoaded',()=>{
