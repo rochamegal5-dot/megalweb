@@ -307,6 +307,31 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 </div>
 
+  <div id="modalFraccionado43" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
+    <h3 style="margin-bottom:12px">🔥 Venta Gas Fraccionado 43.5</h3>
+    <div style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px">
+      <label style="font-size:11px">KILOS A VENDER (solo permitido)</label>
+      <select id="fraccKilos" onchange="calcularFraccTotal()" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white;margin-top:6px;font-size:16px;font-weight:bold">
+        <option value="1">1 kg - $160</option>
+        <option value="1.5">1.5 kg - $240</option>
+        <option value="2">2 kg - $320</option>
+        <option value="2.5">2.5 kg - $400</option>
+        <option value="3">3 kg - $480</option>
+      </select>
+      <div style="text-align:center;margin-top:12px;background:#1e293b;padding:10px;border-radius:6px">
+        <p style="font-size:11px;color:#94a3b8">TOTAL A COBRAR</p>
+        <b id="fraccTotalTexto" style="font-size:24px;color:#22c55e">$160</b>
+        <p style="font-size:10px;color:#64748b;margin-top:4px">Precio fijo: $160/kg</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="cerrarModalFraccionado()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button>
+      <button onclick="ventaFraccionada43()" style="padding:8px 14px;background:#22c55e;color:white;border:none;border-radius:6px;font-weight:bold">💰 Vender Fraccionado</button>
+    </div>
+  </div>
+</div>
+
  <!-- VENTAS -->  
   <div id="view-ventas" class="view-section hidden">
   <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px">
@@ -1066,18 +1091,80 @@ async function iniciarNuevoTubo43(){
   if(!confirm('¿Iniciar nuevo tubo 43.5kg lleno?')) return;
   try{ await fetch(`${API}?table=deposito`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'iniciar_tubo_43'})}); cargarStock(); }catch(e){ alert(e.message); }
 }
-async function venderFraccionado(){
-  const cliente = document.getElementById('fracCliente').value.trim() || 'Cliente ocasional';
-  const kilos = parseInt(document.getElementById('fracKilos').value)||0;
-  if(kilos<1 || kilos>3) return alert('Solo 1 a 3kg');
+
+async function ventaFraccionada43(){
+  const kilosSel=parseFloat(document.getElementById('fraccKilos').value);
+  if(!kilosSel) return alert('Seleccioná los kilos');
+  const validos=[1,1.5,2,2.5,3];
+  if(!validos.includes(kilosSel)) return alert('Solo se permite: 1, 1.5, 2, 2.5, 3 kg');
+  
+  const precioKg=160;
+  const total=kilosSel*precioKg;
+
+  // Buscar tubo 43.5 en uso
   try{
-    const r = await fetch(`${API}?table=deposito`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'venta_fraccionada', cliente_nombre:cliente, kilos})});
-    const j = await r.json();
-    if(j.error) return alert(j.error);
-    alert(`✅ Vendido ${kilos}kg - Quedan ${j.restante?.toFixed(1)||'?'}kg`);
-    document.getElementById('fracKilos').value=1; cargarStock(); cargarResumen();
-  }catch(e){ alert(e.message); }
+    const r=await fetch(API+'?table=stock_43',{cache:'no-store'});
+    const j=await r.json();
+    const tubos=j.data||[];
+    const enUso=tubos.find(t=>t.estado==='en_uso');
+    if(!enUso) return alert('No hay tubo 43.5 en uso. Iniciá uno primero.');
+    if((parseFloat(enUso.kilos_en_uso)||0) < kilosSel) return alert(`El tubo en uso solo tiene ${enUso.kilos_en_uso}kg. Te faltan ${kilosSel - enUso.kilos_en_uso}kg. Iniciá uno nuevo.`);
+    
+    if(!confirm(`¿Vender ${kilosSel}kg fraccionado?\nPrecio: ${kilosSel}kg x $${precioKg} = $${total}\nSe descontará del tubo ${enUso.id}`)) return;
+
+    // Descontar del tubo
+    const nuevoKilos=(parseFloat(enUso.kilos_en_uso)||0)-kilosSel;
+    const nuevoEstado=nuevoKilos<=0?'vacio':'en_uso';
+    await fetch(API+'?table=stock_43',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...enUso, kilos_en_uso:nuevoKilos, estado:nuevoEstado})});
+
+    // Registrar en ventas también
+    const idVenta='VFRAC_'+Date.now();
+    await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      id:idVenta,
+      fecha:new Date().toISOString(),
+      tipo:'fraccionado_43',
+      producto_id:'FRACC_'+kilosSel,
+      producto_nombre:`Gas Fraccionado ${kilosSel}kg (de tubo 43.5)`,
+      cantidad:1,
+      kilos:kilosSel,
+      precio_unitario:precioKg,
+      total:total,
+      cliente:'Mostrador',
+      forma_pago:'efectivo'
+    })});
+
+    // Finanzas auto
+    await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      id:'FIN_'+Date.now(),
+      fecha:new Date().toISOString().split('T')[0],
+      tipo:'ingreso',
+      categoria:'venta_fraccionado',
+      monto:total,
+      descripcion:`Venta ${kilosSel}kg fraccionado a $160/kg`,
+      metodo:'efectivo'
+    })});
+
+    alert(`✅ Vendido ${kilosSel}kg por $${total}\nTubo queda con ${nuevoKilos}kg`);
+    cerrarModalFraccionado();
+    cargarStock43();
+    if(typeof cargarResumen==='function') cargarResumen();
+  }catch(e){ console.error(e); alert('Error al vender fraccionado'); }
 }
+
+function abrirModalFraccionado(){ 
+  const m=document.getElementById('modalFraccionado43'); 
+  if(m){ m.classList.remove('hidden'); m.style.display='flex'; }
+  const sel=document.getElementById('fraccKilos');
+  if(sel) sel.innerHTML=[1,1.5,2,2.5,3].map(k=>`<option value="${k}">${k} kg - $${k*160}</option>`).join('');
+  calcularFraccTotal();
+}
+function cerrarModalFraccionado(){ const m=document.getElementById('modalFraccionado43'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
+function calcularFraccTotal(){
+  const k=parseFloat(document.getElementById('fraccKilos')?.value)||0;
+  const el=document.getElementById('fraccTotalTexto');
+  if(el) el.textContent=`$${k*160} (${k}kg x $160)`;
+}
+ 
     
   // --- VENTAS CON REGLA DE FLETE ---
 function cambiarTabVentas(t){
