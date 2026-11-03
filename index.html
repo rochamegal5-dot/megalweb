@@ -430,8 +430,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
 const API='/api/postgres';
-let gpsMap=null,gpsMapHist=null,gpsPoll=null,tubo43Cache=null;
+let gpsMap=null,gpsMapHist=null;
 let finanzasCache=[],provCache=[],repCache=[],clientesCache=[],productosCache=[],depositoCache=[],camarasCache=[],marketingCache=[];
+let tubo43Cache=null;
+const CATEGORIAS_FIN={ingreso:['Venta Mostrador','Venta Camioneta (APP)','Venta Fraccionado','Cobranza Cliente','Aporte Capital','Otro Ingreso'], egreso:['Compra Gas','Flete Proveedor','Sueldos','Combustible','Mantenimiento Vehículo','Alquiler','Servicios','Impuestos','Repuestos','Publicidad','Viáticos','Comisión','Otro Egreso']};
+
+
 
 
 function mostrarSeccion(id,btn){
