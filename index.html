@@ -1089,7 +1089,6 @@ async function eliminarFinanza(id){ if(!confirm('¿Borrar movimiento?')) return;
 
 
  // --- CAMARAS ---
-let camarasCache = [];
 async function cargarCamaras(){
   try{
     const r = await fetch(`${API}?table=camaras`,{cache:'no-store'}).catch(()=>({json:()=>({data:[STRIPPED]
@@ -1123,7 +1122,6 @@ async function guardarCamara(){
 async function eliminarCamara(id){ if(!confirm('¿Borrar cámara?')) return; try{ await fetch(`${API}?table=camaras&id=${id}`,{method:'DELETE'}); }catch(_){ } let arr=JSON.parse(localStorage.getItem('megal_camaras')||'[]'); arr=arr.filter(x=>x.id!==id); localStorage.setItem('megal_camaras',JSON.stringify(arr)); cargarCamaras(); }
 
 // --- MARKETING ---
-let marketingCache = JSON.parse(localStorage.getItem('megal_marketing')||'[]');
 function cambiarTabMarketing(t){
   document.getElementById('tabMktCampanas').classList.add('hidden'); document.getElementById('tabMktClientes').classList.add('hidden'); document.getElementById('tabMktPromos').classList.add('hidden');
   document.getElementById('btnMktCamp').style.background='#1f2937'; document.getElementById('btnMktCamp').style.color='#94a3b8';
