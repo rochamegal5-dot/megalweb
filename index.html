@@ -60,9 +60,9 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h3 style="font-weight:900">📍 GPS - Flota Rocha</h3>
     <div style="display:flex;gap:6px">
-      <button onclick="cambiarTabGps('vivo')" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">VIVO</button>
-      <button onclick="cambiarTabGps('historico')" style="padding:8px 12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">HISTÓRICO</button>
-    </div>
+      <button id="btnGpsVivo" onclick="cambiarTabGps('vivo')" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">VIVO</button>
+<button id="btnGpsHist" onclick="cambiarTabGps('historico')" style="padding:8px 12px;background:#1f2937;color:#94a3b8;border:1px solid #334155;border-radius:8px">HISTÓRICO</button>
+  </div>
   </div>
   <div id="gpsVivoTab">
     <div class="card" style="padding:8px"><div id="gpsMap" style="height:500px;width:100%;border-radius:12px"></div></div>
@@ -128,13 +128,21 @@ async function cargarResumen(){
   document.getElementById('resUltimasVentas').innerHTML=h||'Sin ventas';
  }catch(e){ console.log('resumen error',e); }
 }
-
 function cambiarTabGps(t){
-  document.getElementById('gpsVivoTab').classList.add('hidden');
-  document.getElementById('gpsHistTab').classList.add('hidden');
-  if(t==='vivo') document.getElementById('gpsVivoTab').classList.remove('hidden');
-  else document.getElementById('gpsHistTab').classList.remove('hidden');
-  setTimeout(()=>{if(gpsMap) gpsMap.invalidateSize(); if(gpsMapHist) gpsMapHist.invalidateSize();},200);
+  const vivo = document.getElementById('gpsVivoTab');
+  const hist = document.getElementById('gpsHistTab');
+  if(t==='vivo'){
+    vivo.classList.remove('hidden');
+    hist.classList.add('hidden');
+  } else {
+    hist.classList.remove('hidden');
+    vivo.classList.add('hidden');
+  }
+  // fuerza a leaflet a recalcular el tamaño después de mostrar
+  setTimeout(()=>{
+    if(t==='vivo' && gpsMap){ gpsMap.invalidateSize(); }
+    if(t==='historico' && gpsMapHist){ gpsMapHist.invalidateSize(); }
+  },250);
 }
 
 function initGpsMaps(){
