@@ -1230,33 +1230,83 @@ async function cargarRepartidoresEnVentas(){
   if(repCache.length===0) await cargarRepartidores();
 }
 
-async function guardarVentaMostrador(){
-  const cliente_nombre = document.getElementById('ventaClienteNombre').value.trim() || 'Cliente ocasional';
-  const tipo_cliente = document.getElementById('ventaTipoCliente').value;
-  const modo = document.getElementById('ventaModo').value;
-  const producto_id = document.getElementById('ventaProducto').value;
-  const cantidad = parseInt(document.getElementById('ventaCantidad').value)||1;
-  const precio = parseFloat(document.getElementById('ventaPrecio').value)||0;
-  let flete = parseFloat(document.getElementById('ventaFlete').value)||0;
-  const pago = document.getElementById('ventaPago').value;
+ async function guardarVentaMostrador(){
+  const prodId=document.getElementById('ventaProducto').value;
+  const cantidad=parseInt(document.getElementById('ventaCantidad').value)||1;
+  const precio=parseFloat(document.getElementById('ventaPrecio').value)||0;
+  const cliente=document.getElementById('ventaCliente').value||'Mostrador';
+  const tipoVenta=document.getElementById('ventaTipoOperacion')?.value||'solo_gas'; // NUEVO SELECT
+  const kg=extraerKgDeProducto(prodId); // 11,13,45
 
-  if(!producto_id) return alert('Elegí producto');
-  if(precio<=0) return alert('Precio debe ser >0');
+  if(!prodId) return alert('Seleccioná producto');
+  if(kg===43.5) return alert('Tubo 43.5 no se vende entero. Usá los botones de fraccionado.');
 
-  // validar regla flete
-  if(modo==='retira' && flete!==0){ flete=0; }
-  if(tipo_cliente==='comercio' && flete!==0){ flete=0; }
-  if(modo==='domicilio' && (tipo_cliente==='consumidor_final' || tipo_cliente==='mides')){
-    if(flete<120){ if(!confirm(`Flete es $120 obligatorio para domicilio, tenés $${flete}. ¿Usar $120?`)){ return; } flete=120; document.getElementById('ventaFlete').value=120; }
-  }
+  // 1. Guardar venta
+  const idVenta='V_'+Date.now();
+  const total=cantidad*precio;
+  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:idVenta, fecha:new Date().toISOString(), tipo:tipoVenta, producto_id:prodId, producto_nombre:prodId, cantidad, precio_unitario:precio, total, cliente, kilos:kg
+  })});
 
-  const total = (cantidad*precio)+flete;
-  try{
-    await fetch(`${API}?table=ventas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo})});
-    alert(`✅ Venta $${total} guardada (Flete $${flete})`);
-    cargarVentasHoy(); cargarStock(); cargarResumen(); calcularTotalMostrador();
-  }catch(e){ alert('Error: '+e.message); }
+  // 2. AJUSTE AUTOMATICO DE STOCK - ESTO ES LO QUE FALTABA
+  await ajustarStockAutomatico({tipoVenta, kg, cantidad});
+
+  // 3. Finanzas auto
+  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoVenta} ${cantidad}x ${kg}kg a ${cliente}`, metodo:'efectivo'
+  })});
+
+  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg (${tipoVenta}) - Stock ajustado`);
+  cargarVentas(); cargarStock(); cargarResumen();
 }
+
+function extraerKgDeProducto(prodId){
+  if(!prodId) return 0;
+  if(prodId.includes('11')) return 11;
+  if(prodId.includes('13')) return 13;
+  if(prodId.includes('45')) return 45;
+  if(prodId.includes('43')) return 43.5;
+  if(prodId.startsWith('FRACC_')) return parseFloat(prodId.split('_')[1])||0;
+  return 13;
+}
+
+async function ajustarStockAutomatico({tipoVenta, kg, cantidad}){
+  // Busca stock actual de ese kg
+  try{
+    const r=await fetch(API+'?table=stock',{cache:'no-store'});
+    const j=await r.json();
+    let stock=j.data||[];
+    let item=stock.find(s=> (s.tipo||s.kg)==kg || s.id==kg);
+    if(!item){
+      // Si no existe, lo crea
+      item={id:kg+'', tipo:kg+'', kg, llenas:0, vacias:0};
+    }
+
+    let llenas=parseInt(item.llenas)||0;
+    let vacias=parseInt(item.vacias)||0;
+
+    if(tipoVenta==='garrafa_completa'){
+      // Se lleva gas+envase -> solo baja llena
+      llenas = Math.max(0, llenas - cantidad);
+    } else if(tipoVenta==='solo_gas'){
+      // Trae vacia, se lleva llena -> baja llena, sube vacia
+      llenas = Math.max(0, llenas - cantidad);
+      vacias = vacias + cantidad;
+    } else if(tipoVenta==='solo_envase_vacio'){
+      // Solo vende fierro vacio
+      vacias = Math.max(0, vacias - cantidad);
+    }
+
+    // Guardar de vuelta
+    await fetch(API+'?table=stock',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      id:item.id||kg+'', tipo:kg+'', kg, llenas, vacias, ultima_venta:new Date().toISOString()
+    })});
+
+    console.log(`Stock ajustado ${kg}kg: ${tipoVenta} x${cantidad} -> Llenas:${llenas} Vacias:${vacias}`);
+  }catch(e){ console.error('Error ajustando stock', e); }
+}   
+////    
+
 
 async function cargarVentasHoy(){
   try{
