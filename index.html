@@ -237,6 +237,58 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalStock()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarEdicionStock()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
 </div>
+
+ <!-- VENTAS -->  
+  <div id="view-ventas" class="view-section hidden">
+  <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px">
+    <button id="btnVentasMostrador" onclick="cambiarTabVentas('mostrador')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">🛒 Mostrador / Domicilio</button>
+    <button id="btnVentasCamioneta" onclick="cambiarTabVentas('camioneta')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🚚 Informe Camioneta (APP)</button>
+  </div>
+
+  <div id="tabVentasMostrador" class="card">
+    <h3 style="margin-bottom:12px">Nueva Venta Mostrador</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label style="font-size:11px">Cliente</label><input list="listaClientesDatalist" id="ventaClienteNombre" placeholder="Escribí o elegí cliente" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><datalist id="listaClientesDatalist"></datalist></div>
+      <div><label style="font-size:11px">Tipo Cliente *</label><select id="ventaTipoCliente" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="consumidor_final">Consumidor Final</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label style="font-size:11px">Modo *</label><select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="domicilio">Domicilio (lleva flete)</option><option value="retira">Retira en local (sin flete)</option></select></div>
+      <div><label style="font-size:11px">Producto *</label><select id="ventaProducto" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label style="font-size:11px">Cantidad</label><input type="number" id="ventaCantidad" value="1" min="1" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+      <div><label style="font-size:11px">Precio Unit.</label><input type="number" id="ventaPrecio" value="0" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+      <div><label style="font-size:11px">Pago</label><select id="ventaPago" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="credito">Crédito</option></select></div>
+    </div>
+
+    <div id="boxFlete" style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid #334155">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <label style="font-size:12px;font-weight:bold">🚚 FLETE</label>
+        <span id="fleteReglaTexto" style="font-size:10px;color:#94a3b8">Calculando regla...</span>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <input type="number" id="ventaFlete" value="0" min="0" style="width:120px;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white">
+        <span style="font-size:11px;color:#64748b" id="fleteAyuda">Si es Retira = $0, si es Comercio = $0, si es Consumidor Final/MIDES domicilio = $120 obligatorio</span>
+      </div>
+    </div>
+
+    <div style="background:#1e293b;padding:12px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #0ea5e9">
+      <span style="font-weight:bold">TOTAL A COBRAR:</span><b id="ventaTotalTexto" style="font-size:22px;color:#22c55e">$0</b>
+    </div>
+
+    <button onclick="guardarVentaMostrador()" style="background:#16a34a;color:white;padding:12px 16px;border:none;border-radius:8px;font-weight:bold;width:100%">💾 Guardar Venta Mostrador</button>
+
+    <div style="margin-top:20px"><h4 style="margin-bottom:8px">Ventas Hoy (Mostrador)</h4><div id="ventasHoyTabla" style="font-size:12px">Cargando...</div></div>
+  </div>
+
+  <div id="tabVentasCamioneta" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>🚚 Ventas Camioneta (vienen de APP)</h3><span id="informeStatus" style="font-size:11px;color:#94a3b8"></span></div>
+    <div id="informeResumen" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px"></div>
+    <div id="informeCamionetaList"></div>
+  </div>
+</div>
   
   <script>
 // ================= PRINCIPIO DEL SCRIPT - NO BORRAR =================
@@ -670,7 +722,125 @@ async function venderFraccionado(){
   }catch(e){ alert(e.message); }
 }
     
-    
+  // --- VENTAS CON REGLA DE FLETE ---
+function cambiarTabVentas(t){
+  document.getElementById('tabVentasMostrador').classList.add('hidden');
+  document.getElementById('tabVentasCamioneta').classList.add('hidden');
+  document.getElementById('btnVentasMostrador').style.background='#1f2937'; document.getElementById('btnVentasMostrador').style.color='#94a3b8';
+  document.getElementById('btnVentasCamioneta').style.background='#1f2937'; document.getElementById('btnVentasCamioneta').style.color='#94a3b8';
+  if(t==='mostrador'){ document.getElementById('tabVentasMostrador').classList.remove('hidden'); document.getElementById('btnVentasMostrador').style.background='#0ea5e9'; document.getElementById('btnVentasMostrador').style.color='white'; cargarVentasHoy(); }
+  if(t==='camioneta'){ document.getElementById('tabVentasCamioneta').classList.remove('hidden'); document.getElementById('btnVentasCamioneta').style.background='#0ea5e9'; document.getElementById('btnVentasCamioneta').style.color='white'; cargarInformeCamioneta(); }
+}
+
+function actualizarReglaFlete(){
+  const tipo = document.getElementById('ventaTipoCliente')?.value || 'consumidor_final';
+  const modo = document.getElementById('ventaModo')?.value || 'domicilio';
+  const fleteInput = document.getElementById('ventaFlete');
+  const texto = document.getElementById('fleteReglaTexto');
+  const box = document.getElementById('boxFlete');
+  if(!fleteInput || !texto) return;
+
+  if(modo==='retira'){
+    fleteInput.value = 0; fleteInput.disabled = true;
+    texto.textContent = 'Retira en local = $0 (sin flete)';
+    box.style.borderColor = '#334155';
+  } else if(tipo==='comercio'){
+    fleteInput.value = 0; fleteInput.disabled = true;
+    texto.textContent = 'Comercio = nunca lleva flete';
+    box.style.borderColor = '#334155';
+  } else {
+    // consumidor_final o mides + domicilio = 150 obligatorio
+    fleteInput.disabled = false;
+    if(parseInt(fleteInput.value)===0) fleteInput.value = 150;
+    texto.textContent = 'Domicilio Consumidor Final/MIDES = $150 obligatorio';
+    box.style.borderColor = '#f59e0b';
+  }
+  calcularTotalMostrador();
+}
+
+function calcularTotalMostrador(){
+  const cant = parseInt(document.getElementById('ventaCantidad')?.value)||1;
+  const precio = parseFloat(document.getElementById('ventaPrecio')?.value)||0;
+  const flete = parseFloat(document.getElementById('ventaFlete')?.value)||0;
+  const total = (cant*precio)+flete;
+  const el = document.getElementById('ventaTotalTexto');
+  if(el) el.textContent = '$'+total;
+}
+
+async function cargarRepartidoresEnVentas(){
+  // ya lo hace cargarRepartidores, pero aseguramos que el select de ventas exista
+  if(repCache.length===0) await cargarRepartidores();
+}
+
+async function guardarVentaMostrador(){
+  const cliente_nombre = document.getElementById('ventaClienteNombre').value.trim() || 'Cliente ocasional';
+  const tipo_cliente = document.getElementById('ventaTipoCliente').value;
+  const modo = document.getElementById('ventaModo').value;
+  const producto_id = document.getElementById('ventaProducto').value;
+  const cantidad = parseInt(document.getElementById('ventaCantidad').value)||1;
+  const precio = parseFloat(document.getElementById('ventaPrecio').value)||0;
+  let flete = parseFloat(document.getElementById('ventaFlete').value)||0;
+  const pago = document.getElementById('ventaPago').value;
+
+  if(!producto_id) return alert('Elegí producto');
+  if(precio<=0) return alert('Precio debe ser >0');
+
+  // validar regla flete
+  if(modo==='retira' && flete!==0){ flete=0; }
+  if(tipo_cliente==='comercio' && flete!==0){ flete=0; }
+  if(modo==='domicilio' && (tipo_cliente==='consumidor_final' || tipo_cliente==='mides')){
+    if(flete<120){ if(!confirm(`Flete es $120 obligatorio para domicilio, tenés $${flete}. ¿Usar $120?`)){ return; } flete=120; document.getElementById('ventaFlete').value=120; }
+  }
+
+  const total = (cantidad*precio)+flete;
+  try{
+    await fetch(`${API}?table=ventas`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo})});
+    alert(`✅ Venta $${total} guardada (Flete $${flete})`);
+    cargarVentasHoy(); cargarStock(); cargarResumen(); calcularTotalMostrador();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+async function cargarVentasHoy(){
+  try{
+    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
+    ventas=ventas.filter(v=> (v.modo||'mostrador')!=='app');
+    const hoy=new Date().toISOString().split('T')[0];
+    ventas=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
+    const el=document.getElementById('ventasHoyTabla'); if(!el) return;
+    if(!ventas.length){ el.innerHTML='<i style="color:#64748b">Sin ventas mostrador hoy</i>'; return; }
+    el.innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Pago</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||''} (${v.tipo_cliente||''})</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id||''} x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937">${v.pago||''}</td><td style="padding:4px;border:1px solid #1f2937">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$${v.total||0}</td><td style="padding:4px;border:1px solid #1f2937">${v.modo||''}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){ const el=document.getElementById('ventasHoyTabla'); if(el) el.textContent='Error: '+e.message; }
+}
+
+async function cargarInformeCamioneta(){
+  try{
+    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
+    ventas=ventas.filter(v=> v.modo==='app' || (v.producto_id&&String(v.producto_id).includes('app')));
+    const cont=document.getElementById('informeCamionetaList');
+    const resumen=document.getElementById('informeResumen');
+    const status=document.getElementById('informeStatus');
+    if(!cont) return;
+    if(ventas.length===0){ cont.innerHTML='<div class="card" style="color:#64748b">Sin ventas de camioneta hoy (vienen de la APP del repartidor)</div>'; if(resumen) resumen.innerHTML=''; if(status) status.textContent='Sin datos'; return; }
+    let tot=0,fletes=0; ventas.forEach(v=>{ tot+=parseFloat(v.total)||0; fletes+=parseFloat(v.flete)||0; });
+    if(resumen) resumen.innerHTML=`<div class="card" style="margin:0;padding:8px;text-align:center"><b>${ventas.length}</b><br><span style="font-size:10px;color:#94a3b8">VENTAS APP</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#22c55e">$${tot}</b><br><span style="font-size:10px;color:#94a3b8">TOTAL</span></div><div class="card" style="margin:0;padding:8px;text-align:center"><b style="color:#f59e0b">$${fletes}</b><br><span style="font-size:10px;color:#94a3b8">FLETES</span></div>`;
+    cont.innerHTML=ventas.map(v=>`<div class="card" style="margin:0 0 8px 0;border-left:4px solid #f59e0b"><div style="display:flex;justify-content:space-between"><b>${v.cliente_nombre||'Cliente'} (${v.tipo_cliente||''})</b><span style="font-size:10px;color:#94a3b8">${(v.fecha||'').substring(11,19)}</span></div><div style="font-size:11px;margin-top:4px">${v.producto_id||''} x${v.cantidad||1} - $${v.total||0} Flete:$${v.flete||0} - APP</div></div>`).join('');
+    if(status) status.textContent=`Actualizado ${new Date().toLocaleTimeString()} - ${ventas.length} ventas APP`;
+  }catch(e){ const el=document.getElementById('informeCamionetaList'); if(el) el.innerHTML='<div style="color:#ef4444">Error: '+e.message+'</div>'; }
+}
+
+// Listener para que al escribir cliente se actualice el tipo
+document.addEventListener('DOMContentLoaded',()=>{
+  const inpCliente = document.getElementById('ventaClienteNombre');
+  if(inpCliente){
+    inpCliente.addEventListener('change',()=>{
+      const opt = document.querySelector(`#listaClientesDatalist option[value="${inpCliente.value}"]`);
+      if(opt){
+        const tipo = opt.getAttribute('data-tipo');
+        if(tipo){ document.getElementById('ventaTipoCliente').value=tipo; actualizarReglaFlete(); }
+      }
+    });
+  }
+});  
     
     
 // Ej: cargarResumen(), cargarStock(), etc.
