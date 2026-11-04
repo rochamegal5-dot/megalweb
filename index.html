@@ -1272,46 +1272,127 @@ async function cargarRepartidoresEnVentas(){
 async function registrarVentaMostrador(){ return guardarVentaMostrador(); }
 
 async function guardarVentaMostrador(){
-  // Lee de ambos IDs para ser compatible
   const prodId=document.getElementById('vmProducto')?.value || document.getElementById('ventaProducto')?.value;
   const cantidad=parseInt(document.getElementById('vmCant')?.value || document.getElementById('ventaCantidad')?.value)||1;
   const precio=parseFloat(document.getElementById('vmPrecio')?.value || document.getElementById('ventaPrecio')?.value)||0;
   const cliente=document.getElementById('vmCliente')?.value || document.getElementById('ventaCliente')?.value || 'Mostrador';
   const tipoVenta=document.getElementById('ventaTipoOperacion')?.value || 'solo_gas';
   const tipoCliente=getTipoCliente();
-  const modo=getModoVenta();
+  const modo=getModoVenta(); // retira / domicilio
   const flete=parseFloat(document.getElementById('vmFlete')?.value || document.getElementById('ventaFlete')?.value)||0;
   const pago=document.getElementById('vmPago')?.value || document.getElementById('ventaPago')?.value || 'contado';
-
   const kg=extraerKgDeProducto(prodId);
 
-  if(!prodId) return alert('Seleccioná producto - Si está vacío, clic en Ventas de nuevo');
-  if(kg===43.5) return alert('Tubo 43.5 no se vende entero. Usá los botones 1kg/1.5kg/2kg/2.5kg/3kg a $160/kg');
+  if(!prodId) return alert('Seleccioná producto');
+  if(kg===43.5) return alert('Tubo 43.5 no se vende entero.');
 
-  // Validar flete
-  if(modo==='retira' && flete!==0) return alert('Retira en local debe ser $0 flete');
-  if((tipoCliente.includes('comercio')) && flete!==0) return alert('Comercio nunca lleva flete');
+  // Validar flete $150
+  if(modo==='retira' && flete!==0) return alert('Retira en local debe ser $0');
+  if(tipoCliente.includes('comercio') && flete!==0) return alert('Comercio nunca lleva flete');
+  if(modo==='domicilio' && !tipoCliente.includes('comercio') && flete!==150) {
+    if(!confirm(`Flete debería ser $150 (Megal). Tenés $${flete}. ¿Guardar igual?`)) return;
+  }
 
   const idVenta='V_'+Date.now();
   const total=(cantidad*precio)+flete;
+  const ahora=new Date();
+  const fechaLocal = ahora.toLocaleString('es-UY'); // para mostrar
+  const fechaISO = ahora.toISOString(); // para guardar
+  const hoyLocal = ahora.toISOString().split('T')[0]; // usamos ISO para comparar igual
 
-  // Guardar en Postgres (tabla ventas)
-  const API_VENTAS = (typeof API!=='undefined'?API: (typeof API_ERP!=='undefined'?API_ERP:'/api/postgres'));
-  await fetch(API_VENTAS+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-    id:idVenta, fecha:new Date().toISOString(), tipo:tipoVenta, tipo_cliente:tipoCliente, modo:modo, producto_id:prodId, producto_nombre:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg
+  // 1. Venta
+  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:idVenta, 
+    fecha:fechaISO, 
+    fecha_local:fechaLocal,
+    hoy:hoyLocal,
+    tipo:tipoVenta, 
+    tipo_cliente:tipoCliente, 
+    modo:modo, // guarda retira/domicilio
+    canal:'mostrador', // NUEVO campo para filtrar mostrador hoy
+    producto_id:prodId, 
+    producto_nombre:prodId, 
+    cantidad, 
+    precio_unitario:precio, 
+    flete, 
+    total, 
+    cliente_nombre:cliente, 
+    pago, 
+    kilos:kg
   })});
 
   await ajustarStockAutomatico({tipoVenta, kg, cantidad});
 
-  await fetch(API_VENTAS+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-    id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoVenta} ${cantidad}x ${kg}kg a ${cliente} (${tipoCliente} ${modo})`, metodo:pago
+  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoVenta} ${cantidad}x ${kg}kg a ${cliente}`, metodo:pago
   })});
 
-  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg (${tipoVenta}) Flete $${flete} - Total $${total} - Stock ajustado`);
-  cargarVentasHoy(); 
+  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg - Total $${total}`);
+  
+  // RECARGA CORRECTA
+  await cargarVentasHoy();
   if(typeof cargarStock==='function') cargarStock(); 
   if(typeof cargarResumen==='function') cargarResumen();
 }
+
+async function cargarVentasHoy(){
+  try{
+    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); 
+    const j=await r.json(); 
+    let ventas=j.data||[];
+    
+    // MOSTRADOR HOY = todo lo que NO es app Y es de hoy (compara por fecha local y por ISO)
+    const hoy = new Date().toISOString().split('T')[0];
+    // también intentamos hoy -1 por tema UTC
+    const ayer = new Date(Date.now()-86400000).toISOString().split('T')[0];
+    
+    ventas=ventas.filter(v=>{
+      const esApp = (v.modo==='app') || (v.canal==='app') || String(v.producto_id||'').includes('app');
+      if(esApp) return false;
+      const fechaV = (v.fecha||'').toString().split('T')[0];
+      const hoyV = v.hoy || '';
+      // acepta hoy o hoy guardado o fecha_local de hoy
+      return fechaV===hoy || fechaV===ayer || hoyV===hoy || (v.fecha_local||'').includes(new Date().toLocaleDateString('es-UY').split('/')[0]);
+    });
+    
+    // Ordena por hora desc
+    ventas.sort((a,b)=> new Date(b.fecha) - new Date(a.fecha));
+
+    const el=document.getElementById('ventasHoyTabla')||document.getElementById('ventasHoyTablaMostrador')||document.getElementById('ventasHoy');
+    if(!el) { console.error('No existe #ventasHoyTabla'); return; }
+    
+    if(!ventas.length){ 
+      el.innerHTML='<div style="padding:12px;background:#0f172a;border-radius:8px;color:#64748b;text-align:center">Sin ventas mostrador hoy<br><small>Hoy: '+hoy+'</small></div>'; 
+      return; 
+    }
+    
+    el.innerHTML=`
+      <div style="margin-bottom:8px;color:#94a3b8;font-size:11px">${ventas.length} ventas hoy - Total: $${ventas.reduce((s,v)=>s+(parseFloat(v.total)||0),0)}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Cant</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead>
+        <tbody>${ventas.map(v=>{
+          const hora = v.fecha_local || (v.fecha||'').substring(11,19) || '';
+          return `<tr>
+            <td style="padding:4px;border:1px solid #1f2937">${hora}</td>
+            <td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||v.cliente||'Mostrador'}<br><small style="color:#94a3b8">${v.tipo_cliente||''} ${v.tipo||''}</small></td>
+            <td style="padding:4px;border:1px solid #1f2937">${v.producto_id||''}</td>
+            <td style="padding:4px;border:1px solid #1f2937;text-align:center">x${v.cantidad||1}</td>
+            <td style="padding:4px;border:1px solid #1f2937;color:${v.flete>0?'#f59e0b':'#64748b'}">$${v.flete||0}</td>
+            <td style="padding:4px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${v.total||0}</td>
+            <td style="padding:4px;border:1px solid #1f2937"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${v.modo==='retira'?'#334155':'#f59e0b'};color:${v.modo==='retira'?'#94a3b8':'#000'}">${v.modo||'mostrador'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+      
+    console.log('Ventas hoy cargadas:', ventas.length);
+  }catch(e){ 
+    const el=document.getElementById('ventasHoyTabla');
+    if(el) el.innerHTML='<div style="color:#ef4444">Error: '+e.message+'</div>'; 
+    console.error(e);
+  }
+}
+///////    
+
 
 function extraerKgDeProducto(prodId){
   if(!prodId) return 0;
@@ -1353,18 +1434,7 @@ async function ajustarStockAutomatico({tipoVenta, kg, cantidad}){
   }catch(e){ console.error('Error ajustando stock', e); }
 }
 
-async function cargarVentasHoy(){
-  try{
-    const API_V = (typeof API!=='undefined'?API: (typeof API_ERP!=='undefined'?API_ERP:'/api/postgres'));
-    const r=await fetch(API_V+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
-    ventas=ventas.filter(v=> (v.modo||'mostrador')!=='app');
-    const hoy=new Date().toISOString().split('T')[0];
-    ventas=ventas.filter(v=> (v.fecha||'').toString().split('T')[0]===hoy);
-    const el=document.getElementById('ventasHoyTabla')||document.getElementById('ventasHoyTablaMostrador'); if(!el) return;
-    if(!ventas.length){ el.innerHTML='<i style="color:#64748b">Sin ventas mostrador hoy</i>'; return; }
-    el.innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente/Tipo</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Pago</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||v.cliente||''} (${v.tipo_cliente||''})</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id||''} x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937">${v.pago||''}</td><td style="padding:4px;border:1px solid #1f2937">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900">$${v.total||0}</td></tr>`).join('')}</tbody></table>`;
-  }catch(e){ const el=document.getElementById('ventasHoyTabla'); if(el) el.textContent='Error: '+e.message; }
-}
+
 
 // FRACCIONADO 43.5 - $160/KG FIJO
 function ventaRapidaFraccionado(kilos){
