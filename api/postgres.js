@@ -11,10 +11,11 @@ export default async function handler(req, res) {
   const id = (req.query.id || '').toString();
 
   try {
-    // CREAR TABLAS
+    
+   // CREAR TABLAS - MEGAL FINAL CON STOCK 3 ESTADOS + TUBO 43.5
     await sql.query(`CREATE TABLE IF NOT EXISTS gps_locations (id TEXT PRIMARY KEY, repartidor_id TEXT, lat FLOAT, lng FLOAT, velocidad FLOAT, fecha TEXT)`);
     await sql.query(`CREATE TABLE IF NOT EXISTS finanzas (id TEXT PRIMARY KEY, fecha TEXT, tipo TEXT, categoria TEXT, descripcion TEXT, monto FLOAT, metodo_pago TEXT)`);
-    await sql.query(`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, llenas INT, vacias INT, en_uso INT)`);
+    await sql.query(`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, llenas INT, vacias INT, para_cambio INT, en_uso INT, kilos_restantes FLOAT)`);
     await sql.query(`CREATE TABLE IF NOT EXISTS ventas (id TEXT PRIMARY KEY, fecha TEXT, fecha_local TEXT, hoy TEXT, tipo TEXT, tipo_cliente TEXT, modo TEXT, canal TEXT, producto_id TEXT, cantidad INT, precio_unitario FLOAT, flete FLOAT, total FLOAT, cliente_nombre TEXT, pago TEXT, kilos FLOAT)`);
     await sql.query(`CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, rubro TEXT, email TEXT)`);
     await sql.query(`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT, precio_compra FLOAT, precio_venta FLOAT, stock_minimo INT, proveedor_id TEXT, kg FLOAT, descripcion TEXT)`);
@@ -23,6 +24,12 @@ export default async function handler(req, res) {
     await sql.query(`CREATE TABLE IF NOT EXISTS camaras (id TEXT PRIMARY KEY, nombre TEXT, url TEXT, ubicacion TEXT)`);
     await sql.query(`CREATE TABLE IF NOT EXISTS puntos_ref (id TEXT PRIMARY KEY, nombre TEXT, lat FLOAT, lng FLOAT, tipo TEXT)`);
 
+    // MIGRACIONES - Por si ya tenías la tabla deposito vieja sin las nuevas columnas
+    try{ await sql.query(`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INT DEFAULT 0`); }catch(e){}
+    try{ await sql.query(`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes FLOAT DEFAULT 0`); }catch(e){}
+    try{ await sql.query(`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS en_uso INT DEFAULT 0`); }catch(e){}
+    try{ await sql.query(`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS llenas INT DEFAULT 0`); }catch(e){}
+    try{ await sql.query(`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS vacias INT DEFAULT 0`); }catch(e){}
     // GET - LEER
     if(req.method==='GET'){
       if(!table) return res.json({data:[]});
