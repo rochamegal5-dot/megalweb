@@ -1035,202 +1035,92 @@ async function cargarStock(){
     }
 
     // TUBO EN USO
-// ===== SOLO TUBO 43.5 EN USO - BARRA + 2 INDICADORES + CAMBIO DE TUBO =====
-async function cargarTuboEnUso(depExterno){
+
+// ===== TUBO 43.5 EN USO - VERSION QUE NO QUEDA CARGANDO =====
+async function cargarTuboEnUso(){
+  const tuboDiv = document.getElementById('stockTuboEnUso');
+  if(!tuboDiv) { console.error('No existe #stockTuboEnUso'); return; }
+  
   try{
-    let dep = depExterno;
-    if(!dep){
-      const r = await fetch(API+'?table=deposito',{cache:'no-store'});
-      dep = (await r.json()).data || [];
+    tuboDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Cargando tubo 43.5...</div>';
+    
+    // Usar API o API_ERP - lo que tengas
+    const API_URL = (typeof API !== 'undefined' ? API : (typeof API_ERP !== 'undefined' ? API_ERP : '/api/postgres'));
+    console.log('Cargando deposito desde:', API_URL);
+    
+    const r = await fetch(API_URL+'?table=deposito',{cache:'no-store'});
+    if(!r.ok) throw new Error('Error API deposito: '+r.status);
+    
+    const j = await r.json();
+    let dep = j.data || [];
+    console.log('Deposito:', dep);
+    
+    // Si no hay deposito, crear uno por defecto
+    let tubo = dep.find(d=> String(d.producto_id).includes('43'));
+    if(!tubo){
+      console.log('No hay tubo 43.5, creando por defecto');
+      tubo = {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:5, vacias:3, para_cambio:0};
+      // Guardarlo
+      await fetch(API_URL+'?table=deposito',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...tubo, accion:'balance_inicial'})
+      });
     }
     
-    const tubo = dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
     const kilosRest = parseFloat(tubo.kilos_restantes);
     const kilosRestSafe = isNaN(kilosRest) ? 43.5 : kilosRest;
     const usado = 43.5 - kilosRestSafe;
-    const porcentajeRest = (kilosRestSafe/43.5*100).toFixed(1);
+    const porcentajeRest = Math.max(0, Math.min(100, (kilosRestSafe/43.5*100))).toFixed(1);
     const llenas43 = parseInt(tubo.llenas)||0;
     const vacias43 = parseInt(tubo.vacias)||0;
     
-    const tuboDiv = document.getElementById('stockTuboEnUso');
-    if(!tuboDiv) return;
-    
-    const puedeCambiar = kilosRestSafe <= 6; // Se venden entre 38 y 43.5kg, quedan 0.5 a 5.5 de talón
+    const puedeCambiar = kilosRestSafe <= 6;
     const casiVacio = kilosRestSafe <= 2;
     
     tuboDiv.innerHTML = `
       <h3 style="margin-bottom:20px;font-size:16px">🧪 Tubo 43.5kg En Uso</h3>
-      
-      <!-- 2 INDICADORES -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <div style="background:#22c55e15;padding:20px;border-radius:12px;text-align:center;border:2px solid #22c55e30">
-          <div style="font-size:11px;color:#22c55e;font-weight:bold;letter-spacing:1px">GAS RESTANTE</div>
+          <div style="font-size:11px;color:#22c55e;font-weight:bold">GAS RESTANTE</div>
           <div style="font-size:42px;font-weight:900;color:#22c55e;margin:8px 0">${kilosRestSafe.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">${porcentajeRest}% del tubo</div>
+          <div style="font-size:11px;color:#64748b">${porcentajeRest}%</div>
         </div>
         <div style="background:#ef444415;padding:20px;border-radius:12px;text-align:center;border:2px solid #ef444430">
-          <div style="font-size:11px;color:#ef4444;font-weight:bold;letter-spacing:1px">GAS VENDIDO</div>
+          <div style="font-size:11px;color:#ef4444;font-weight:bold">GAS VENDIDO</div>
           <div style="font-size:42px;font-weight:900;color:#ef4444;margin:8px 0">${usado.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">Entre 38 y 43.5kg por tubo</div>
+          <div style="font-size:11px;color:#64748b">Entre 38 y 43.5kg</div>
         </div>
       </div>
-
-      <!-- BARRA DE PROGRESO -->
       <div style="background:#0f172a;padding:16px;border-radius:12px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:8px">
-          <span>0kg</span><span style="color:#e2e8f0;font-weight:bold">TUBO 43.5kg</span><span>43.5kg</span>
-        </div>
         <div style="background:#1f2937;height:32px;border-radius:16px;overflow:hidden;position:relative">
-          <div style="background:${casiVacio ? 'linear-gradient(90deg,#ef4444,#dc2626)' : puedeCambiar ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#22c55e,#16a34a)'};height:100%;width:${porcentajeRest}%;transition:width 0.5s ease"></div>
-          <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,0.5)">
-            ${kilosRestSafe.toFixed(1)}kg / 43.5kg
-          </div>
+          <div style="background:${casiVacio ? '#ef4444' : puedeCambiar ? '#f59e0b' : '#22c55e'};height:100%;width:${porcentajeRest}%;transition:width 0.5s ease"></div>
+          <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:14px">${kilosRestSafe.toFixed(1)}kg / 43.5kg</div>
         </div>
       </div>
-
-      <!-- BOTON CAMBIAR TUBO - APARECE CUANDO QUEDAN MENOS DE 6KG -->
       ${puedeCambiar ? `
       <div style="margin-top:20px;background:${casiVacio ? '#ef444420' : '#f59e0b20'};border:1px solid ${casiVacio ? '#ef444430' : '#f59e0b30'};padding:16px;border-radius:12px;text-align:center">
-        <div style="font-size:13px;color:${casiVacio ? '#ef4444' : '#f59e0b'};font-weight:bold;margin-bottom:8px">
-          ${casiVacio ? '🔴 Tubo casi vacío - Cambiar urgente' : '🟡 Tubo por terminar - Quedan '+kilosRestSafe.toFixed(1)+'kg de talón/pérdida'}
-        </div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">
-          Vendiste ${usado.toFixed(1)}kg de 43.5kg<br>
-          Tubo actual pasa a VACÍO y 1 LLENO pasa a EN USO
-        </div>
-        <button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;font-size:14px;width:100%;cursor:pointer">
-          🔄 CAMBIAR TUBO 43.5
-        </button>
-        <div style="font-size:10px;color:#64748b;margin-top:8px">
-          Llenas disponibles: ${llenas43} | Vacías: ${vacias43} | Talón/pérdida: ${kilosRestSafe.toFixed(1)}kg
-        </div>
-      </div>
-      ` : `
-      <div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">
-        El tubo se puede cambiar cuando queden menos de 6kg<br>
-        Te faltan ${(kilosRestSafe-6).toFixed(1)}kg por vender - Se vende entre 38 y 43.5kg por tubo
-      </div>
-      `}
-
-      <!-- BOTONES FRACCIONADO - DESCUENTAN DE ACA, VIENEN DE VENTAS -->
-      <div style="margin-top:24px">
-        <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;text-align:center">Venta rápida fraccionado - Todo descuenta de este tubo - $160/kg</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-          <button onclick="venderFraccionado(1)" style="background:#1f2937;color:white;padding:14px 4px;border:1px solid #334155;border-radius:8px;font-weight:bold;cursor:pointer">1kg<br><span style="color:#22c55e">$160</span></button>
-          <button onclick="venderFraccionado(1.5)" style="background:#1f2937;color:white;padding:14px 4px;border:1px solid #334155;border-radius:8px;font-weight:bold;cursor:pointer">1.5kg<br><span style="color:#22c55e">$240</span></button>
-          <button onclick="venderFraccionado(2)" style="background:#1f2937;color:white;padding:14px 4px;border:1px solid #334155;border-radius:8px;font-weight:bold;cursor:pointer">2kg<br><span style="color:#22c55e">$320</span></button>
-          <button onclick="venderFraccionado(2.5)" style="background:#1f2937;color:white;padding:14px 4px;border:1px solid #334155;border-radius:8px;font-weight:bold;cursor:pointer">2.5kg<br><span style="color:#22c55e">$400</span></button>
-          <button onclick="venderFraccionado(3)" style="background:#1f2937;color:white;padding:14px 4px;border:1px solid #334155;border-radius:8px;font-weight:bold;cursor:pointer">3kg<br><span style="color:#22c55e">$480</span></button>
-        </div>
-      </div>
+        <button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO 43.5 - Quedan ${kilosRestSafe.toFixed(1)}kg talón</button>
+        <div style="font-size:10px;color:#64748b;margin-top:8px">Llenas: ${llenas43} | Vacías: ${vacias43}</div>
+      </div>` : `<div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">Se puede cambiar cuando queden menos de 6kg. Te faltan ${(kilosRestSafe-6).toFixed(1)}kg</div>`}
+      <div style="margin-top:20px"><div style="font-size:12px;color:#94a3b8;margin-bottom:10px;text-align:center">Venta rápida $160/kg</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"><button onclick="venderFraccionado(1)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1kg $160</button><button onclick="venderFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1.5kg $240</button><button onclick="venderFraccionado(2)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2kg $320</button><button onclick="venderFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2.5kg $400</button><button onclick="venderFraccionado(3)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">3kg $480</button></div></div>
     `;
+    
   }catch(e){
-    console.error('cargarTuboEnUso',e);
-    const el=document.getElementById('stockTuboEnUso');
-    if(el) el.innerHTML=`<div style="color:#ef4444;padding:20px">Error cargando tubo: ${e.message}</div>`;
+    console.error('Error cargarTuboEnUso:',e);
+    if(tuboDiv) tuboDiv.innerHTML=`<div style="color:#ef4444;padding:20px;text-align:center"><b>Error cargando tubo</b><br>${e.message}<br><br><button onclick="cargarTuboEnUso()" style="background:#1f2937;color:white;padding:8px 16px;border:none;border-radius:6px;margin-top:12px">Reintentar</button><br><br><span style="font-size:11px;color:#64748b">Revisá consola F12 - API: ${typeof API !== 'undefined' ? API : typeof API_ERP !== 'undefined' ? API_ERP : 'no definida'}</span></div>`;
   }
 }
 
-// Cambiar tubo: el que está en uso pasa a vacío y uno lleno pasa a en uso
-async function cambiarTubo43(){
-  try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'});
-    const dep=(await r.json()).data||[];
-    let tubo=dep.find(d=> String(d.producto_id).includes('43'));
-    if(!tubo){ alert('No hay tubo 43.5 en stock'); return; }
-    
-    const kilosRest=parseFloat(tubo.kilos_restantes)||0;
-    const usado=43.5-kilosRest;
-    const llenas=parseInt(tubo.llenas)||0;
-    const vacias=parseInt(tubo.vacias)||0;
-    
-    if(llenas<=0){
-      return alert(`No tenés tubos 43.5 llenos para poner en uso.\n\nLlenas: ${llenas}\nVacías: ${vacias}\n\nHacé un Ingreso por Remito de 43.5 primero.`);
-    }
-    
-    if(!confirm(`¿Cambiar tubo 43.5?\n\nVendiste: ${usado.toFixed(1)}kg de 43.5kg\nQuedan: ${kilosRest.toFixed(1)}kg como talón/pérdida (normal)\n\n• Tubo actual (${kilosRest.toFixed(1)}kg) → VACÍO\n• 1 tubo lleno → EN USO con 43.5kg\n\nStock después:\nLlenas: ${llenas} → ${llenas-1}\nVacías: ${vacias} → ${vacias+1}\n\n¿Confirmar cambio?`)) return;
-    
-    const nuevoLlenas = llenas - 1;
-    const nuevoVacias = vacias + 1;
-    
-    await fetch(API+'?table=deposito',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        producto_id:tubo.producto_id,
-        llenas:nuevoLlenas,
-        vacias:nuevoVacias,
-        para_cambio:tubo.para_cambio||0,
-        en_uso:tubo.en_uso||1,
-        kilos_restantes:43.5,
-        accion:'balance_inicial'
-      })
-    });
-    
-    await fetch(API+'?table=finanzas',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        id:'FIN_'+Date.now(),
-        fecha:new Date().toISOString().split('T')[0],
-        tipo:'egreso',
-        categoria:'cambio_tubo_43',
-        descripcion:`Cambio tubo 43.5 - Vendidos ${usado.toFixed(1)}kg, talón/pérdida ${kilosRest.toFixed(1)}kg. L:${llenas}->${nuevoLlenas} V:${vacias}->${nuevoVacias}`,
-        monto:0,
-        metodo_pago:'stock'
-      })
-    });
-    
-    alert(`✅ Tubo cambiado:\n\nVendiste ${usado.toFixed(1)}kg\nTalón/pérdida: ${kilosRest.toFixed(1)}kg\n\nNuevo stock: ${nuevoLlenas} llenas, ${nuevoVacias} vacías, 1 tubo en uso 43.5kg`);
-    
-    // Recargar solo tubo y stock general si existe
-    if(typeof cargarStock==='function') cargarStock();
-    else cargarTuboEnUso();
-    
-  }catch(e){ alert('Error cambiando tubo: '+e.message); console.error(e); }
+// Asegurar que se llame al cambiar de pestaña
+function cambiarTabStock(tab){
+  ['tabStockGas','tabStockTubo','tabStockOtros'].forEach(id=> document.getElementById(id)?.classList.add('hidden'));
+  ['btnStockGas','btnStockTubo','btnStockOtros'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; } });
+  if(tab==='gas'){ document.getElementById('tabStockGas')?.classList.remove('hidden'); document.getElementById('btnStockGas').style.background='#0ea5e9'; document.getElementById('btnStockGas').style.color='white'; }
+  if(tab==='tubo'){ document.getElementById('tabStockTubo')?.classList.remove('hidden'); document.getElementById('btnStockTubo').style.background='#0ea5e9'; document.getElementById('btnStockTubo').style.color='white'; cargarTuboEnUso(); }
+  if(tab==='otros'){ document.getElementById('tabStockOtros')?.classList.remove('hidden'); document.getElementById('btnStockOtros').style.background='#0ea5e9'; document.getElementById('btnStockOtros').style.color='white'; }
 }
 
-// Venta fraccionada - descuenta de este tubo, se llama desde Ventas
-async function venderFraccionado(k){
-  try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'});
-    const dep=(await r.json()).data||[];
-    const tubo=dep.find(d=> String(d.producto_id).includes('43'));
-    const disp=parseFloat(tubo?.kilos_restantes)||43.5;
-    if(disp < k) return alert(`Sin gas suficiente: Disponible ${disp.toFixed(1)}kg, pediste ${k}kg. Cambiá el tubo.`);
-    if(!confirm(`¿Vender ${k}kg fraccionado por $${k*160}?\nDescontará del tubo 43.5 en uso\nQuedan: ${disp.toFixed(1)}kg → ${(disp-k).toFixed(1)}kg`)) return;
-    
-    const id='V_'+Date.now();
-    await fetch(API+'?table=ventas',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        id, fecha:new Date().toISOString(), fecha_local:new Date().toLocaleString('es-UY'), hoy:new Date().toISOString().split('T')[0],
-        tipo:'fraccionado', tipo_cliente:'consumidor_final', modo:'retira', canal:'mostrador',
-        producto_id:`FRACC_${k}`, cantidad:1, precio_unitario:k*160, flete:0, total:k*160,
-        cliente_nombre:'Fraccionado Mostrador', pago:'contado', kilos:k
-      })
-    });
-    
-    // Descontar del tubo
-    let kilosRest = parseFloat(tubo.kilos_restantes)||43.5;
-    kilosRest = Math.max(0, kilosRest - k);
-    
-    await fetch(API+'?table=deposito',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})
-    });
-    
-    alert(`✅ Vendido ${k}kg fraccionado - Quedan ${kilosRest.toFixed(1)}kg en tubo`);
-    
-    // Recargar
-    cargarTuboEnUso();
-    if(typeof cargarVentasHoy==='function') cargarVentasHoy();
-    if(typeof cargarStock==='function') cargarStock();
-    
-  }catch(e){ alert('Error venta fraccionada: '+e.message); }
-}
 
     // OTROS
     const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k)));
