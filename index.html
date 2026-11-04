@@ -1135,13 +1135,6 @@ function cambiarTabStock(tab){
   }catch(e){ console.error('cargarStock',e); }
 }
 
-function cambiarTabStock(tab){
-  ['tabStockGas','tabStockTubo','tabStockOtros'].forEach(id=> document.getElementById(id)?.classList.add('hidden'));
-  ['btnStockGas','btnStockTubo','btnStockOtros'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; } });
-  if(tab==='gas'){ document.getElementById('tabStockGas').classList.remove('hidden'); document.getElementById('btnStockGas').style.background='#0ea5e9'; document.getElementById('btnStockGas').style.color='white'; }
-  if(tab==='tubo'){ document.getElementById('tabStockTubo').classList.remove('hidden'); document.getElementById('btnStockTubo').style.background='#0ea5e9'; document.getElementById('btnStockTubo').style.color='white'; }
-  if(tab==='otros'){ document.getElementById('tabStockOtros').classList.remove('hidden'); document.getElementById('btnStockOtros').style.background='#0ea5e9'; document.getElementById('btnStockOtros').style.color='white'; }
-}
 
 function abrirModalIngresoInicial(prodId){ if(prodId) document.getElementById('ingInicialProd').value=prodId; document.getElementById('modalIngresoInicial').classList.remove('hidden'); document.getElementById('modalIngresoInicial').style.display='flex'; }
 function cerrarModalIngresoInicial(){ const m=document.getElementById('modalIngresoInicial'); m.classList.add('hidden'); m.style.display='none'; }
