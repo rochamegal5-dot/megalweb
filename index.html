@@ -1242,7 +1242,7 @@ async function cargarProductosParaVentas(){
   }catch(e){ console.error('productos ventas',e); }
 }
 
-async function guardarVentaMostrador(){
+    async function guardarVentaMostrador(){
   const prodId=document.getElementById('vmProducto')?.value;
   const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
   const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
@@ -1253,63 +1253,113 @@ async function guardarVentaMostrador(){
   const pago=document.getElementById('vmPago')?.value||'contado';
   
   if(!prodId) return alert('Seleccioná producto');
-  if(modo==='retira' && flete!==0) return alert('Retira en local debe ser $0 - corregí flete');
+  if(modo==='retira' && flete!==0) return alert('Retira debe ser $0');
   if(String(tipoCliente).includes('comercio') && flete!==0) return alert('Comercio nunca lleva flete');
 
   const id='V_'+Date.now(); const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
   const total=cantidad*precio+flete;
-  const kg = String(prodId).includes('11')?11:String(prodId).includes('13')?13:String(prodId).includes('45')?45:13;
+  const kg = extraerKgDeProducto(prodId);
 
-  // 1. GUARDAR EN POSTGRES VENTAS
-  const resp=await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+  console.log('Guardando venta:',{prodId, kg, cantidad, tipoOp, total, flete});
+
+  // 1. GUARDAR VENTA
+  const rVenta = await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
     id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg
   })});
-  const respJ=await resp.json().catch(()=>({})); console.log('Venta guardada DB',respJ);
+  console.log('Venta DB resp', await rVenta.json());
 
-  // 2. DESCONTAR STOCK AUTOMÁTICO
-  await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad});
+  // 2. DESCONTAR STOCK - AHORA CON LOGS Y BUSQUEDA FLEXIBLE
+  const resStock = await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
+  console.log('Stock result', resStock);
 
   // 3. FINANZAS
   await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
     id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${cantidad}x ${kg}kg ${cliente} flete $${flete}`, metodo:pago
   })});
 
-  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg = $${total} (flete $${flete} incluido)`);
-  await cargarVentasHoy(); if(typeof cargarStock==='function') cargarStock(); if(typeof cargarResumen==='function') cargarResumen();
+  alert(`✅ Venta $${total} guardada - Stock actualizado`);
+  await cargarVentasHoy(); 
+  if(typeof cargarStock==='function'){ await cargarStock(); }
+  if(typeof cargarResumen==='function') cargarResumen();
 }
 
-async function cargarVentasHoy(){
+async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
   try{
-    const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
-    const hoy=new Date().toISOString().split('T')[0]; const ayer=new Date(Date.now()-86400000).toISOString().split('T')[0];
-    // solo mostrador de hoy/ayer
-    ventas=ventas.filter(v=>{ if(v.canal==='app'||v.modo==='app') return false; const fv=(v.fecha||'').toString().split('T')[0]; return fv===hoy||fv===ayer||v.hoy===hoy||v.canal==='mostrador'; });
-    ventas.sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
-    const el=document.getElementById('ventasHoyTabla'); if(!el) return;
-    if(!ventas.length){ el.innerHTML=`<div style="padding:12px;background:#0f172a;border-radius:8px;color:#64748b;text-align:center">Sin ventas hoy (${hoy})</div>`; return; }
-    const totalDia=ventas.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
-    el.innerHTML=`<div style="margin-bottom:8px;color:#94a3b8;font-size:12px"><b>${ventas.length} ventas hoy</b> - Total $${totalDia}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Cant</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead>
-      <tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${v.fecha_local||(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||'Mostrador'}<br><small style="color:#94a3b8">${v.tipo_cliente||''}</small></td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id}</td><td style="padding:4px;border:1px solid #1f2937;text-align:center">x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937;color:${v.flete>0?'#f59e0b':'#64748b'}">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${v.total||0}</td><td style="padding:4px;border:1px solid #1f2937"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${v.modo==='retira'?'#334155':'#f59e0b'};color:${v.modo==='retira'?'#94a3b8':'#000'}">${v.modo||''}</span></td></tr>`).join('')}</tbody>
-    </table>`;
-  }catch(e){ console.error('cargarVentasHoy',e); }
+    console.log(`[STOCK] Iniciando ajuste: tipo=${tipoVenta} kg=${kg} prodId=${prodId} cant=${cantidad}`);
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'});
+    const j=await r.json(); 
+    let dep=j.data||[];
+    console.log('[STOCK] Deposito actual:', dep);
+
+    // BUSQUEDA FLEXIBLE: puede estar guardado como '11', '11kg', '13', '13kg', etc
+    const buscarIds = [String(kg), String(prodId), String(kg)+'kg', String(prodId)+'kg', 'garrafa_'+kg];
+    let item = null;
+    for(const bid of buscarIds){
+      item = dep.find(d=> String(d.producto_id).toLowerCase()===bid.toLowerCase());
+      if(item) { console.log('[STOCK] Encontrado con id:', bid, item); break; }
+    }
+    if(!item){
+      // buscar por numero contenido
+      item = dep.find(d=> String(d.producto_id).includes(String(kg)));
+    }
+
+    if(!item){
+      console.log('[STOCK] No existe, creando nuevo con 20 llenas');
+      item={producto_id:String(kg), llenas:20, vacias:10, en_uso:0};
+    }
+
+    let llenas=parseInt(item.llenas)||0; 
+    let vacias=parseInt(item.vacias)||0;
+    let en_uso=parseInt(item.en_uso)||0;
+    const llenasAntes=llenas, vaciasAntes=vacias;
+
+    // LÓGICA MEGAL REAL:
+    if(tipoVenta==='garrafa_completa'){
+      // vende gas + envase: pierde llena
+      llenas=Math.max(0,llenas-cantidad);
+    } else if(tipoVenta==='solo_gas'){
+      // cliente trae envase vacío: pierde llena, gana vacía
+      llenas=Math.max(0,llenas-cantidad); 
+      vacias+=cantidad;
+    } else if(tipoVenta==='solo_envase_vacio'){
+      // vende solo envase vacío
+      vacias=Math.max(0,vacias-cantidad);
+    }
+
+    console.log(`[STOCK] ${item.producto_id}: Llenas ${llenasAntes}->${llenas} Vacias ${vaciasAntes}->${vacias}`);
+
+    // GUARDAR EN POSTGRES - USANDO EL MISMO producto_id QUE YA EXISTIA
+    const payload = {
+      producto_id: item.producto_id, // importante: usar el id que ya existe, no el kg nuevo
+      llenas, vacias, en_uso,
+      accion:'balance_inicial'
+    };
+
+    const rSave = await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const jSave = await rSave.json();
+    console.log('[STOCK] Guardado DB:', jSave);
+
+    // VERIFICAR QUE SE GUARDO
+    const r2=await fetch(API+'?table=deposito',{cache:'no-store'});
+    const j2=await r2.json();
+    console.log('[STOCK] Deposito después:', j2.data);
+
+    return {ok:true, antes:{llenas:llenasAntes, vacias:vaciasAntes}, despues:{llenas, vacias}};
+  }catch(e){ 
+    console.error('[STOCK] ERROR',e); 
+    return {ok:false, error:e.message};
+  }
 }
 
-async function ajustarStockAutomatico({tipoVenta, kg, cantidad}){
-  try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); let dep=j.data||[];
-    let item=dep.find(d=>String(d.producto_id)===String(kg));
-    if(!item) item={producto_id:String(kg), llenas:20, vacias:10};
-    let llenas=parseInt(item.llenas)||0; let vacias=parseInt(item.vacias)||0;
-    // LÓGICA MEGAL:
-    if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
-    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; } // cliente trae vacío
-    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
-    console.log(`Stock ${kg}kg: ${item.llenas}/${item.vacias} -> ${llenas}/${vacias} (${tipoVenta})`);
-    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'balance_inicial', producto_id:String(kg), llenas, vacias})});
-  }catch(e){ console.error('stock auto',e); }
+function extraerKgDeProducto(prodId){
+  const s=String(prodId).toLowerCase();
+  if(s.includes('11')) return 11;
+  if(s.includes('13')) return 13;
+  if(s.includes('45')) return 45;
+  if(s.includes('43')) return 43.5;
+  return 13;
 }
+
 
 
 // --- FINANZAS EMPRESA COMPLETA ---
