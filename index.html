@@ -989,21 +989,23 @@ async function guardarProveedor(){
 async function eliminarProveedor(id){ if(!confirm('¿Borrar proveedor?')) return; try{ await fetch(`${API}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }catch(e){ alert(e.message); } }
     
 // --- STOCK ---
-// --- STOCK MEGAL FINAL - LEE DE DEPOSITO REAL ---
+// --- STOCK 3 PESTAÑAS - MODELO ANTERIOR RESTAURADO + CONECTADO A DEPOSITO ---
 async function cargarStock(){
   try{
     const rDep = await fetch(API+'?table=deposito',{cache:'no-store'});
     const jDep = await rDep.json();
     let dep = jDep.data || [];
-    console.log('[STOCK VIEW] deposito:', dep);
+    
+    const rProd = await fetch(API+'?table=productos',{cache:'no-store'});
+    const jProd = await rProd.json();
+    let productos = jProd.data || [];
 
-    // Si está vacío, inicializar con valores base
     if(!dep.length){
       dep = [
         {producto_id:'11', llenas:15, vacias:10, en_uso:0},
         {producto_id:'13', llenas:20, vacias:8, en_uso:0},
         {producto_id:'45', llenas:5, vacias:2, en_uso:0},
-        {producto_id:'43.5', llenas:0, vacias:0, en_uso:1}, // tubo madre para fraccionado
+        {producto_id:'43.5', llenas:0, vacias:0, en_uso:1},
       ];
       for(const d of dep){
         await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...d, accion:'balance_inicial'})});
@@ -1012,104 +1014,90 @@ async function cargarStock(){
 
     window.depositoCache = dep;
 
-    // Render en la pestaña GAS
-    const contGas = document.getElementById('stockGas') || document.getElementById('tabStockGas') || document.getElementById('view-stock');
-    // Buscamos el contenedor donde va la tabla de gas
-    let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">`;
+    // --- GAS 11/13/45 ---
+    const gases = dep.filter(d=> ['11','13','45'].some(k=> String(d.producto_id).includes(k)) );
+    const gasLista = document.getElementById('stockGasLista');
+    const tablaGas = document.getElementById('tablaStockGas');
+    
+    if(gasLista){
+      gasLista.innerHTML = gases.map(d=>{
+        const llenas=parseInt(d.llenas)||0; const vacias=parseInt(d.vacias)||0;
+        const total=llenas+vacias;
+        const kg = String(d.producto_id).includes('11')?'11':String(d.producto_id).includes('45')?'45':'13';
+        const color = llenas<5 ? '#ef4444' : llenas<10 ? '#f59e0b' : '#22c55e';
+        return `
+          <div class="card" style="border-left:4px solid ${color}">
+            <div style="display:flex;justify-content:space-between"><b style="font-size:22px">${kg}kg</b><span style="background:#0f172a;padding:4px 8px;border-radius:12px;font-size:10px">${d.producto_id}</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;text-align:center">
+              <div style="background:#0f172a;padding:12px;border-radius:8px"><div style="font-size:28px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:10px;color:#94a3b8">LLENAS</div></div>
+              <div style="background:#0f172a;padding:12px;border-radius:8px"><div style="font-size:28px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:10px;color:#94a3b8">VACÍAS</div></div>
+            </div>
+            <div style="margin-top:8px;text-align:center;font-size:12px;color:#64748b">Total envases: ${total} ${llenas<5?'<span style="color:#ef4444">⚠️ RECARGAR</span>':''}</div>
+          </div>`;
+      }).join('') || '<div class="card" style="color:#64748b">Sin stock gas - cargá en depósito</div>';
+    }
+    if(tablaGas){
+      tablaGas.innerHTML = gases.map(d=>`<tr><td style="padding:8px;border:1px solid #1f2937;font-weight:bold">${d.producto_id} - ${String(d.producto_id).includes('11')?'11kg':String(d.producto_id).includes('45')?'45kg':'13kg'}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${d.llenas||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${d.vacias||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${(parseInt(d.llenas)||0)+(parseInt(d.vacias)||0)}</td><td style="padding:8px;border:1px solid #1f2937">${(parseInt(d.llenas)||0)<5?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td></tr>`).join('');
+    }
 
-    dep.forEach(d=>{
-      const pid = String(d.producto_id);
-      const kg = pid.includes('11') ? '11' : pid.includes('13') ? '13' : pid.includes('45') ? '45' : pid.includes('43') ? '43.5' : pid;
-      const llenas = parseInt(d.llenas)||0;
-      const vacias = parseInt(d.vacias)||0;
-      const total = llenas + vacias;
-      const alerta = llenas < 5 ? 'border-color:#ef4444' : llenas < 10 ? 'border-color:#f59e0b' : 'border-color:#22c55e';
-      html += `
-        <div class="card" style="border-left:4px solid ${llenas < 5 ? '#ef4444' : '#22c55e'}; ${alerta}">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <b style="font-size:18px">${kg}kg</b>
-            <span style="font-size:10px;background:#0f172a;padding:4px 8px;border-radius:12px">${pid}</span>
-          </div>
-          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
-            <div style="background:#0f172a;padding:8px;border-radius:8px">
-              <div style="font-size:20px;font-weight:900;color:#22c55e">${llenas}</div>
-              <div style="font-size:10px;color:#94a3b8">LLENAS</div>
-            </div>
-            <div style="background:#0f172a;padding:8px;border-radius:8px">
-              <div style="font-size:20px;font-weight:900;color:#94a3b8">${vacias}</div>
-              <div style="font-size:10px;color:#94a3b8">VACÍAS</div>
-            </div>
-          </div>
-          <div style="margin-top:8px;font-size:11px;color:#64748b;text-align:center">Total envases: ${total}</div>
-          ${llenas < 5 ? `<div style="margin-top:8px;background:#ef444420;color:#ef4444;padding:4px;border-radius:4px;text-align:center;font-size:11px;font-weight:bold">⚠️ STOCK BAJO - RECARGAR</div>` : ''}
+    // --- TUBO 43.5 ---
+    const tubo = dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', llenas:0, vacias:0, en_uso:1};
+    const tuboMadre = document.getElementById('stockTuboMadre');
+    if(tuboMadre){
+      const kilosRestantes = 43.5 - (parseFloat(tubo.en_uso)||0); // si usas en_uso para fraccionado
+      tuboMadre.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">TUBO MADRE</div><div style="font-size:20px;font-weight:900;color:#f59e0b">${tubo.producto_id}</div><div style="font-size:11px;color:#64748b">${tubo.en_uso||1} en uso</div></div>
+          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">KG DISPONIBLES</div><div style="font-size:20px;font-weight:900;color:#22c55e">${43.5}kg</div><div style="font-size:11px;color:#64748b">Tubo lleno = 43.5kg</div></div>
+          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">PRECIO</div><div style="font-size:20px;font-weight:900;color:#38bdf8">$160/kg</div><div style="font-size:11px;color:#64748b">Fraccionado</div></div>
         </div>`;
-    });
-    html += `</div>`;
-
-    // Tabla detallada
-    html += `
-      <div class="card">
-        <h3 style="margin-bottom:12px">Detalle Stock Gas</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Llenas</th><th style="padding:8px;border:1px solid #1f2937">Vacías</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Estado</th></tr></thead>
-          <tbody>${dep.map(d=>`<tr><td style="padding:6px;border:1px solid #1f2937;font-weight:bold">${d.producto_id}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${d.llenas||0}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center">${d.vacias||0}</td><td style="padding:6px;border:1px solid #1f2937;text-align:center">${(parseInt(d.llenas)||0)+(parseInt(d.vacias)||0)}</td><td style="padding:6px;border:1px solid #1f2937">${(parseInt(d.llenas)||0)<5?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>`;
-
-    // Pintar en los 3 lugares posibles donde tengas el stock
-    const targets = ['stockGasLista','listaStockGas','contenidoStockGas','stockContenido','view-stock','tabStockGas'];
-    let pintado=false;
-    for(const id of targets){
-      const el=document.getElementById(id);
-      if(el){ el.innerHTML=html; pintado=true; }
     }
-    // Si no encontró ninguno, busca el view-stock directo
-    const viewStock=document.getElementById('view-stock');
-    if(viewStock && !pintado){
-      // si view-stock es el contenedor principal, no lo pisamos todo, buscamos dentro
-      const inner=viewStock.querySelector('#stockGas') || viewStock;
-      if(inner) inner.innerHTML = html;
+    const fraccLista = document.getElementById('stockFraccLista');
+    if(fraccLista){
+      const fracc = [
+        {k:1, precio:160}, {k:1.5, precio:240}, {k:2, precio:320}, {k:2.5, precio:400}, {k:3, precio:480}
+      ];
+      fraccLista.innerHTML = fracc.map(f=>`
+        <div class="card" style="text-align:center;border-left:4px solid #f59e0b">
+          <b>${f.k}kg</b><br><span style="color:#94a3b8">$${f.precio}</span><br>
+          <small style="color:#64748b">Descuenta ${f.k}kg del tubo 43.5</small>
+        </div>`).join('');
     }
 
-    console.log('[STOCK VIEW] Renderizado OK');
-  }catch(e){ console.error('cargarStock error',e); }
+    // --- OTROS ---
+    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k) || String(p.nombre||'').includes(k)) );
+    const otrosLista = document.getElementById('stockOtrosLista');
+    const tablaOtros = document.getElementById('tablaStockOtros');
+    if(otrosLista){
+      otrosLista.innerHTML = otros.length ? otros.map(p=>`
+        <div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">Stock: ${p.stock||0} - Mín: ${p.stock_minimo||5}</span></div>
+      `).join('') : '<div class="card" style="color:#64748b">Sin productos otros</div>';
+    }
+    if(tablaOtros){
+      tablaOtros.innerHTML = otros.map(p=>`<tr><td style="padding:8px;border:1px solid #1f2937">${p.nombre||p.id}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${p.stock||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${p.stock_minimo||5}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:12px;text-align:center;color:#64748b">Sin otros</td></tr>';
+    }
+
+  }catch(e){ console.error('cargarStock 3 tabs',e); }
 }
 
-function cambiarTabStock(t){
-  // Ocultar todas las tabs de stock
-  document.querySelectorAll('[id^="tabStock"]').forEach(el=>el.classList.add('hidden'));
-  document.querySelectorAll('[id^="stockTab"]').forEach(el=>el.classList.add('hidden'));
-  // Mostrar la seleccionada
-  const tabGas=document.getElementById('tabStockGas')||document.getElementById('stockGas');
-  const tabTubo=document.getElementById('tabStockTubo')||document.getElementById('stockTubo');
-  const tabOtros=document.getElementById('tabStockOtros')||document.getElementById('stockOtros');
-  if(t==='gas' && tabGas) tabGas.classList.remove('hidden');
-  if(t==='tubo' && tabTubo) tabTubo.classList.remove('hidden');
-  if(t==='otros' && tabOtros) tabOtros.classList.remove('hidden');
-  cargarStock();
+function cambiarTabStock(tab){
+  document.getElementById('tabStockGas')?.classList.add('hidden');
+  document.getElementById('tabStockFracc')?.classList.add('hidden');
+  document.getElementById('tabStockOtros')?.classList.add('hidden');
+  ['btnStockGas','btnStockFracc','btnStockOtros'].forEach(id=>{
+    const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; }
+  });
+  if(tab==='gas'){ document.getElementById('tabStockGas')?.classList.remove('hidden'); document.getElementById('btnStockGas').style.background='#0ea5e9'; document.getElementById('btnStockGas').style.color='white'; }
+  if(tab==='fraccionado'){ document.getElementById('tabStockFracc')?.classList.remove('hidden'); document.getElementById('btnStockFracc').style.background='#0ea5e9'; document.getElementById('btnStockFracc').style.color='white'; }
+  if(tab==='otros'){ document.getElementById('tabStockOtros')?.classList.remove('hidden'); document.getElementById('btnStockOtros').style.background='#0ea5e9'; document.getElementById('btnStockOtros').style.color='white'; }
 }
 
-// Asegurar que al entrar a stock siempre recargue
-const _oldMostrarSeccionStock = window.mostrarSeccion;
-window.mostrarSeccion = window.mostrarSeccion || _oldMostrarSeccionStock;
-if(typeof _oldMostrarSeccionStock === 'function'){
-  const original = _oldMostrarSeccionStock;
-  window.mostrarSeccion = function(id,btn){
-    document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-    const el=document.getElementById('view-'+id); if(el) el.classList.remove('hidden');
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active');
-    if(id==='resumen' && typeof cargarResumen==='function') cargarResumen();
-    if(id==='stock'){ cargarStock(); if(typeof cambiarTabStock==='function') cambiarTabStock('gas'); }
-    if(id==='ventas'){ if(typeof cargarProductosParaVentas==='function') cargarProductosParaVentas(); if(typeof cargarVentasHoy==='function') cargarVentasHoy(); if(typeof cambiarTabVentas==='function') cambiarTabVentas('mostrador'); }
-    if(id==='productos' && typeof cargarProductosCatalogo==='function') cargarProductosCatalogo();
-    if(id==='clientes' && typeof cargarClientes==='function') cargarClientes();
-    if(id==='proveedores' && typeof cargarProveedores==='function') cargarProveedores();
-    if(id==='repartidores' && typeof cargarRepartidores==='function') cargarRepartidores();
-    if(id==='gps'){ setTimeout(()=>{ if(typeof initGpsMaps==='function') initGpsMaps(); },150); }
-    if(id==='finanzas' && typeof cargarFinanzas==='function') cargarFinanzas();
-  };
+function ventaRapidaFraccionado(k){
+  alert(`Venta fraccionado ${k}kg - va a descontar ${k}kg del tubo 43.5 (próximo paso)`);
+  // Aquí después conectamos con modal fraccionado real
 }
-//////
+    
+
 function renderStockGas(){
   const tbody = document.getElementById('tablaStockGas');
   if(!tbody) return;
