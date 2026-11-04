@@ -980,8 +980,8 @@ async function guardarProveedor(){
 async function eliminarProveedor(id){ if(!confirm('¿Borrar proveedor?')) return; try{ await fetch(`${API}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }catch(e){ alert(e.message); } }
     
 // --- STOCK ---
-// ===== STOCK MEGAL FINAL DESDE CERO - CON 3 ESTADOS + REMITO REAL =====
-async function cargarStock(){
+// --- STOCK ---
+window.cargarStock = async function(){
   try{
     const rDep = await fetch(API+'?table=deposito',{cache:'no-store'});
     const jDep = await rDep.json();
@@ -996,175 +996,52 @@ async function cargarStock(){
         {producto_id:'11', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
         {producto_id:'13', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
         {producto_id:'45', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
-        {producto_id:'43.5', llenas:0, vacias:0, para_cambio:0, en_uso:1, kilos_restantes:43.5},
+        {producto_id:'43.5', llenas:4, vacias:3, para_cambio:0, en_uso:1, kilos_restantes:43.5},
       ];
     }
     window.depositoCache = dep;
 
-    // GAS 11/13/45/43.5
-    const gases = dep.filter(d=> ['11','13','45','43'].some(k=> String(d.producto_id).toLowerCase().includes(k.toLowerCase())));
+    const gases = dep.filter(d=> ['11','13','45'].includes(String(d.producto_id)) || String(d.producto_id)==='11' || String(d.producto_id)==='13' || String(d.producto_id)==='45' );
     const gasCards = document.getElementById('stockGasCards');
     const tablaGas = document.getElementById('tablaStockGas');
     
     if(gasCards){
       gasCards.innerHTML = gases.map(d=>{
         const pid=String(d.producto_id);
-        const es43=pid.includes('43');
         const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0;
         const total=llenas+vacias+cambio;
-        const kg = es43 ? '43.5' : pid.includes('11')?'11':pid.includes('45')?'45':'13';
-        if(es43){
-          return `<div class="card" style="border-left:4px solid #f59e0b"><div style="display:flex;justify-content:space-between"><b style="font-size:20px;color:#f59e0b">${kg}kg TUBO MADRE</b><span style="font-size:10px;background:#78350f;color:#fbbf24;padding:4px 8px;border-radius:12px">FRACCIONADO</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#f59e0b">${d.en_uso||1}</div><div style="font-size:9px;color:#94a3b8">EN USO</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍOS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENOS</div></div></div><div style="margin-top:8px;font-size:10px;color:#fbbf24;text-align:center;background:#f59e0b15;padding:6px;border-radius:6px">Nunca se vende entero - Solo fraccionado 1-3kg</div></div>`;
-        } else {
-          const color = total<5 ? '#ef4444' : total<10 ? '#f59e0b' : '#22c55e';
-          return `<div class="card" style="border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between"><b style="font-size:22px">${kg}kg</b><span style="font-size:10px;background:#0f172a;padding:4px 8px;border-radius:12px">Total: ${total}</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENAS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍAS</div></div><div style="background:#ef444420;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#ef4444">${cambio}</div><div style="font-size:9px;color:#ef4444">P/CAMBIO</div></div></div></div>`;
-        }
+        const color = total<5 ? '#ef4444' : total<10 ? '#f59e0b' : '#22c55e';
+        return `<div class="card" style="border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between"><b style="font-size:22px">${pid}kg</b><span style="font-size:10px;background:#0f172a;padding:4px 8px;border-radius:12px">Total: ${total}</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENAS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍAS</div></div><div style="background:#ef444420;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#ef4444">${cambio}</div><div style="font-size:9px;color:#ef4444">P/CAMBIO</div></div></div></div>`;
       }).join('');
     }
     if(tablaGas){
       tablaGas.innerHTML = gases.map(d=>{
         const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0, total=llenas+vacias+cambio;
-        return `<tr><td style="padding:10px;border:1px solid #1f2937;font-weight:bold">${d.producto_id}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${llenas}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${vacias}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#ef4444">${cambio}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;font-weight:900">${total}</td><td style="padding:10px;border:1px solid #1f2937">${total<5?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td><td style="padding:10px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
+        return `<tr><td style="padding:10px;border:1px solid #1f2937;font-weight:bold">${d.producto_id}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${llenas}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${vacias}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#ef4444">${cambio}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;font-weight:900">${total}</td><td style="padding:10px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
       }).join('');
     }
 
-    // TUBO EN USO
+    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k)));
+    const otrosDiv = document.getElementById('stockOtrosCards');
+    if(otrosDiv) otrosDiv.innerHTML = otros.length ? otros.map(p=>`<div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">$${p.precio_venta||0}</span></div>`).join('') : '<div class="card" style="color:#64748b">Sin otros productos</div>';
 
-// ===== TUBO 43.5 EN USO - VERSION QUE NO QUEDA CARGANDO =====
-async function cargarTuboEnUso(){
-  const tuboDiv = document.getElementById('stockTuboEnUso');
-  if(!tuboDiv) { console.error('No existe #stockTuboEnUso'); return; }
-  
-  try{
-    tuboDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Cargando tubo 43.5...</div>';
-    
-    // Usar API o API_ERP - lo que tengas
-    const API_URL = (typeof API !== 'undefined' ? API : (typeof API_ERP !== 'undefined' ? API_ERP : '/api/postgres'));
-    console.log('Cargando deposito desde:', API_URL);
-    
-    const r = await fetch(API_URL+'?table=deposito',{cache:'no-store'});
-    if(!r.ok) throw new Error('Error API deposito: '+r.status);
-    
-    const j = await r.json();
-    let dep = j.data || [];
-    console.log('Deposito:', dep);
-    
-    // Si no hay deposito, crear uno por defecto
-    let tubo = dep.find(d=> String(d.producto_id).includes('43'));
-    if(!tubo){
-      console.log('No hay tubo 43.5, creando por defecto');
-      tubo = {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:5, vacias:3, para_cambio:0};
-      // Guardarlo
-      await fetch(API_URL+'?table=deposito',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({...tubo, accion:'balance_inicial'})
-      });
-    }
-    
-    const kilosRest = parseFloat(tubo.kilos_restantes);
-    const kilosRestSafe = isNaN(kilosRest) ? 43.5 : kilosRest;
-    const usado = 43.5 - kilosRestSafe;
-    const porcentajeRest = Math.max(0, Math.min(100, (kilosRestSafe/43.5*100))).toFixed(1);
-    const llenas43 = parseInt(tubo.llenas)||0;
-    const vacias43 = parseInt(tubo.vacias)||0;
-    
-    const puedeCambiar = kilosRestSafe <= 6;
-    const casiVacio = kilosRestSafe <= 2;
-    
-    tuboDiv.innerHTML = `
-      <h3 style="margin-bottom:20px;font-size:16px">🧪 Tubo 43.5kg En Uso</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-        <div style="background:#22c55e15;padding:20px;border-radius:12px;text-align:center;border:2px solid #22c55e30">
-          <div style="font-size:11px;color:#22c55e;font-weight:bold">GAS RESTANTE</div>
-          <div style="font-size:42px;font-weight:900;color:#22c55e;margin:8px 0">${kilosRestSafe.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">${porcentajeRest}%</div>
-        </div>
-        <div style="background:#ef444415;padding:20px;border-radius:12px;text-align:center;border:2px solid #ef444430">
-          <div style="font-size:11px;color:#ef4444;font-weight:bold">GAS VENDIDO</div>
-          <div style="font-size:42px;font-weight:900;color:#ef4444;margin:8px 0">${usado.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">Entre 38 y 43.5kg</div>
-        </div>
-      </div>
-      <div style="background:#0f172a;padding:16px;border-radius:12px">
-        <div style="background:#1f2937;height:32px;border-radius:16px;overflow:hidden;position:relative">
-          <div style="background:${casiVacio ? '#ef4444' : puedeCambiar ? '#f59e0b' : '#22c55e'};height:100%;width:${porcentajeRest}%;transition:width 0.5s ease"></div>
-          <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:14px">${kilosRestSafe.toFixed(1)}kg / 43.5kg</div>
-        </div>
-      </div>
-      ${puedeCambiar ? `
-      <div style="margin-top:20px;background:${casiVacio ? '#ef444420' : '#f59e0b20'};border:1px solid ${casiVacio ? '#ef444430' : '#f59e0b30'};padding:16px;border-radius:12px;text-align:center">
-        <button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO 43.5 - Quedan ${kilosRestSafe.toFixed(1)}kg talón</button>
-        <div style="font-size:10px;color:#64748b;margin-top:8px">Llenas: ${llenas43} | Vacías: ${vacias43}</div>
-      </div>` : `<div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">Se puede cambiar cuando queden menos de 6kg. Te faltan ${(kilosRestSafe-6).toFixed(1)}kg</div>`}
-      <div style="margin-top:20px"><div style="font-size:12px;color:#94a3b8;margin-bottom:10px;text-align:center">Venta rápida $160/kg</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"><button onclick="venderFraccionado(1)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1kg $160</button><button onclick="venderFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1.5kg $240</button><button onclick="venderFraccionado(2)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2kg $320</button><button onclick="venderFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2.5kg $400</button><button onclick="venderFraccionado(3)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">3kg $480</button></div></div>
-    `;
-    
-  }catch(e){
-    console.error('Error cargarTuboEnUso:',e);
-    if(tuboDiv) tuboDiv.innerHTML=`<div style="color:#ef4444;padding:20px;text-align:center"><b>Error cargando tubo</b><br>${e.message}<br><br><button onclick="cargarTuboEnUso()" style="background:#1f2937;color:white;padding:8px 16px;border:none;border-radius:6px;margin-top:12px">Reintentar</button><br><br><span style="font-size:11px;color:#64748b">Revisá consola F12 - API: ${typeof API !== 'undefined' ? API : typeof API_ERP !== 'undefined' ? API_ERP : 'no definida'}</span></div>`;
-  }
-}
+  }catch(e){ console.error('cargarStock',e); }
+};
 
-// Asegurar que se llame al cambiar de pestaña
-function cambiarTabStock(tab){
-  console.log('Cambiando tab stock a:', tab);
-  ['tabStockGas','tabStockTubo','tabStockOtros'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.add('hidden');
-  });
-  ['btnStockGas','btnStockTubo','btnStockOtros'].forEach(id=>{
-    const b=document.getElementById(id);
-    if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; }
-  });
-  
-  if(tab==='gas'){
-    document.getElementById('tabStockGas')?.classList.remove('hidden');
-    const b=document.getElementById('btnStockGas'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; }
-    cargarStock();
-  }
-  if(tab==='tubo'){
-    document.getElementById('tabStockTubo')?.classList.remove('hidden');
-    const b=document.getElementById('btnStockTubo'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; }
-    // FORZAR CARGA DEL TUBO - ESTO TE FALTA
-    setTimeout(()=>{ cargarTuboEnUso(); },100);
-  }
-  if(tab==='otros'){
-    document.getElementById('tabStockOtros')?.classList.remove('hidden');
-    const b=document.getElementById('btnStockOtros'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; }
-  }
-}
-
-// TUBO - VERSION QUE NO QUEDA CARGANDO NUNCA
-async function cargarTuboEnUso(){
+window.cargarTuboEnUso = async function(){
   const tuboDiv = document.getElementById('stockTuboEnUso');
   if(!tuboDiv) return;
-  
   try{
     tuboDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Cargando tubo 43.5...</div>';
-    
-    // DETECTAR API - vos estás en megalweb.vercel.app
-    const API_URL = window.API || window.API_ERP || '/api/postgres';
-    console.log('API usada para tubo:', API_URL);
-    
-    const r = await fetch(API_URL+'?table=deposito',{cache:'no-store'});
-    if(!r.ok) throw new Error('API error '+r.status);
+    const r = await fetch(API+'?table=deposito',{cache:'no-store'});
     const j = await r.json();
-    const dep = j.data || [];
-    
-    let tubo = dep.find(d=> String(d.producto_id).includes('43'));
-    if(!tubo){
-      tubo = {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:4, vacias:0, para_cambio:0};
-    }
-    
+    let dep = j.data || [];
+    let tubo = dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:4, vacias:3, para_cambio:0};
     const kilosRest = parseFloat(tubo.kilos_restantes)||43.5;
     const usado = 43.5 - kilosRest;
     const porcentajeRest = (kilosRest/43.5*100).toFixed(1);
-    const llenas43 = parseInt(tubo.llenas)||0;
-    
     const puedeCambiar = kilosRest <= 6;
     const casiVacio = kilosRest <= 2;
-    
     tuboDiv.innerHTML = `
       <h3 style="margin-bottom:20px">🧪 Tubo 43.5kg En Uso</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
@@ -1176,7 +1053,7 @@ async function cargarTuboEnUso(){
         <div style="background:#ef444415;padding:20px;border-radius:12px;text-align:center;border:2px solid #ef444430">
           <div style="font-size:11px;color:#ef4444;font-weight:bold">GAS VENDIDO</div>
           <div style="font-size:42px;font-weight:900;color:#ef4444;margin:8px 0">${usado.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">Entre 38 y 43.5kg</div>
+          <div style="font-size:11px;color:#64748b">38-43.5kg real</div>
         </div>
       </div>
       <div style="background:#0f172a;padding:16px;border-radius:12px">
@@ -1185,51 +1062,89 @@ async function cargarTuboEnUso(){
           <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900">${kilosRest.toFixed(1)}kg / 43.5kg</div>
         </div>
       </div>
-      ${puedeCambiar ? `<div style="margin-top:20px;background:${casiVacio ? '#ef444420' : '#f59e0b20'};padding:16px;border-radius:12px;text-align:center"><button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO - Quedan ${kilosRest.toFixed(1)}kg talón</button><div style="font-size:10px;color:#64748b;margin-top:8px">Llenas disp: ${llenas43}</div></div>` : `<div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">Se puede cambiar cuando queden menos de 6kg. Faltan ${(kilosRest-6).toFixed(1)}kg</div>`}
+      ${puedeCambiar ? `<div style="margin-top:20px;background:${casiVacio ? '#ef444420' : '#f59e0b20'};padding:16px;border-radius:12px;text-align:center"><button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO - Quedan ${kilosRest.toFixed(1)}kg talón</button></div>` : `<div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">Se cambia con menos de 6kg. Faltan ${(kilosRest-6).toFixed(1)}kg</div>`}
       <div style="margin-top:20px"><div style="font-size:12px;color:#94a3b8;margin-bottom:10px;text-align:center">Venta rápida $160/kg</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"><button onclick="venderFraccionado(1)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1kg $160</button><button onclick="venderFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">1.5kg $240</button><button onclick="venderFraccionado(2)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2kg $320</button><button onclick="venderFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">2.5kg $400</button><button onclick="venderFraccionado(3)" style="background:#1f2937;color:white;padding:12px 4px;border:1px solid #334155;border-radius:8px">3kg $480</button></div></div>
     `;
   }catch(e){
     console.error(e);
     tuboDiv.innerHTML = `<div style="color:#ef4444;padding:20px">Error: ${e.message}<br><button onclick="cargarTuboEnUso()" style="margin-top:12px;background:#334155;color:white;padding:8px 16px;border:none;border-radius:6px">Reintentar</button></div>`;
   }
-}
+};
 
-    // OTROS
-    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k)));
-    const otrosDiv = document.getElementById('stockOtrosCards');
-    if(otrosDiv) otrosDiv.innerHTML = otros.length ? otros.map(p=>`<div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">$${p.precio_venta||0}</span></div>`).join('') : '<div class="card" style="color:#64748b">Sin otros productos</div>';
+window.cambiarTabStock = function(tab){
+  ['tabStockGas','tabStockTubo','tabStockOtros'].forEach(id=> document.getElementById(id)?.classList.add('hidden'));
+  ['btnStockGas','btnStockTubo','btnStockOtros'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; } });
+  if(tab==='gas'){ document.getElementById('tabStockGas')?.classList.remove('hidden'); const b=document.getElementById('btnStockGas'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; } cargarStock(); }
+  if(tab==='tubo'){ document.getElementById('tabStockTubo')?.classList.remove('hidden'); const b=document.getElementById('btnStockTubo'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; } setTimeout(()=>{ cargarTuboEnUso(); },100); }
+  if(tab==='otros'){ document.getElementById('tabStockOtros')?.classList.remove('hidden'); const b=document.getElementById('btnStockOtros'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; } }
+};
 
-    // HISTORIAL
-    const movs = finanzas.filter(f=> f.categoria && (f.categoria.includes('venta') || f.categoria.includes('ingreso') || f.categoria.includes('remito'))).slice(0,20);
-    const hist = document.getElementById('historialStock');
-    if(hist) hist.innerHTML = movs.map(m=>`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:4px;margin-bottom:4px"><span>${(m.fecha||'').substring(0,10)} - ${m.descripcion||m.categoria}</span><b style="color:${m.tipo==='ingreso'?'#22c55e':'#ef4444'}">${m.tipo==='ingreso'?'+':''}$${m.monto||0}</b></div>`).join('') || '<span style="color:#64748b">Sin movimientos</span>';
+window.ajustarStockAutomatico = async function({tipoVenta, kg, cantidad, prodId}){
+  try{
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); if(!r.ok) throw new Error('API '+r.status);
+    const dep=(await r.json()).data||[];
+    const kgStr=String(kg);
+    let item = dep.find(d=> String(d.producto_id)===kgStr || String(d.producto_id)===String(prodId)) || dep.find(d=> String(d.producto_id).includes(kgStr));
+    if(!item) item={producto_id:kgStr, llenas:20, vacias:10, para_cambio:0, en_uso:kgStr.includes('43')?1:0, kilos_restantes:kgStr.includes('43')?43.5:0};
+    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
+    if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
+    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
+    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
+    else if(tipoVenta==='fallada'){ llenas=Math.max(0,llenas-cantidad); para_cambio+=cantidad; }
+    else if(tipoVenta==='fraccionado' || String(prodId).startsWith('FRACC')){
+      const tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
+      let kilosRest=parseFloat(tubo.kilos_restantes)||43.5;
+      kilosRest=Math.max(0,kilosRest-(parseFloat(kg)||0)*cantidad);
+      await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})});
+      return {ok:true};
+    } else { llenas=Math.max(0,llenas-cantidad); }
+    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
+    return {ok:true};
+  }catch(e){ console.error('ajustarStock',e); return {ok:false, error:e.message}; }
+};
 
-  }catch(e){ console.error('cargarStock',e); }
-}
+window.venderFraccionado = async function(k){
+  const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
+  const tubo=dep.find(d=> String(d.producto_id).includes('43')); const disp=parseFloat(tubo?.kilos_restantes)||43.5;
+  if(disp < k) return alert(`Sin gas: Disponible ${disp}kg, pediste ${k}kg`);
+  if(!confirm(`¿Vender ${k}kg fraccionado $${k*160}?`)) return;
+  const id='V_'+Date.now();
+  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:new Date().toISOString(), fecha_local:new Date().toLocaleString('es-UY'), hoy:new Date().toISOString().split('T')[0], tipo:'fraccionado', tipo_cliente:'consumidor_final', modo:'retira', canal:'mostrador', producto_id:`FRACC_${k}`, cantidad:1, precio_unitario:k*160, flete:0, total:k*160, cliente_nombre:'Fraccionado', pago:'contado', kilos:k})});
+  await ajustarStockAutomatico({tipoVenta:'fraccionado', kg:k, cantidad:1, prodId:`FRACC_${k}`});
+  cargarStock(); cargarTuboEnUso(); if(typeof cargarVentasHoy==='function') cargarVentasHoy(); alert(`✅ ${k}kg vendido`);
+};
 
+window.cambiarTubo43 = async function(){
+  if(!confirm('¿Cambiar tubo 43.5? El que está en uso pasa a vacío y uno lleno pasa a en uso.')) return;
+  const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
+  let tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', llenas:4, vacias:3, en_uso:1, kilos_restantes:5};
+  if((parseInt(tubo.llenas)||0) <=0) return alert('No hay tubos 43.5 llenos para poner en uso');
+  tubo.llenas=Math.max(0,(parseInt(tubo.llenas)||0)-1);
+  tubo.vacias=(parseInt(tubo.vacias)||0)+1;
+  tubo.kilos_restantes=43.5;
+  await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...tubo, accion:'balance_inicial'})});
+  alert('✅ Tubo cambiado a 43.5kg lleno');
+  cargarTuboEnUso(); cargarStock();
+};
 
 function abrirModalIngresoInicial(prodId){ if(prodId) document.getElementById('ingInicialProd').value=prodId; document.getElementById('modalIngresoInicial').classList.remove('hidden'); document.getElementById('modalIngresoInicial').style.display='flex'; }
 function cerrarModalIngresoInicial(){ const m=document.getElementById('modalIngresoInicial'); m.classList.add('hidden'); m.style.display='none'; }
-
 async function guardarIngresoInicial(){
   const pid=document.getElementById('ingInicialProd').value;
   const llenas=parseInt(document.getElementById('ingInicialLlenas').value)||0;
   const vacias=parseInt(document.getElementById('ingInicialVacias').value)||0;
   const para_cambio=parseInt(document.getElementById('ingInicialCambio').value)||0;
   await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:pid, llenas, vacias, para_cambio, en_uso:pid.includes('43')?1:0, kilos_restantes:pid.includes('43')?43.5:0, accion:'balance_inicial'})});
-  cerrarModalIngresoInicial(); cargarStock(); alert(`✅ Balance ${pid}: ${llenas} llenas + ${vacias} vacías + ${para_cambio} p/cambio = ${llenas+vacias+para_cambio} total`);
+  cerrarModalIngresoInicial(); cargarStock(); cargarTuboEnUso(); alert(`✅ Balance ${pid}: ${llenas} llenas + ${vacias} vacías + ${para_cambio} p/cambio`);
 }
-
 function abrirModalIngresoRemito(){
   fetch(API+'?table=proveedores',{cache:'no-store'}).then(r=>r.json()).then(j=>{
     const sel=document.getElementById('ingRemitoProv');
     if(sel) sel.innerHTML = (j.data||[]).map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('') || '<option value="prov_default">Proveedor General</option>';
   });
   document.getElementById('modalIngresoRemito').classList.remove('hidden'); document.getElementById('modalIngresoRemito').style.display='flex';
-  calcularBalanceRemito();
 }
 function cerrarModalIngresoRemito(){ const m=document.getElementById('modalIngresoRemito'); m.classList.add('hidden'); m.style.display='none'; }
-
 function calcularBalanceRemito(){
   const trae=parseInt(document.getElementById('ingRemitoTraeLlenas')?.value)||0;
   const nuevos=parseInt(document.getElementById('ingRemitoNuevos')?.value)||0;
@@ -1240,12 +1155,10 @@ function calcularBalanceRemito(){
   const diff=debeLlevar-llevaTotal;
   const info=document.getElementById('balanceRemitoInfo');
   if(!info) return;
-  if(trae===0){ info.innerHTML='Ingresá cuántas llenas trae'; info.style.background='#0f172a'; info.style.color='#94a3b8'; return; }
-  if(diff===0){ info.innerHTML=`✅ OK: Trae ${trae} = ${llevaVacias} vacías + ${llevaCambio} cambio + ${nuevos} nuevos`; info.style.background='#22c55e20'; info.style.color='#22c55e'; }
-  else if(diff>0){ info.innerHTML=`⚠️ Faltan ${diff} envases por devolver`; info.style.background='#f59e0b20'; info.style.color='#f59e0b'; }
-  else { info.innerHTML=`⚠️ Lleva ${Math.abs(diff)} de más`; info.style.background='#ef444420'; info.style.color='#ef4444'; }
+  if(trae===0){ info.innerHTML='Ingresá cuántas llenas trae'; return; }
+  if(diff===0){ info.innerHTML=`✅ OK: Trae ${trae} = ${llevaVacias} vacías + ${llevaCambio} cambio + ${nuevos} nuevos`; info.style.background='#22c55e20'; }
+  else { info.innerHTML=`⚠ Faltan ${diff} envases`; info.style.background='#f59e0b20'; }
 }
-
 async function guardarIngresoRemito(){
   const prod=document.getElementById('ingRemitoProd').value;
   const traeLlenas=parseInt(document.getElementById('ingRemitoTraeLlenas').value)||0;
@@ -1254,83 +1167,32 @@ async function guardarIngresoRemito(){
   const llevaCambio=parseInt(document.getElementById('ingRemitoLlevaCambio').value)||0;
   const prov=document.getElementById('ingRemitoProv').value||'Prov';
   const num=document.getElementById('ingRemitoNum').value||'S/N';
-  if(traeLlenas===0) return alert('Ingresá cuántas llenas trae');
   const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
   let item=dep.find(d=> String(d.producto_id)===String(prod)) || {producto_id:prod, llenas:0, vacias:0, para_cambio:0, en_uso:prod.includes('43')?1:0, kilos_restantes:prod.includes('43')?43.5:0};
   let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
-  const antesL=llenas, antesV=vacias, antesC=para_cambio;
   llenas+=traeLlenas; vacias=Math.max(0,vacias-llevaVacias); para_cambio=Math.max(0,para_cambio-llevaCambio);
   await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
-  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'ingreso_remito', monto:0, descripcion:`Remito ${num} ${prov}: ${prod}kg Trae ${traeLlenas} Lleva V:${llevaVacias} C:${llevaCambio} Nuevos:${nuevos}. L:${antesL}->${llenas} V:${antesV}->${vacias}`})});
-  cerrarModalIngresoRemito(); cargarStock(); alert(`✅ Remito ${num}: ${prod}kg Trae ${traeLlenas} Lleva V:${llevaVacias} C:${llevaCambio} Nuevos:${nuevos}\nAhora: ${llenas} llenas, ${vacias} vacías, ${para_cambio} p/cambio`);
+  cerrarModalIngresoRemito(); cargarStock(); cargarTuboEnUso(); alert(`✅ Remito ${num} guardado`);
 }
 
-async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
-  try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
-    let item=dep.find(d=> String(d.producto_id)===String(kg) || String(d.producto_id)===String(prodId)) || dep.find(d=> String(d.producto_id).includes(String(kg))) || {producto_id:String(kg), llenas:20, vacias:10, para_cambio:0, en_uso:0, kilos_restantes:0};
-    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
-    if(tipoVenta==='garrafa_completa') llenas=Math.max(0,llenas-cantidad);
-    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
-    else if(tipoVenta==='solo_envase_vacio') vacias=Math.max(0,vacias-cantidad);
-    else if(tipoVenta==='fallada'){ llenas=Math.max(0,llenas-cantidad); para_cambio+=cantidad; }
-    else if(tipoVenta==='fraccionado' || String(prodId).startsWith('FRACC')){
-      const tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
-      let kilosRest=parseFloat(tubo.kilos_restantes)||43.5;
-      kilosRest=Math.max(0,kilosRest-(parseFloat(kg)||0)*cantidad);
-      await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})});
-      return {ok:true};
-    }
-    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
-    return {ok:true};
-  }catch(e){ console.error(e); return {ok:false}; }
-}
-
-async function venderFraccionado(k){
-  const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
-  const tubo=dep.find(d=> String(d.producto_id).includes('43'));
-  const disp=parseFloat(tubo?.kilos_restantes)||43.5;
-  if(disp < k) return alert(`Sin gas: Disponible ${disp}kg, pediste ${k}kg`);
-  if(!confirm(`¿Vender ${k}kg fraccionado $`+k*160+'?')) return;
-  const id='V_'+Date.now();
-  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:new Date().toISOString(), fecha_local:new Date().toLocaleString('es-UY'), hoy:new Date().toISOString().split('T')[0], tipo:'fraccionado', tipo_cliente:'consumidor_final', modo:'retira', canal:'mostrador', producto_id:`FRACC_${k}`, cantidad:1, precio_unitario:k*160, flete:0, total:k*160, cliente_nombre:'Fraccionado', pago:'contado', kilos:k})});
-  await ajustarStockAutomatico({tipoVenta:'fraccionado', kg:k, cantidad:1, prodId:`FRACC_${k}`});
-  cargarStock(); if(typeof cargarVentasHoy==='function') cargarVentasHoy(); alert(`✅ ${k}kg vendido`);
-}
-
-
-
-
-
-// --- VENTAS MEGAL FINAL VERIFICADO - GUARDA / MUESTRA / DESCUENTA STOCK / FLETE $150 ---
-window.PRODUCTOS_MEGAL_DEFAULT = window.PRODUCTOS_MEGAL_DEFAULT || [
+// --- VENTAS MEGAL FINAL ---
+window.PRODUCTOS_MEGAL_DEFAULT = [
   {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750, kg:11},
   {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850, kg:13},
   {id:'45', nombre:'Garrafa 45kg', tipo:'gas', precio_compra:2000, precio_venta:2800, kg:45},
 ];
 window._modoMostrador = window._modoMostrador || 'retira';
-
-// --- VENTAS MEGAL FINAL - TODO EN ORDEN CORRECTO ---
-window.PRODUCTOS_MEGAL_DEFAULT = window.PRODUCTOS_MEGAL_DEFAULT || [
-  {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750, kg:11},
-  {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850, kg:13},
-  {id:'45', nombre:'Garrafa 45kg', tipo:'gas', precio_compra:2000, precio_venta:2800, kg:45},
-];
-window._modoMostrador = window._modoMostrador || 'retira';
-
-function extraerKgDeProducto(prodId){
+window.extraerKgDeProducto = function(prodId){
   const s=String(prodId).toLowerCase();
   if(s.includes('11')) return 11;
   if(s.includes('13')) return 13;
   if(s.includes('45')) return 45;
   if(s.includes('43')) return 43.5;
   return 13;
-}
-
-function getTipoCliente(){ return document.getElementById('vmTipoCliente')?.value || 'consumidor_final'; }
-function getModoVenta(){ return document.getElementById('vmModo')?.value || window._modoMostrador; }
-
-function setMostradorModo(modo){
+};
+window.getTipoCliente = function(){ return document.getElementById('vmTipoCliente')?.value || 'consumidor_final'; };
+window.getModoVenta = function(){ return document.getElementById('vmModo')?.value || window._modoMostrador; };
+window.setMostradorModo = function(modo){
   window._modoMostrador=modo;
   const m=document.getElementById('vmModo'); if(m) m.value=modo;
   const bR=document.getElementById('btnMostradorRetira'); const bD=document.getElementById('btnMostradorDomicilio');
@@ -1339,9 +1201,8 @@ function setMostradorModo(modo){
     else { bD.style.background='#38bdf8'; bD.style.color='#000'; bR.style.background='#1f2937'; bR.style.color='#94a3b8'; }
   }
   actualizarReglaFlete();
-}
-
-function actualizarReglaFlete(){
+};
+window.actualizarReglaFlete = function(){
   const tipo=getTipoCliente(); const modo=getModoVenta();
   const fleteInput=document.getElementById('vmFlete'); const info=document.getElementById('vmFleteInfo');
   if(!fleteInput) return;
@@ -1357,46 +1218,35 @@ function actualizarReglaFlete(){
     if(info) info.textContent='Domicilio = $150 (editable)';
   }
   calcularTotalMostrador();
-}
-
-function calcularTotalMostrador(){
+};
+window.calcularTotalMostrador = function(){
   const cant=parseInt(document.getElementById('vmCant')?.value)||1;
   const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
   const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
   const el=document.getElementById('vmTotal'); if(el) el.textContent='$'+(cant*precio+flete);
-}
-
-async function cargarProductosParaVentas(){
+};
+window.cargarProductosParaVentas = async function(){
   try{
     const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); let lista=j.data||[];
     if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT;
     window.productosCache=lista;
     const sel=document.getElementById('vmProducto'); if(!sel) return;
     sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre||p.id} ($${p.precio_venta||0})</option>`).join('');
-    if(!sel.dataset.listener){
-      sel.dataset.listener='1';
-      sel.addEventListener('change',()=>{
-        const opt=sel.selectedOptions[0]; const precio=opt?.dataset?.precio||0;
-        const inp=document.getElementById('vmPrecio'); if(inp && precio>0){ inp.value=precio; calcularTotalMostrador(); }
-      });
-    }
   }catch(e){ console.error(e); }
-}
-
-async function cargarVentasHoy(){
+};
+window.cargarVentasHoy = async function(){
   try{
     const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
-    const hoy=new Date().toISOString().split('T')[0]; const ayer=new Date(Date.now()-86400000).toISOString().split('T')[0];
-    ventas=ventas.filter(v=>{ if(v.canal==='app'||v.modo==='app') return false; const fv=(v.fecha||'').toString().split('T')[0]; return fv===hoy||fv===ayer||v.hoy===hoy||v.canal==='mostrador'; });
+    const hoy=new Date().toISOString().split('T')[0];
+    ventas=ventas.filter(v=>{ const fv=(v.fecha||'').toString().split('T')[0]; return fv===hoy || v.hoy===hoy || v.canal==='mostrador'; });
     ventas.sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
     const el=document.getElementById('ventasHoyTabla'); if(!el) return;
     if(!ventas.length){ el.innerHTML=`<div style="padding:12px;background:#0f172a;border-radius:8px;color:#64748b;text-align:center">Sin ventas hoy (${hoy})</div>`; return; }
     const tot=ventas.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
     el.innerHTML=`<div style="margin-bottom:8px;color:#94a3b8;font-size:12px">${ventas.length} ventas - Total $${tot}</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${v.fecha_local||(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||'Mostrador'}</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id} x${v.cantidad}</td><td style="padding:4px;border:1px solid #1f2937;color:${v.flete>0?'#f59e0b':'#64748b'}">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;color:#22c55e;font-weight:900">$${v.total||0}</td></tr>`).join('')}</tbody></table>`;
   }catch(e){ console.error('cargarVentasHoy',e); }
-}
-
-function cambiarTabVentas(t){
+};
+window.cambiarTabVentas = function(t){
   const m=document.getElementById('ventaMostrador'); const c=document.getElementById('ventaCamioneta');
   const bm=document.getElementById('tabVentaMostrador'); const bc=document.getElementById('tabVentaCamioneta');
   if(m) m.classList.add('hidden'); if(c) c.classList.add('hidden');
@@ -1404,25 +1254,8 @@ function cambiarTabVentas(t){
   if(bc){ bc.style.background='#1f2937'; bc.style.color='#94a3b8'; }
   if(t==='mostrador'){ if(m) m.classList.remove('hidden'); if(bm){ bm.style.background='#0ea5e9'; bm.style.color='white'; } cargarProductosParaVentas(); cargarVentasHoy(); }
   else { if(c) c.classList.remove('hidden'); if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } }
-}
-
-async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
-  try{
-    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); let dep=j.data||[];
-    const buscarIds=[String(kg), String(prodId), String(kg)+'kg'];
-    let item=null; for(const bid of buscarIds){ item=dep.find(d=> String(d.producto_id).toLowerCase()===bid.toLowerCase()); if(item) break; }
-    if(!item) item=dep.find(d=> String(d.producto_id).includes(String(kg)));
-    if(!item) item={producto_id:String(kg), llenas:20, vacias:10, en_uso:0};
-    let llenas=parseInt(item.llenas)||0; let vacias=parseInt(item.vacias)||0; let en_uso=parseInt(item.en_uso)||0;
-    if(tipoVenta==='garrafa_completa') llenas=Math.max(0,llenas-cantidad);
-    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
-    else if(tipoVenta==='solo_envase_vacio') vacias=Math.max(0,vacias-cantidad);
-    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, en_uso, accion:'balance_inicial'})});
-    return {ok:true};
-  }catch(e){ console.error(e); return {ok:false}; }
-}
-
-async function guardarVentaMostrador(){
+};
+window.guardarVentaMostrador = async function(){
   try{
     const prodId=document.getElementById('vmProducto')?.value;
     const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
@@ -1430,152 +1263,17 @@ async function guardarVentaMostrador(){
     const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
     const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
     const tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
-    const tipoCliente= (typeof getTipoCliente==='function'?getTipoCliente():'consumidor_final');
-    const modo= (typeof getModoVenta==='function'?getModoVenta():'retira');
-    const pago=document.getElementById('vmPago')?.value||'contado';
-    
     if(!prodId) return alert('Seleccioná producto');
-    
-    const id='V_'+Date.now();
-    const ahora=new Date();
-    const fechaISO=ahora.toISOString();
-    const fechaLocal=ahora.toLocaleString('es-UY');
-    const hoy=fechaISO.split('T')[0];
-    const total=cantidad*precio+flete;
-    const kg= (typeof extraerKgDeProducto==='function'?extraerKgDeProducto(prodId):parseFloat(String(prodId).match(/\d+(\.\d+)?/)?.[0]||'11'));
-    
-    console.log('VENTA:', {prodId, kg, cantidad, tipoOp, total});
-    
-    const API_URL = window.API || window.API_ERP || '/api/postgres';
-    
-    // 1. Guardar venta
-    const rVenta = await fetch(API_URL+'?table=ventas',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg})
-    });
-    if(!rVenta.ok) throw new Error('Error guardando venta: '+rVenta.status);
-    
-    // 2. DESCONTAR STOCK - ESTO ES LO QUE NO TE ANDABA
-    console.log('Descontando stock...', tipoOp, kg, cantidad);
-    const resStock = await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
-    console.log('Resultado ajuste stock:', resStock);
-    
-    // 3. Finanzas
-    await fetch(API_URL+'?table=finanzas',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:pago})
-    });
-    
+    const id='V_'+Date.now(); const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
+    const total=cantidad*precio+flete; const kg=extraerKgDeProducto(prodId);
+    await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:getTipoCliente(), modo:getModoVenta(), canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago:document.getElementById('vmPago')?.value||'contado', kilos:kg})});
+    const res=await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
+    console.log('stock res',res);
+    await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:document.getElementById('vmPago')?.value||'contado'})});
     alert(`✅ Venta $${total} - ${cantidad}x ${kg}kg (${tipoOp}) - Stock actualizado`);
-    
-    // 4. RECARGAR TODO - ESTO TE FALTABA
-    if(typeof cargarVentasHoy==='function') await cargarVentasHoy();
-    if(typeof cargarStock==='function') await cargarStock();
-    if(typeof cargarTuboEnUso==='function') await cargarTuboEnUso();
-    if(typeof cargarCaja==='function') await cargarCaja();
-    
-    // Limpiar form si tenés
-    if(typeof calcularTotalMostrador==='function') calcularTotalMostrador();
-    
-  }catch(e){
-    console.error('Error en guardarVentaMostrador:', e);
-    alert('❌ Error guardando venta: '+e.message);
-  }
-}
-
-// Y ESTA ES LA VERSION FINAL DE ajustarStockAutomatico QUE SI FUNCIONA CON TU LOGICA
-async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
-  try{
-    const API_URL = window.API || window.API_ERP || '/api/postgres';
-    console.log('ajustarStockAutomatico:', {tipoVenta, kg, cantidad, prodId});
-    
-    const r=await fetch(API_URL+'?table=deposito',{cache:'no-store'});
-    if(!r.ok) throw new Error('Error API deposito '+r.status);
-    const dep=(await r.json()).data||[];
-    
-    // BUSCAR POR KG - ROBUSTO (11, 13, 45, 43.5)
-    const kgStr = String(kg);
-    let item = dep.find(d=> String(d.producto_id)===kgStr || String(d.producto_id)===String(prodId));
-    if(!item) item = dep.find(d=> String(d.producto_id).includes(kgStr));
-    if(!item) item = dep.find(d=> kgStr.includes(String(d.producto_id)));
-    
-    if(!item){
-      console.warn('No se encontró deposito para', kg, 'creando por defecto');
-      item = {producto_id:kgStr, llenas:20, vacias:10, para_cambio:0, en_uso: kgStr.includes('43')?1:0, kilos_restantes: kgStr.includes('43')?43.5:0};
-    }
-    
-    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
-    const antes = {llenas, vacias, para_cambio};
-    
-    // LOGICA REAL MEGAL
-    if(tipoVenta==='garrafa_completa' || tipoVenta==='envase_carga' || tipoVenta==='completa'){
-      llenas=Math.max(0,llenas-cantidad);
-    }
-    else if(tipoVenta==='solo_gas' || tipoVenta==='carga' || tipoVenta==='recarga'){
-      // Cliente trae vacía y se lleva llena: llenas -1, vacias +1
-      llenas=Math.max(0,llenas-cantidad);
-      vacias+=cantidad;
-    }
-    else if(tipoVenta==='solo_envase' || tipoVenta==='envase_vacio' || tipoVenta==='solo_envase_vacio'){
-      vacias=Math.max(0,vacias-cantidad);
-    }
-    else if(tipoVenta==='fallada'){
-      // Entregás llena y te entra fallada para cambio
-      llenas=Math.max(0,llenas-cantidad);
-      para_cambio+=cantidad;
-    }
-    else if(tipoVenta==='fraccionado' || String(prodId).startsWith('FRACC')){
-      // Fraccionado descuenta del tubo 43.5
-      const tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
-      let kilosRest=parseFloat(tubo.kilos_restantes)||43.5;
-      kilosRest=Math.max(0,kilosRest-(parseFloat(kg)||0)*cantidad);
-      console.log(`Fraccionado: tubo ${tubo.kilos_restantes} -> ${kilosRest}`);
-      await fetch(API_URL+'?table=deposito',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})
-      });
-      console.log(`Stock Tubo: ${JSON.stringify(antes)} -> kilos_restantes ${kilosRest}`);
-      return {ok:true, antes, despues:{kilos_restantes:kilosRest}};
-    }
-    else {
-      // Por defecto, si no reconoce tipo, descuenta llena
-      llenas=Math.max(0,llenas-cantidad);
-    }
-    
-    console.log(`Stock ${item.producto_id}: Llenas ${antes.llenas}->${llenas} Vacias ${antes.vacias}->${vacias} Cambio ${antes.para_cambio}->${para_cambio}`);
-    
-    const rUp = await fetch(API_URL+'?table=deposito',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        producto_id:item.producto_id,
-        llenas, vacias, para_cambio,
-        en_uso:item.en_uso||0,
-        kilos_restantes:item.kilos_restantes||0,
-        accion:'balance_inicial'
-      })
-    });
-    if(!rUp.ok) throw new Error('Error actualizando deposito');
-    
-    return {ok:true, antes, despues:{llenas, vacias, para_cambio}};
-    
-  }catch(e){
-    console.error('Error ajustarStockAutomatico:', e);
-    return {ok:false, error:e.message};
-  }
-}
-
-function extraerKgDeProducto(prodId){
-  const s=String(prodId).toLowerCase();
-  if(s.includes('11')) return 11;
-  if(s.includes('13')) return 13;
-  if(s.includes('45')) return 45;
-  if(s.includes('43')) return 43.5;
-  return 13;
-}
+    await cargarVentasHoy(); await cargarStock(); await cargarTuboEnUso();
+  }catch(e){ console.error(e); alert('❌ Error: '+e.message); }
+};
 
 
 
