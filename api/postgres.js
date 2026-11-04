@@ -107,18 +107,19 @@ export default async function handler(req, res) {
       }
 
       // VENTAS
-      if (table === 'ventas') {
-        const vid = body.id || 'v_'+Date.now();
-        await sql`INSERT INTO ventas (id, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id) VALUES (${vid}, ${body.producto_id||'13'}, ${body.cliente_nombre||'Cliente'}, ${parseInt(body.cantidad)||1}, ${parseFloat(body.total)||0}, ${parseFloat(body.flete)||0}, ${body.pago||'contado'}, ${body.tipo_cliente||'consumidor_final'}, ${body.modo||'mostrador'}, ${body.repartidor_id||''})`;
-        // Descontar stock
-        if (body.producto_id && body.producto_id !== '43.5') {
-          const dep = await sql`SELECT * FROM deposito WHERE producto_id=${body.producto_id}`;
-          if (dep.rows[0]) {
-            const nl = Math.max(0, (parseInt(dep.rows[0].llenas)||0) - (parseInt(body.cantidad)||1));
-            const nv = (parseInt(dep.rows[0].vacias)||0) + (parseInt(body.cantidad)||1);
-            await sql`UPDATE deposito SET llenas=${nl}, vacias=${nv} WHERE producto_id=${body.producto_id}`;
-          }
-        }
+      if(table==='ventas'){
+  if(method==='GET'){
+    const {rows}=await sql.query(`SELECT * FROM ventas ORDER BY fecha DESC LIMIT 500`);
+    return res.json({data:[STRIPPED]
+  }
+  if(method==='POST'){
+    const b=req.body;
+    await sql`CREATE TABLE IF NOT EXISTS ventas (id TEXT PRIMARY KEY, fecha TEXT, fecha_local TEXT, hoy TEXT, tipo TEXT, tipo_cliente TEXT, modo TEXT, canal TEXT, producto_id TEXT, cantidad INT, precio_unitario FLOAT, flete FLOAT, total FLOAT, cliente_nombre TEXT, pago TEXT, kilos FLOAT)`;
+    await sql.query(`INSERT INTO ventas (id,fecha,fecha_local,hoy,tipo,tipo_cliente,modo,canal,producto_id,cantidad,precio_unitario,flete,total,cliente_nombre,pago,kilos) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) ON CONFLICT (id) DO UPDATE SET fecha=EXCLUDED.fecha, total=EXCLUDED.total`, [b.id,b.fecha,b.fecha_local,b.hoy,b.tipo,b.tipo_cliente,b.modo,b.canal,b.producto_id,b.cantidad,b.precio_unitario,b.flete,b.total,b.cliente_nombre,b.pago,b.kilos]);
+    return res.json({ok:true});
+  }
+}
+        
         // Auto ingreso en finanzas
         await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE, 'ingreso', 'Venta Mostrador', ${'Venta ' + (body.producto_id||'') + ' - ' + (body.cliente_nombre||'')}, ${parseFloat(body.total)||0}, ${body.pago||'contado'})`;
         if ((parseFloat(body.flete)||0) > 0) {
