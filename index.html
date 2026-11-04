@@ -233,51 +233,55 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
 <!-- STOCK --> 
-  <div id="view-stock" class="view-section hidden">
-  <div class="card">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <button id="btnStockGas" onclick="cambiarTabStock('gas')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">GAS 11/13/45</button>
-      <button id="btnStockTubo" onclick="cambiarTabStock('tubo')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">TUBO 43.5</button>
-      <button id="btnStockOtros" onclick="cambiarTabStock('otros')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">OTROS</button>
-      <button id="btnStockIngreso" onclick="cambiarTabStock('ingreso')" style="background:#16a34a;color:white;padding:8px 14px;border:none;border-radius:8px">+ INGRESO</button>
+<div id="view-stock" class="view-section hidden">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button id="btnStockGas" onclick="cambiarTabStock('gas')" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🔥 Gas 11/13/45</button>
+    <button id="btnStockFracc" onclick="cambiarTabStock('fraccionado')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">🧪 Tubo 43.5 / Fraccionado</button>
+    <button id="btnStockOtros" onclick="cambiarTabStock('otros')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">📦 Otros</button>
+  </div>
+
+  <!-- TAB GAS -->
+  <div id="tabStockGas">
+    <div id="stockGasLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+    <div class="card" style="margin-top:16px">
+      <h3>Detalle Gas</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
+        <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Llenas</th><th style="padding:8px;border:1px solid #1f2937">Vacías</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Estado</th></tr></thead>
+        <tbody id="tablaStockGas"></tbody>
+      </table>
     </div>
   </div>
 
-  <div id="tabStockGas" class="card">
-    <h3 style="margin-bottom:8px">GAS Envasado - Stock</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Llenas</th><th style="padding:8px;border:1px solid #1f2937">Vacías</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
-      <tbody id="tablaStockGas"><tr><td colspan="5" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
-    </table>
-  </div>
-
-  <div id="tabStockTubo" class="card hidden">
-    <h3 style="margin-bottom:8px">TUBO 43.5 - Fraccionado</h3>
-    <div id="tuboInfo" style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between"><span>Kilos en uso:</span><b id="tuboKilos" style="color:#38bdf8;font-size:20px">0 kg</b></div>
-      <div style="display:flex;justify-content:space-between"><span>Estado:</span><span id="tuboEstado">Sin iniciar</span></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button onclick="iniciarNuevoTubo43()" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">🆕 Iniciar Nuevo Tubo 43.5kg</button>
-      <button onclick="abrirBalanceInicial('43.5')" style="background:#334155;color:white;padding:8px 14px;border:none;border-radius:8px">Balance Inicial</button>
-    </div>
-    <div class="card" style="background:#0f172a">
-      <h4 style="margin-bottom:8px">Venta Fraccionada 1-3kg</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><label style="font-size:11px">Cliente</label><input type="text" id="fracCliente" placeholder="Cliente" style="width:100%;padding:6px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white"></div>
-        <div><label style="font-size:11px">Kilos (1-3)</label><input type="number" id="fracKilos" min="1" max="3" value="1" style="width:100%;padding:6px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white"></div>
+  <!-- TAB FRACCIONADO -->
+  <div id="tabStockFracc" class="hidden">
+    <div class="card" style="border-left:4px solid #f59e0b">
+      <h3>🧪 Tubo 43.5kg - Madre (nunca se vende entero)</h3>
+      <div id="stockTuboMadre" style="margin-top:12px"></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px">
+        <button onclick="ventaRapidaFraccionado(1)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1kg<br><small>$160</small></button>
+        <button onclick="ventaRapidaFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1.5kg<br><small>$240</small></button>
+        <button onclick="ventaRapidaFraccionado(2)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2kg<br><small>$320</small></button>
+        <button onclick="ventaRapidaFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2.5kg<br><small>$400</small></button>
+        <button onclick="ventaRapidaFraccionado(3)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">3kg<br><small>$480</small></button>
       </div>
-      <button onclick="venderFraccionado()" style="background:#f59e0b;color:black;padding:8px 14px;border:none;border-radius:8px;font-weight:bold;width:100%">Vender Fraccionado</button>
     </div>
+    <div id="stockFraccLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px"></div>
   </div>
 
-  <div id="tabStockOtros" class="card hidden">
-    <h3 style="margin-bottom:8px">OTROS Productos</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Llenas</th><th style="padding:8px;border:1px solid #1f2937">Vacías</th><th style="padding:8px;border:1px solid #1f2937">Acciones</th></tr></thead>
-      <tbody id="tablaStockOtros"><tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Cargando...</td></tr></tbody>
-    </table>
+  <!-- TAB OTROS -->
+  <div id="tabStockOtros" class="hidden">
+    <div id="stockOtrosLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px"></div>
+    <div class="card" style="margin-top:16px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Stock</th><th style="padding:8px;border:1px solid #1f2937">Mínimo</th></tr></thead>
+        <tbody id="tablaStockOtros"></tbody>
+      </table>
+    </div>
   </div>
+</div>
+
+
+
 
   <div id="tabStockIngreso" class="card hidden">
     <h3 style="margin-bottom:12px">Ingreso de Mercadería</h3>
