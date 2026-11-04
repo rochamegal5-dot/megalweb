@@ -233,108 +233,95 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
 <!-- STOCK --> 
+<!-- STOCK MEGAL FINAL DESDE CERO - 3 PESTAÑAS + INGRESO INICIAL + REMITO REAL -->
 <div id="view-stock" class="view-section hidden">
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button id="btnStockGas" onclick="cambiarTabStock('gas')" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🔥 Gas 11/13/45</button>
-    <button id="btnStockFracc" onclick="cambiarTabStock('fraccionado')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">🧪 Tubo 43.5 / Fraccionado</button>
-    <button id="btnStockOtros" onclick="cambiarTabStock('otros')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">📦 Otros</button>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <button onclick="abrirModalIngresoInicial()" style="background:#22c55e;color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:bold">📥 Ingreso Inicial</button>
+    <button onclick="abrirModalIngresoRemito()" style="background:#0ea5e9;color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:bold">🧾 Ingreso Remito</button>
+    <button onclick="cargarStock()" style="background:#1f2937;color:#94a3b8;padding:10px 16px;border:none;border-radius:8px">🔄 Actualizar</button>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button id="btnStockGas" onclick="cambiarTabStock('gas')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">🔥 Gas 11/13/43.5/45</button>
+      <button id="btnStockTubo" onclick="cambiarTabStock('tubo')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🧪 Tubo 43.5 En Uso</button>
+      <button id="btnStockOtros" onclick="cambiarTabStock('otros')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">📦 Otros</button>
+    </div>
   </div>
 
-  <!-- TAB GAS -->
+  <!-- TAB 1: GAS -->
   <div id="tabStockGas">
-    <div id="stockGasLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+    <div id="stockGasCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px"></div>
     <div class="card" style="margin-top:16px">
-      <h3>Detalle Gas</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
-        <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Llenas</th><th style="padding:8px;border:1px solid #1f2937">Vacías</th><th style="padding:8px;border:1px solid #1f2937">Total</th><th style="padding:8px;border:1px solid #1f2937">Estado</th></tr></thead>
+      <h3 style="margin-bottom:12px">📊 Detalle Stock Gas - Llenas / Vacías / Para Cambio = Total</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#0f172a"><th style="padding:10px;border:1px solid #1f2937">Producto</th><th style="padding:10px;border:1px solid #1f2937">Llenas</th><th style="padding:10px;border:1px solid #1f2937">Vacías</th><th style="padding:10px;border:1px solid #1f2937">Para Cambio</th><th style="padding:10px;border:1px solid #1f2937">Total</th><th style="padding:10px;border:1px solid #1f2937">Estado</th><th style="padding:10px;border:1px solid #1f2937">Ajustar</th></tr></thead>
         <tbody id="tablaStockGas"></tbody>
       </table>
     </div>
   </div>
 
-  <!-- TAB FRACCIONADO -->
-  <div id="tabStockFracc" class="hidden">
-    <div class="card" style="border-left:4px solid #f59e0b">
-      <h3>🧪 Tubo 43.5kg - Madre (nunca se vende entero)</h3>
-      <div id="stockTuboMadre" style="margin-top:12px"></div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px">
-        <button onclick="ventaRapidaFraccionado(1)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1kg<br><small>$160</small></button>
-        <button onclick="ventaRapidaFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1.5kg<br><small>$240</small></button>
-        <button onclick="ventaRapidaFraccionado(2)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2kg<br><small>$320</small></button>
-        <button onclick="ventaRapidaFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2.5kg<br><small>$400</small></button>
-        <button onclick="ventaRapidaFraccionado(3)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">3kg<br><small>$480</small></button>
-      </div>
-    </div>
-    <div id="stockFraccLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px"></div>
-  </div>
-
-  <!-- TAB OTROS -->
-  <div id="tabStockOtros" class="hidden">
-    <div id="stockOtrosLista" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px"></div>
+  <!-- TAB 2: TUBO EN USO -->
+  <div id="tabStockTubo" class="hidden">
+    <div id="stockTuboEnUso" class="card" style="border-left:4px solid #f59e0b"></div>
     <div class="card" style="margin-top:16px">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Stock</th><th style="padding:8px;border:1px solid #1f2937">Mínimo</th></tr></thead>
-        <tbody id="tablaStockOtros"></tbody>
-      </table>
+      <h3>📈 Ventas Fraccionado (descuentan del tubo madre)</h3>
+      <div id="movimientosFracc" style="max-height:250px;overflow:auto;margin-top:12px;color:#94a3b8">Cargando...</div>
     </div>
+  </div>
+
+  <!-- TAB 3: OTROS -->
+  <div id="tabStockOtros" class="hidden">
+    <div id="stockOtrosCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>📋 Historial Movimientos Stock</h3>
+    <div id="historialStock" style="max-height:300px;overflow:auto;margin-top:12px"></div>
   </div>
 </div>
 
-
-
-
-  <div id="tabStockIngreso" class="card hidden">
-    <h3 style="margin-bottom:12px">Ingreso de Mercadería</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label style="font-size:11px">Producto *</label><select id="ingProducto" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg (Tubo)</option></select></div>
-      <div><label style="font-size:11px">Proveedor</label><select id="ingProveedor" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label style="font-size:11px">Llenas que ingresan</label><input type="number" id="ingLlenas" value="0" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-      <div><label style="font-size:11px">Vacías que ingresan</label><input type="number" id="ingVacias" value="0" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-    </div>
-    <button onclick="guardarIngresoGas43()" style="background:#16a34a;color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:bold;width:100%">💾 Guardar Ingreso</button>
-  </div>
-</div>
-
-<!-- Modal Editar Stock / Balance -->
-<div id="modalStock" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
-    <h3 id="tituloModalStock" style="margin-bottom:12px">Editar Stock</h3>
-    <input type="hidden" id="stockProductoId">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div><label style="font-size:11px">Llenas</label><input type="number" id="stockLlenas" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-      <div><label style="font-size:11px">Vacías</label><input type="number" id="stockVacias" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-    </div>
-    <div id="boxKilosStock" class="hidden" style="margin-bottom:12px"><label style="font-size:11px">Kilos en uso (solo 43.5)</label><input type="number" id="stockKilos" step="0.1" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalStock()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarEdicionStock()" style="padding:8px 14px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
-  </div>
-</div>
-
-  <div id="modalFraccionado43" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;width:90%;max-width:400px">
-    <h3 style="margin-bottom:12px">🔥 Venta Gas Fraccionado 43.5</h3>
-    <div style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px">
-      <label style="font-size:11px">KILOS A VENDER (solo permitido)</label>
-      <select id="fraccKilos" onchange="calcularFraccTotal()" style="width:100%;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white;margin-top:6px;font-size:16px;font-weight:bold">
-        <option value="1">1 kg - $160</option>
-        <option value="1.5">1.5 kg - $240</option>
-        <option value="2">2 kg - $320</option>
-        <option value="2.5">2.5 kg - $400</option>
-        <option value="3">3 kg - $480</option>
-      </select>
-      <div style="text-align:center;margin-top:12px;background:#1e293b;padding:10px;border-radius:6px">
-        <p style="font-size:11px;color:#94a3b8">TOTAL A COBRAR</p>
-        <b id="fraccTotalTexto" style="font-size:24px;color:#22c55e">$160</b>
-        <p style="font-size:10px;color:#64748b;margin-top:4px">Precio fijo: $160/kg</p>
+<!-- MODAL INGRESO INICIAL -->
+<div id="modalIngresoInicial" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000000aa;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div class="card" style="width:90%;max-width:500px">
+    <h3>📥 Ingreso Inicial / Balance</h3>
+    <div style="display:grid;gap:12px;margin-top:16px">
+      <div><label style="font-size:11px">Producto</label><select id="ingInicialProd" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg Tubo Madre</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label style="font-size:11px">Llenas</label><input type="number" id="ingInicialLlenas" value="0" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+        <div><label style="font-size:11px">Vacías</label><input type="number" id="ingInicialVacias" value="0" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+        <div><label style="font-size:11px">Para Cambio</label><input type="number" id="ingInicialCambio" value="0" min="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
       </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="cerrarModalFraccionado()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button>
-      <button onclick="ventaFraccionada43()" style="padding:8px 14px;background:#22c55e;color:white;border:none;border-radius:6px;font-weight:bold">💰 Vender Fraccionado</button>
+      <div style="display:flex;gap:8px"><button onclick="guardarIngresoInicial()" style="flex:1;background:#22c55e;color:white;padding:10px;border:none;border-radius:8px;font-weight:bold">Guardar</button><button onclick="cerrarModalIngresoInicial()" style="flex:1;background:#1f2937;color:#94a3b8;padding:10px;border:none;border-radius:8px">Cancelar</button></div>
     </div>
   </div>
 </div>
+
+<!-- MODAL REMITO REAL -->
+<div id="modalIngresoRemito" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000000aa;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div class="card" style="width:90%;max-width:560px;max-height:90vh;overflow:auto">
+    <h3>🧾 Ingreso Gas por Remito - Lógica Real</h3>
+    <div style="background:#0f172a;padding:8px;border-radius:6px;font-size:11px;color:#94a3b8;margin-top:12px">Trae Llenas = Vacías que lleva + Para Cambio que lleva + Envases Nuevos</div>
+    <div style="display:grid;gap:12px;margin-top:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label style="font-size:11px">Proveedor</label><select id="ingRemitoProv" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></select></div>
+        <div><label style="font-size:11px">N° Remito</label><input type="text" id="ingRemitoNum" placeholder="001-12345" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+      </div>
+      <div><label style="font-size:11px">Producto Gas</label><select id="ingRemitoProd" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><option value="11">11kg</option><option value="13">13kg</option><option value="45">45kg</option><option value="43.5">43.5kg</option></select></div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label style="font-size:11px;color:#22c55e;font-weight:bold">🟢 Trae LLENAS</label><input type="number" id="ingRemitoTraeLlenas" value="0" min="0" oninput="calcularBalanceRemito()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #22c55e;border-radius:6px;color:white"></div>
+          <div><label style="font-size:11px;color:#f59e0b;font-weight:bold">🟡 NUEVOS comprados</label><input type="number" id="ingRemitoNuevos" value="0" min="0" oninput="calcularBalanceRemito()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #f59e0b;border-radius:6px;color:white"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+          <div><label style="font-size:11px">⚪ Lleva VACÍAS</label><input type="number" id="ingRemitoLlevaVacias" value="0" min="0" oninput="calcularBalanceRemito()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+          <div><label style="font-size:11px;color:#ef4444">🔴 Lleva PARA CAMBIO</label><input type="number" id="ingRemitoLlevaCambio" value="0" min="0" oninput="calcularBalanceRemito()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #ef4444;border-radius:6px;color:white"></div>
+        </div>
+        <div id="balanceRemitoInfo" style="margin-top:12px;padding:8px;border-radius:6px;background:#0f172a;text-align:center;font-size:12px;color:#94a3b8"></div>
+      </div>
+      <div style="display:flex;gap:8px"><button onclick="guardarIngresoRemito()" style="flex:1;background:#0ea5e9;color:white;padding:10px;border:none;border-radius:8px;font-weight:bold">Guardar Remito</button><button onclick="cerrarModalIngresoRemito()" style="flex:1;background:#1f2937;color:#94a3b8;padding:10px;border:none;border-radius:8px">Cancelar</button></div>
+    </div>
+  </div>
+</div>
+  
+  
 
  <!-- VENTAS -->  
 <div id="view-ventas" class="view-section hidden">
@@ -993,260 +980,175 @@ async function guardarProveedor(){
 async function eliminarProveedor(id){ if(!confirm('¿Borrar proveedor?')) return; try{ await fetch(`${API}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }catch(e){ alert(e.message); } }
     
 // --- STOCK ---
-// --- STOCK 3 PESTAÑAS - MODELO ANTERIOR RESTAURADO + CONECTADO A DEPOSITO ---
+// ===== STOCK MEGAL FINAL DESDE CERO - CON 3 ESTADOS + REMITO REAL =====
 async function cargarStock(){
   try{
     const rDep = await fetch(API+'?table=deposito',{cache:'no-store'});
     const jDep = await rDep.json();
     let dep = jDep.data || [];
-    
     const rProd = await fetch(API+'?table=productos',{cache:'no-store'});
-    const jProd = await rProd.json();
-    let productos = jProd.data || [];
+    const productos = (await rProd.json()).data || [];
+    const rFin = await fetch(API+'?table=finanzas',{cache:'no-store'});
+    const finanzas = (await rFin.json()).data || [];
 
     if(!dep.length){
       dep = [
-        {producto_id:'11', llenas:15, vacias:10, en_uso:0},
-        {producto_id:'13', llenas:20, vacias:8, en_uso:0},
-        {producto_id:'45', llenas:5, vacias:2, en_uso:0},
-        {producto_id:'43.5', llenas:0, vacias:0, en_uso:1},
+        {producto_id:'11', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'13', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'45', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'43.5', llenas:0, vacias:0, para_cambio:0, en_uso:1, kilos_restantes:43.5},
       ];
-      for(const d of dep){
-        await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...d, accion:'balance_inicial'})});
-      }
     }
-
     window.depositoCache = dep;
 
-    // --- GAS 11/13/45 ---
-    const gases = dep.filter(d=> ['11','13','45'].some(k=> String(d.producto_id).includes(k)) );
-    const gasLista = document.getElementById('stockGasLista');
+    // GAS 11/13/45/43.5
+    const gases = dep.filter(d=> ['11','13','45','43'].some(k=> String(d.producto_id).toLowerCase().includes(k.toLowerCase())));
+    const gasCards = document.getElementById('stockGasCards');
     const tablaGas = document.getElementById('tablaStockGas');
     
-    if(gasLista){
-      gasLista.innerHTML = gases.map(d=>{
-        const llenas=parseInt(d.llenas)||0; const vacias=parseInt(d.vacias)||0;
-        const total=llenas+vacias;
-        const kg = String(d.producto_id).includes('11')?'11':String(d.producto_id).includes('45')?'45':'13';
-        const color = llenas<5 ? '#ef4444' : llenas<10 ? '#f59e0b' : '#22c55e';
-        return `
-          <div class="card" style="border-left:4px solid ${color}">
-            <div style="display:flex;justify-content:space-between"><b style="font-size:22px">${kg}kg</b><span style="background:#0f172a;padding:4px 8px;border-radius:12px;font-size:10px">${d.producto_id}</span></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;text-align:center">
-              <div style="background:#0f172a;padding:12px;border-radius:8px"><div style="font-size:28px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:10px;color:#94a3b8">LLENAS</div></div>
-              <div style="background:#0f172a;padding:12px;border-radius:8px"><div style="font-size:28px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:10px;color:#94a3b8">VACÍAS</div></div>
-            </div>
-            <div style="margin-top:8px;text-align:center;font-size:12px;color:#64748b">Total envases: ${total} ${llenas<5?'<span style="color:#ef4444">⚠️ RECARGAR</span>':''}</div>
-          </div>`;
-      }).join('') || '<div class="card" style="color:#64748b">Sin stock gas - cargá en depósito</div>';
+    if(gasCards){
+      gasCards.innerHTML = gases.map(d=>{
+        const pid=String(d.producto_id);
+        const es43=pid.includes('43');
+        const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0;
+        const total=llenas+vacias+cambio;
+        const kg = es43 ? '43.5' : pid.includes('11')?'11':pid.includes('45')?'45':'13';
+        if(es43){
+          return `<div class="card" style="border-left:4px solid #f59e0b"><div style="display:flex;justify-content:space-between"><b style="font-size:20px;color:#f59e0b">${kg}kg TUBO MADRE</b><span style="font-size:10px;background:#78350f;color:#fbbf24;padding:4px 8px;border-radius:12px">FRACCIONADO</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#f59e0b">${d.en_uso||1}</div><div style="font-size:9px;color:#94a3b8">EN USO</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍOS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:18px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENOS</div></div></div><div style="margin-top:8px;font-size:10px;color:#fbbf24;text-align:center;background:#f59e0b15;padding:6px;border-radius:6px">Nunca se vende entero - Solo fraccionado 1-3kg</div></div>`;
+        } else {
+          const color = total<5 ? '#ef4444' : total<10 ? '#f59e0b' : '#22c55e';
+          return `<div class="card" style="border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between"><b style="font-size:22px">${kg}kg</b><span style="font-size:10px;background:#0f172a;padding:4px 8px;border-radius:12px">Total: ${total}</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENAS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍAS</div></div><div style="background:#ef444420;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#ef4444">${cambio}</div><div style="font-size:9px;color:#ef4444">P/CAMBIO</div></div></div></div>`;
+        }
+      }).join('');
     }
     if(tablaGas){
-      tablaGas.innerHTML = gases.map(d=>`<tr><td style="padding:8px;border:1px solid #1f2937;font-weight:bold">${d.producto_id} - ${String(d.producto_id).includes('11')?'11kg':String(d.producto_id).includes('45')?'45kg':'13kg'}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${d.llenas||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${d.vacias||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${(parseInt(d.llenas)||0)+(parseInt(d.vacias)||0)}</td><td style="padding:8px;border:1px solid #1f2937">${(parseInt(d.llenas)||0)<5?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td></tr>`).join('');
+      tablaGas.innerHTML = gases.map(d=>{
+        const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0, total=llenas+vacias+cambio;
+        return `<tr><td style="padding:10px;border:1px solid #1f2937;font-weight:bold">${d.producto_id}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${llenas}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${vacias}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#ef4444">${cambio}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;font-weight:900">${total}</td><td style="padding:10px;border:1px solid #1f2937">${total<5?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td><td style="padding:10px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
+      }).join('');
     }
 
-    // --- TUBO 43.5 ---
-    const tubo = dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', llenas:0, vacias:0, en_uso:1};
-    const tuboMadre = document.getElementById('stockTuboMadre');
-    if(tuboMadre){
-      const kilosRestantes = 43.5 - (parseFloat(tubo.en_uso)||0); // si usas en_uso para fraccionado
-      tuboMadre.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">TUBO MADRE</div><div style="font-size:20px;font-weight:900;color:#f59e0b">${tubo.producto_id}</div><div style="font-size:11px;color:#64748b">${tubo.en_uso||1} en uso</div></div>
-          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">KG DISPONIBLES</div><div style="font-size:20px;font-weight:900;color:#22c55e">${43.5}kg</div><div style="font-size:11px;color:#64748b">Tubo lleno = 43.5kg</div></div>
-          <div style="background:#0f172a;padding:12px;border-radius:8px;text-align:center"><div style="font-size:12px;color:#94a3b8">PRECIO</div><div style="font-size:20px;font-weight:900;color:#38bdf8">$160/kg</div><div style="font-size:11px;color:#64748b">Fraccionado</div></div>
-        </div>`;
-    }
-    const fraccLista = document.getElementById('stockFraccLista');
-    if(fraccLista){
-      const fracc = [
-        {k:1, precio:160}, {k:1.5, precio:240}, {k:2, precio:320}, {k:2.5, precio:400}, {k:3, precio:480}
-      ];
-      fraccLista.innerHTML = fracc.map(f=>`
-        <div class="card" style="text-align:center;border-left:4px solid #f59e0b">
-          <b>${f.k}kg</b><br><span style="color:#94a3b8">$${f.precio}</span><br>
-          <small style="color:#64748b">Descuenta ${f.k}kg del tubo 43.5</small>
-        </div>`).join('');
+    // TUBO EN USO
+    const tubo = dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1};
+    const kilosRest = parseFloat(tubo.kilos_restantes)||43.5;
+    const usado = 43.5 - kilosRest;
+    const tuboDiv = document.getElementById('stockTuboEnUso');
+    if(tuboDiv){
+      tuboDiv.innerHTML = `<h3>🧪 Tubo 43.5kg En Uso - Disponible para Fraccionar</h3><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:16px"><div style="background:#0f172a;padding:16px;border-radius:8px;text-align:center"><div style="font-size:11px;color:#94a3b8">TUBO</div><div style="font-size:22px;font-weight:900;color:#f59e0b">${tubo.producto_id}</div><div style="font-size:11px;color:#64748b">${tubo.en_uso||1} en uso</div></div><div style="background:#0f172a;padding:16px;border-radius:8px;text-align:center"><div style="font-size:11px;color:#94a3b8">CAPACIDAD</div><div style="font-size:22px;font-weight:900">43.5kg</div></div><div style="background:#22c55e15;padding:16px;border-radius:8px;text-align:center;border:1px solid #22c55e30"><div style="font-size:11px;color:#22c55e">DISPONIBLE</div><div style="font-size:22px;font-weight:900;color:#22c55e">${kilosRest.toFixed(1)}kg</div></div><div style="background:#ef444415;padding:16px;border-radius:8px;text-align:center"><div style="font-size:11px;color:#ef4444">USADO</div><div style="font-size:22px;font-weight:900;color:#ef4444">${usado.toFixed(1)}kg</div></div></div><div style="margin-top:16px;background:#1f2937;height:20px;border-radius:10px;overflow:hidden"><div style="background:linear-gradient(90deg,#f59e0b,#ef4444);height:100%;width:${(usado/43.5*100)}%"></div></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px"><button onclick="venderFraccionado(1)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1kg $160</button><button onclick="venderFraccionado(1.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">1.5kg $240</button><button onclick="venderFraccionado(2)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2kg $320</button><button onclick="venderFraccionado(2.5)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">2.5kg $400</button><button onclick="venderFraccionado(3)" style="background:#1f2937;color:white;padding:12px;border:1px solid #334155;border-radius:8px">3kg $480</button></div>`;
     }
 
-    // --- OTROS ---
-    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k) || String(p.nombre||'').includes(k)) );
-    const otrosLista = document.getElementById('stockOtrosLista');
-    const tablaOtros = document.getElementById('tablaStockOtros');
-    if(otrosLista){
-      otrosLista.innerHTML = otros.length ? otros.map(p=>`
-        <div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">Stock: ${p.stock||0} - Mín: ${p.stock_minimo||5}</span></div>
-      `).join('') : '<div class="card" style="color:#64748b">Sin productos otros</div>';
-    }
-    if(tablaOtros){
-      tablaOtros.innerHTML = otros.map(p=>`<tr><td style="padding:8px;border:1px solid #1f2937">${p.nombre||p.id}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${p.stock||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${p.stock_minimo||5}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:12px;text-align:center;color:#64748b">Sin otros</td></tr>';
-    }
+    // OTROS
+    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k)));
+    const otrosDiv = document.getElementById('stockOtrosCards');
+    if(otrosDiv) otrosDiv.innerHTML = otros.length ? otros.map(p=>`<div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">$${p.precio_venta||0}</span></div>`).join('') : '<div class="card" style="color:#64748b">Sin otros productos</div>';
 
-  }catch(e){ console.error('cargarStock 3 tabs',e); }
+    // HISTORIAL
+    const movs = finanzas.filter(f=> f.categoria && (f.categoria.includes('venta') || f.categoria.includes('ingreso') || f.categoria.includes('remito'))).slice(0,20);
+    const hist = document.getElementById('historialStock');
+    if(hist) hist.innerHTML = movs.map(m=>`<div style="display:flex;justify-content:space-between;padding:6px;background:#0f172a;border-radius:4px;margin-bottom:4px"><span>${(m.fecha||'').substring(0,10)} - ${m.descripcion||m.categoria}</span><b style="color:${m.tipo==='ingreso'?'#22c55e':'#ef4444'}">${m.tipo==='ingreso'?'+':''}$${m.monto||0}</b></div>`).join('') || '<span style="color:#64748b">Sin movimientos</span>';
+
+  }catch(e){ console.error('cargarStock',e); }
 }
 
 function cambiarTabStock(tab){
-  document.getElementById('tabStockGas')?.classList.add('hidden');
-  document.getElementById('tabStockFracc')?.classList.add('hidden');
-  document.getElementById('tabStockOtros')?.classList.add('hidden');
-  ['btnStockGas','btnStockFracc','btnStockOtros'].forEach(id=>{
-    const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; }
+  ['tabStockGas','tabStockTubo','tabStockOtros'].forEach(id=> document.getElementById(id)?.classList.add('hidden'));
+  ['btnStockGas','btnStockTubo','btnStockOtros'].forEach(id=>{ const b=document.getElementById(id); if(b){ b.style.background='#1f2937'; b.style.color='#94a3b8'; } });
+  if(tab==='gas'){ document.getElementById('tabStockGas').classList.remove('hidden'); document.getElementById('btnStockGas').style.background='#0ea5e9'; document.getElementById('btnStockGas').style.color='white'; }
+  if(tab==='tubo'){ document.getElementById('tabStockTubo').classList.remove('hidden'); document.getElementById('btnStockTubo').style.background='#0ea5e9'; document.getElementById('btnStockTubo').style.color='white'; }
+  if(tab==='otros'){ document.getElementById('tabStockOtros').classList.remove('hidden'); document.getElementById('btnStockOtros').style.background='#0ea5e9'; document.getElementById('btnStockOtros').style.color='white'; }
+}
+
+function abrirModalIngresoInicial(prodId){ if(prodId) document.getElementById('ingInicialProd').value=prodId; document.getElementById('modalIngresoInicial').classList.remove('hidden'); document.getElementById('modalIngresoInicial').style.display='flex'; }
+function cerrarModalIngresoInicial(){ const m=document.getElementById('modalIngresoInicial'); m.classList.add('hidden'); m.style.display='none'; }
+
+async function guardarIngresoInicial(){
+  const pid=document.getElementById('ingInicialProd').value;
+  const llenas=parseInt(document.getElementById('ingInicialLlenas').value)||0;
+  const vacias=parseInt(document.getElementById('ingInicialVacias').value)||0;
+  const para_cambio=parseInt(document.getElementById('ingInicialCambio').value)||0;
+  await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:pid, llenas, vacias, para_cambio, en_uso:pid.includes('43')?1:0, kilos_restantes:pid.includes('43')?43.5:0, accion:'balance_inicial'})});
+  cerrarModalIngresoInicial(); cargarStock(); alert(`✅ Balance ${pid}: ${llenas} llenas + ${vacias} vacías + ${para_cambio} p/cambio = ${llenas+vacias+para_cambio} total`);
+}
+
+function abrirModalIngresoRemito(){
+  fetch(API+'?table=proveedores',{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    const sel=document.getElementById('ingRemitoProv');
+    if(sel) sel.innerHTML = (j.data||[]).map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('') || '<option value="prov_default">Proveedor General</option>';
   });
-  if(tab==='gas'){ document.getElementById('tabStockGas')?.classList.remove('hidden'); document.getElementById('btnStockGas').style.background='#0ea5e9'; document.getElementById('btnStockGas').style.color='white'; }
-  if(tab==='fraccionado'){ document.getElementById('tabStockFracc')?.classList.remove('hidden'); document.getElementById('btnStockFracc').style.background='#0ea5e9'; document.getElementById('btnStockFracc').style.color='white'; }
-  if(tab==='otros'){ document.getElementById('tabStockOtros')?.classList.remove('hidden'); document.getElementById('btnStockOtros').style.background='#0ea5e9'; document.getElementById('btnStockOtros').style.color='white'; }
+  document.getElementById('modalIngresoRemito').classList.remove('hidden'); document.getElementById('modalIngresoRemito').style.display='flex';
+  calcularBalanceRemito();
+}
+function cerrarModalIngresoRemito(){ const m=document.getElementById('modalIngresoRemito'); m.classList.add('hidden'); m.style.display='none'; }
+
+function calcularBalanceRemito(){
+  const trae=parseInt(document.getElementById('ingRemitoTraeLlenas')?.value)||0;
+  const nuevos=parseInt(document.getElementById('ingRemitoNuevos')?.value)||0;
+  const llevaVacias=parseInt(document.getElementById('ingRemitoLlevaVacias')?.value)||0;
+  const llevaCambio=parseInt(document.getElementById('ingRemitoLlevaCambio')?.value)||0;
+  const debeLlevar=trae-nuevos;
+  const llevaTotal=llevaVacias+llevaCambio;
+  const diff=debeLlevar-llevaTotal;
+  const info=document.getElementById('balanceRemitoInfo');
+  if(!info) return;
+  if(trae===0){ info.innerHTML='Ingresá cuántas llenas trae'; info.style.background='#0f172a'; info.style.color='#94a3b8'; return; }
+  if(diff===0){ info.innerHTML=`✅ OK: Trae ${trae} = ${llevaVacias} vacías + ${llevaCambio} cambio + ${nuevos} nuevos`; info.style.background='#22c55e20'; info.style.color='#22c55e'; }
+  else if(diff>0){ info.innerHTML=`⚠️ Faltan ${diff} envases por devolver`; info.style.background='#f59e0b20'; info.style.color='#f59e0b'; }
+  else { info.innerHTML=`⚠️ Lleva ${Math.abs(diff)} de más`; info.style.background='#ef444420'; info.style.color='#ef4444'; }
 }
 
-function ventaRapidaFraccionado(k){
-  alert(`Venta fraccionado ${k}kg - va a descontar ${k}kg del tubo 43.5 (próximo paso)`);
-  // Aquí después conectamos con modal fraccionado real
+async function guardarIngresoRemito(){
+  const prod=document.getElementById('ingRemitoProd').value;
+  const traeLlenas=parseInt(document.getElementById('ingRemitoTraeLlenas').value)||0;
+  const nuevos=parseInt(document.getElementById('ingRemitoNuevos').value)||0;
+  const llevaVacias=parseInt(document.getElementById('ingRemitoLlevaVacias').value)||0;
+  const llevaCambio=parseInt(document.getElementById('ingRemitoLlevaCambio').value)||0;
+  const prov=document.getElementById('ingRemitoProv').value||'Prov';
+  const num=document.getElementById('ingRemitoNum').value||'S/N';
+  if(traeLlenas===0) return alert('Ingresá cuántas llenas trae');
+  const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
+  let item=dep.find(d=> String(d.producto_id)===String(prod)) || {producto_id:prod, llenas:0, vacias:0, para_cambio:0, en_uso:prod.includes('43')?1:0, kilos_restantes:prod.includes('43')?43.5:0};
+  let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
+  const antesL=llenas, antesV=vacias, antesC=para_cambio;
+  llenas+=traeLlenas; vacias=Math.max(0,vacias-llevaVacias); para_cambio=Math.max(0,para_cambio-llevaCambio);
+  await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
+  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:new Date().toISOString().split('T')[0], tipo:'ingreso', categoria:'ingreso_remito', monto:0, descripcion:`Remito ${num} ${prov}: ${prod}kg Trae ${traeLlenas} Lleva V:${llevaVacias} C:${llevaCambio} Nuevos:${nuevos}. L:${antesL}->${llenas} V:${antesV}->${vacias}`})});
+  cerrarModalIngresoRemito(); cargarStock(); alert(`✅ Remito ${num}: ${prod}kg Trae ${traeLlenas} Lleva V:${llevaVacias} C:${llevaCambio} Nuevos:${nuevos}\nAhora: ${llenas} llenas, ${vacias} vacías, ${para_cambio} p/cambio`);
 }
-    
 
-function renderStockGas(){
-  const tbody = document.getElementById('tablaStockGas');
-  if(!tbody) return;
-  const gases = depositoCache.filter(d=>['11','13','45'].includes(String(d.producto_id)));
-  const lista = gases.length ? gases : [{producto_id:'11', llenas:0, vacias:0},{producto_id:'13', llenas:0, vacias:0},{producto_id:'45', llenas:0, vacias:0}];
-  tbody.innerHTML = lista.map(d=>{
-    const tot = (parseInt(d.llenas)||0)+(parseInt(d.vacias)||0);
-    return `<tr><td style="padding:8px;border:1px solid #1f2937"><b>${d.producto_id}kg</b></td><td style="padding:8px;border:1px solid #1f2937;color:#22c55e">${d.llenas||0}</td><td style="padding:8px;border:1px solid #1f2937;color:#f59e0b">${d.vacias||0}</td><td style="padding:8px;border:1px solid #1f2937">${tot}</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="abrirEditarStock('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="abrirBalanceInicial('${d.producto_id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:4px">Balance</button></td></tr>`;
-  }).join('');
-}
-function renderStockOtros(){
-  const tbody = document.getElementById('tablaStockOtros');
-  if(!tbody) return;
-  const otros = depositoCache.filter(d=>!['11','13','45','43.5'].includes(String(d.producto_id)));
-  if(!otros.length){ tbody.innerHTML='<tr><td colspan="4" style="padding:12px;color:#64748b;text-align:center">Sin otros productos</td></tr>'; return; }
-  tbody.innerHTML = otros.map(d=>`<tr><td style="padding:8px;border:1px solid #1f2937"><b>${d.producto_id}</b></td><td style="padding:8px;border:1px solid #1f2937">${d.llenas||0}</td><td style="padding:8px;border:1px solid #1f2937">${d.vacias||0}</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="abrirEditarStock('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Editar</button></td></tr>`).join('');
-}
-function renderTubo43(){
-  const tubo = depositoCache.find(d=>String(d.producto_id)==='43.5');
-  const kilos = parseFloat(tubo?.kilos_en_uso||0);
-  const elK = document.getElementById('tuboKilos');
-  const elE = document.getElementById('tuboEstado');
-  if(elK) elK.textContent = kilos.toFixed(1)+' kg';
-  if(elE) elE.textContent = kilos>0 ? `En uso - Quedan ${kilos}kg` : 'Sin iniciar - Iniciá un tubo nuevo';
-  if(elK) elK.style.color = kilos>5 ? '#22c55e' : kilos>0 ? '#f59e0b' : '#ef4444';
-}
-function abrirEditarStock(pid){
-  const d = depositoCache.find(x=>String(x.producto_id)===String(pid)) || {producto_id:pid, llenas:0, vacias:0, kilos_en_uso:0};
-  document.getElementById('stockProductoId').value = d.producto_id;
-  document.getElementById('stockLlenas').value = d.llenas||0;
-  document.getElementById('stockVacias').value = d.vacias||0;
-  document.getElementById('stockKilos').value = d.kilos_en_uso||0;
-  document.getElementById('tituloModalStock').textContent = 'Editar '+d.producto_id;
-  if(String(pid)==='43.5'){ document.getElementById('boxKilosStock').classList.remove('hidden'); } else { document.getElementById('boxKilosStock').classList.add('hidden'); }
-  document.getElementById('modalStock').classList.remove('hidden'); document.getElementById('modalStock').style.display='flex';
-}
-function abrirBalanceInicial(pid){
-  document.getElementById('stockProductoId').value = pid;
-  document.getElementById('stockLlenas').value = prompt(`Balance inicial - ¿Cuántas llenas de ${pid}?`, '0') || 0;
-  document.getElementById('stockVacias').value = prompt(`¿Cuántas vacías de ${pid}?`, '0') || 0;
-  const kilos = String(pid)==='43.5' ? prompt('¿Kilos en uso?', '43.5') || 0 : 0;
-  document.getElementById('stockKilos').value = kilos;
-  document.getElementById('tituloModalStock').textContent = 'Balance Inicial '+pid;
-  if(String(pid)==='43.5'){ document.getElementById('boxKilosStock').classList.remove('hidden'); } else { document.getElementById('boxKilosStock').classList.add('hidden'); }
-  document.getElementById('modalStock').classList.remove('hidden'); document.getElementById('modalStock').style.display='flex';
-}
-function cerrarModalStock(){ const m=document.getElementById('modalStock'); m.classList.add('hidden'); m.style.display='none'; }
-async function guardarEdicionStock(){
-  const pid = document.getElementById('stockProductoId').value;
-  const llenas = parseInt(document.getElementById('stockLlenas').value)||0;
-  const vacias = parseInt(document.getElementById('stockVacias').value)||0;
-  const kilos = parseFloat(document.getElementById('stockKilos').value)||0;
+async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
   try{
-    await fetch(`${API}?table=deposito`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'balance_inicial', producto_id:pid, llenas, vacias, kilos_en_uso:kilos})});
-    cerrarModalStock(); cargarStock(); cargarResumen();
-  }catch(e){ alert('Error '+e.message); }
-}
-async function guardarIngresoGas43(){
-  const producto_id = document.getElementById('ingProducto').value;
-  const llenas = parseInt(document.getElementById('ingLlenas').value)||0;
-  const vacias = parseInt(document.getElementById('ingVacias').value)||0;
-  if(llenas===0 && vacias===0) return alert('Poné al menos llenas o vacías');
-  try{
-    await fetch(`${API}?table=deposito`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'ingreso_gas', producto_id, llenas, vacias})});
-    alert('✅ Ingreso OK'); document.getElementById('ingLlenas').value=0; document.getElementById('ingVacias').value=0;
-    cargarStock(); cargarResumen();
-  }catch(e){ alert(e.message); }
-}
-async function iniciarNuevoTubo43(){
-  if(!confirm('¿Iniciar nuevo tubo 43.5kg lleno?')) return;
-  try{ await fetch(`${API}?table=deposito`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'iniciar_tubo_43'})}); cargarStock(); }catch(e){ alert(e.message); }
-}
-
-async function ventaFraccionada43(){
-  const kilosSel=parseFloat(document.getElementById('fraccKilos').value);
-  if(!kilosSel) return alert('Seleccioná los kilos');
-  const validos=[1,1.5,2,2.5,3];
-  if(!validos.includes(kilosSel)) return alert('Solo se permite: 1, 1.5, 2, 2.5, 3 kg');
-  
-  const precioKg=160;
-  const total=kilosSel*precioKg;
-
-  // Buscar tubo 43.5 en uso
-  try{
-    const r=await fetch(API+'?table=stock_43',{cache:'no-store'});
-    const j=await r.json();
-    const tubos=j.data||[];
-    const enUso=tubos.find(t=>t.estado==='en_uso');
-    if(!enUso) return alert('No hay tubo 43.5 en uso. Iniciá uno primero.');
-    if((parseFloat(enUso.kilos_en_uso)||0) < kilosSel) return alert(`El tubo en uso solo tiene ${enUso.kilos_en_uso}kg. Te faltan ${kilosSel - enUso.kilos_en_uso}kg. Iniciá uno nuevo.`);
-    
-    if(!confirm(`¿Vender ${kilosSel}kg fraccionado?\nPrecio: ${kilosSel}kg x $${precioKg} = $${total}\nSe descontará del tubo ${enUso.id}`)) return;
-
-    // Descontar del tubo
-    const nuevoKilos=(parseFloat(enUso.kilos_en_uso)||0)-kilosSel;
-    const nuevoEstado=nuevoKilos<=0?'vacio':'en_uso';
-    await fetch(API+'?table=stock_43',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...enUso, kilos_en_uso:nuevoKilos, estado:nuevoEstado})});
-
-    // Registrar en ventas también
-    const idVenta='VFRAC_'+Date.now();
-    await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      id:idVenta,
-      fecha:new Date().toISOString(),
-      tipo:'fraccionado_43',
-      producto_id:'FRACC_'+kilosSel,
-      producto_nombre:`Gas Fraccionado ${kilosSel}kg (de tubo 43.5)`,
-      cantidad:1,
-      kilos:kilosSel,
-      precio_unitario:precioKg,
-      total:total,
-      cliente:'Mostrador',
-      forma_pago:'efectivo'
-    })});
-
-    // Finanzas auto
-    await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      id:'FIN_'+Date.now(),
-      fecha:new Date().toISOString().split('T')[0],
-      tipo:'ingreso',
-      categoria:'venta_fraccionado',
-      monto:total,
-      descripcion:`Venta ${kilosSel}kg fraccionado a $160/kg`,
-      metodo:'efectivo'
-    })});
-
-    alert(`✅ Vendido ${kilosSel}kg por $${total}\nTubo queda con ${nuevoKilos}kg`);
-    cerrarModalFraccionado();
-    cargarStock43();
-    if(typeof cargarResumen==='function') cargarResumen();
-  }catch(e){ console.error(e); alert('Error al vender fraccionado'); }
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
+    let item=dep.find(d=> String(d.producto_id)===String(kg) || String(d.producto_id)===String(prodId)) || dep.find(d=> String(d.producto_id).includes(String(kg))) || {producto_id:String(kg), llenas:20, vacias:10, para_cambio:0, en_uso:0, kilos_restantes:0};
+    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
+    if(tipoVenta==='garrafa_completa') llenas=Math.max(0,llenas-cantidad);
+    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
+    else if(tipoVenta==='solo_envase_vacio') vacias=Math.max(0,vacias-cantidad);
+    else if(tipoVenta==='fallada'){ llenas=Math.max(0,llenas-cantidad); para_cambio+=cantidad; }
+    else if(tipoVenta==='fraccionado' || String(prodId).startsWith('FRACC')){
+      const tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
+      let kilosRest=parseFloat(tubo.kilos_restantes)||43.5;
+      kilosRest=Math.max(0,kilosRest-(parseFloat(kg)||0)*cantidad);
+      await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})});
+      return {ok:true};
+    }
+    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
+    return {ok:true};
+  }catch(e){ console.error(e); return {ok:false}; }
 }
 
-function abrirModalFraccionado(){ 
-  const m=document.getElementById('modalFraccionado43'); 
-  if(m){ m.classList.remove('hidden'); m.style.display='flex'; }
-  const sel=document.getElementById('fraccKilos');
-  if(sel) sel.innerHTML=[1,1.5,2,2.5,3].map(k=>`<option value="${k}">${k} kg - $${k*160}</option>`).join('');
-  calcularFraccTotal();
+async function venderFraccionado(k){
+  const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const dep=(await r.json()).data||[];
+  const tubo=dep.find(d=> String(d.producto_id).includes('43'));
+  const disp=parseFloat(tubo?.kilos_restantes)||43.5;
+  if(disp < k) return alert(`Sin gas: Disponible ${disp}kg, pediste ${k}kg`);
+  if(!confirm(`¿Vender ${k}kg fraccionado $`+k*160+'?')) return;
+  const id='V_'+Date.now();
+  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:new Date().toISOString(), fecha_local:new Date().toLocaleString('es-UY'), hoy:new Date().toISOString().split('T')[0], tipo:'fraccionado', tipo_cliente:'consumidor_final', modo:'retira', canal:'mostrador', producto_id:`FRACC_${k}`, cantidad:1, precio_unitario:k*160, flete:0, total:k*160, cliente_nombre:'Fraccionado', pago:'contado', kilos:k})});
+  await ajustarStockAutomatico({tipoVenta:'fraccionado', kg:k, cantidad:1, prodId:`FRACC_${k}`});
+  cargarStock(); if(typeof cargarVentasHoy==='function') cargarVentasHoy(); alert(`✅ ${k}kg vendido`);
 }
-function cerrarModalFraccionado(){ const m=document.getElementById('modalFraccionado43'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-function calcularFraccTotal(){
-  const k=parseFloat(document.getElementById('fraccKilos')?.value)||0;
-  const el=document.getElementById('fraccTotalTexto');
-  if(el) el.textContent=`$${k*160} (${k}kg x $160)`;
-}
+
+
 
 
 
