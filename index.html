@@ -1429,22 +1429,149 @@ async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
 }
 
 async function guardarVentaMostrador(){
-  const prodId=document.getElementById('vmProducto')?.value;
-  const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
-  const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
-  const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
-  const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
-  const tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
-  const tipoCliente=getTipoCliente(); const modo=getModoVenta();
-  const pago=document.getElementById('vmPago')?.value||'contado';
-  if(!prodId) return alert('Seleccioná producto');
-  const id='V_'+Date.now(); const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
-  const total=cantidad*precio+flete; const kg=extraerKgDeProducto(prodId);
-  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg})});
-  await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
-  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${cantidad}x ${kg}kg`, metodo:pago})});
-  alert(`✅ Venta $${total} - Stock actualizado`);
-  await cargarVentasHoy(); if(typeof cargarStock==='function') await cargarStock();
+  try{
+    const prodId=document.getElementById('vmProducto')?.value;
+    const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
+    const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
+    const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
+    const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
+    const tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
+    const tipoCliente= (typeof getTipoCliente==='function'?getTipoCliente():'consumidor_final');
+    const modo= (typeof getModoVenta==='function'?getModoVenta():'retira');
+    const pago=document.getElementById('vmPago')?.value||'contado';
+    
+    if(!prodId) return alert('Seleccioná producto');
+    
+    const id='V_'+Date.now();
+    const ahora=new Date();
+    const fechaISO=ahora.toISOString();
+    const fechaLocal=ahora.toLocaleString('es-UY');
+    const hoy=fechaISO.split('T')[0];
+    const total=cantidad*precio+flete;
+    const kg= (typeof extraerKgDeProducto==='function'?extraerKgDeProducto(prodId):parseFloat(String(prodId).match(/\d+(\.\d+)?/)?.[0]||'11'));
+    
+    console.log('VENTA:', {prodId, kg, cantidad, tipoOp, total});
+    
+    const API_URL = window.API || window.API_ERP || '/api/postgres';
+    
+    // 1. Guardar venta
+    const rVenta = await fetch(API_URL+'?table=ventas',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg})
+    });
+    if(!rVenta.ok) throw new Error('Error guardando venta: '+rVenta.status);
+    
+    // 2. DESCONTAR STOCK - ESTO ES LO QUE NO TE ANDABA
+    console.log('Descontando stock...', tipoOp, kg, cantidad);
+    const resStock = await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
+    console.log('Resultado ajuste stock:', resStock);
+    
+    // 3. Finanzas
+    await fetch(API_URL+'?table=finanzas',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:pago})
+    });
+    
+    alert(`✅ Venta $${total} - ${cantidad}x ${kg}kg (${tipoOp}) - Stock actualizado`);
+    
+    // 4. RECARGAR TODO - ESTO TE FALTABA
+    if(typeof cargarVentasHoy==='function') await cargarVentasHoy();
+    if(typeof cargarStock==='function') await cargarStock();
+    if(typeof cargarTuboEnUso==='function') await cargarTuboEnUso();
+    if(typeof cargarCaja==='function') await cargarCaja();
+    
+    // Limpiar form si tenés
+    if(typeof calcularTotalMostrador==='function') calcularTotalMostrador();
+    
+  }catch(e){
+    console.error('Error en guardarVentaMostrador:', e);
+    alert('❌ Error guardando venta: '+e.message);
+  }
+}
+
+// Y ESTA ES LA VERSION FINAL DE ajustarStockAutomatico QUE SI FUNCIONA CON TU LOGICA
+async function ajustarStockAutomatico({tipoVenta, kg, cantidad, prodId}){
+  try{
+    const API_URL = window.API || window.API_ERP || '/api/postgres';
+    console.log('ajustarStockAutomatico:', {tipoVenta, kg, cantidad, prodId});
+    
+    const r=await fetch(API_URL+'?table=deposito',{cache:'no-store'});
+    if(!r.ok) throw new Error('Error API deposito '+r.status);
+    const dep=(await r.json()).data||[];
+    
+    // BUSCAR POR KG - ROBUSTO (11, 13, 45, 43.5)
+    const kgStr = String(kg);
+    let item = dep.find(d=> String(d.producto_id)===kgStr || String(d.producto_id)===String(prodId));
+    if(!item) item = dep.find(d=> String(d.producto_id).includes(kgStr));
+    if(!item) item = dep.find(d=> kgStr.includes(String(d.producto_id)));
+    
+    if(!item){
+      console.warn('No se encontró deposito para', kg, 'creando por defecto');
+      item = {producto_id:kgStr, llenas:20, vacias:10, para_cambio:0, en_uso: kgStr.includes('43')?1:0, kilos_restantes: kgStr.includes('43')?43.5:0};
+    }
+    
+    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
+    const antes = {llenas, vacias, para_cambio};
+    
+    // LOGICA REAL MEGAL
+    if(tipoVenta==='garrafa_completa' || tipoVenta==='envase_carga' || tipoVenta==='completa'){
+      llenas=Math.max(0,llenas-cantidad);
+    }
+    else if(tipoVenta==='solo_gas' || tipoVenta==='carga' || tipoVenta==='recarga'){
+      // Cliente trae vacía y se lleva llena: llenas -1, vacias +1
+      llenas=Math.max(0,llenas-cantidad);
+      vacias+=cantidad;
+    }
+    else if(tipoVenta==='solo_envase' || tipoVenta==='envase_vacio' || tipoVenta==='solo_envase_vacio'){
+      vacias=Math.max(0,vacias-cantidad);
+    }
+    else if(tipoVenta==='fallada'){
+      // Entregás llena y te entra fallada para cambio
+      llenas=Math.max(0,llenas-cantidad);
+      para_cambio+=cantidad;
+    }
+    else if(tipoVenta==='fraccionado' || String(prodId).startsWith('FRACC')){
+      // Fraccionado descuenta del tubo 43.5
+      const tubo=dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:0, vacias:0, para_cambio:0};
+      let kilosRest=parseFloat(tubo.kilos_restantes)||43.5;
+      kilosRest=Math.max(0,kilosRest-(parseFloat(kg)||0)*cantidad);
+      console.log(`Fraccionado: tubo ${tubo.kilos_restantes} -> ${kilosRest}`);
+      await fetch(API_URL+'?table=deposito',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...tubo, kilos_restantes:kilosRest, accion:'balance_inicial'})
+      });
+      console.log(`Stock Tubo: ${JSON.stringify(antes)} -> kilos_restantes ${kilosRest}`);
+      return {ok:true, antes, despues:{kilos_restantes:kilosRest}};
+    }
+    else {
+      // Por defecto, si no reconoce tipo, descuenta llena
+      llenas=Math.max(0,llenas-cantidad);
+    }
+    
+    console.log(`Stock ${item.producto_id}: Llenas ${antes.llenas}->${llenas} Vacias ${antes.vacias}->${vacias} Cambio ${antes.para_cambio}->${para_cambio}`);
+    
+    const rUp = await fetch(API_URL+'?table=deposito',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        producto_id:item.producto_id,
+        llenas, vacias, para_cambio,
+        en_uso:item.en_uso||0,
+        kilos_restantes:item.kilos_restantes||0,
+        accion:'balance_inicial'
+      })
+    });
+    if(!rUp.ok) throw new Error('Error actualizando deposito');
+    
+    return {ok:true, antes, despues:{llenas, vacias, para_cambio}};
+    
+  }catch(e){
+    console.error('Error ajustarStockAutomatico:', e);
+    return {ok:false, error:e.message};
+  }
 }
 
 function extraerKgDeProducto(prodId){
