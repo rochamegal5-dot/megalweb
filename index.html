@@ -333,70 +333,55 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 </div>
 
  <!-- VENTAS -->  
-  <div id="view-ventas" class="view-section hidden">
-  <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px">
-    <button id="btnVentasMostrador" onclick="cambiarTabVentas('mostrador')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">🛒 Mostrador / Domicilio</button>
-    <button id="btnVentasCamioneta" onclick="cambiarTabVentas('camioneta')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🚚 Informe Camioneta (APP)</button>
+<div id="view-ventas" class="view-section hidden">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="tabVentaMostrador" onclick="cambiarTabVentas('mostrador')" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🏪 Mostrador</button>
+    <button id="tabVentaCamioneta" onclick="cambiarTabVentas('camioneta')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">🚚 Camioneta APP</button>
   </div>
 
-  <div id="tabVentasMostrador" class="card">
-    <h3 style="margin-bottom:12px">Nueva Venta Mostrador</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label style="font-size:11px">Cliente</label><input list="listaClientesDatalist" id="ventaClienteNombre" placeholder="Escribí o elegí cliente" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><datalist id="listaClientesDatalist"></datalist></div>
-      <div><label style="font-size:11px">Tipo Cliente *</label><select id="ventaTipoCliente" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="consumidor_final">Consumidor Final</option><option value="comercio">Comercio</option><option value="mides">MIDES</option></select></div>
+  <div id="ventaMostrador">
+    <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label style="font-size:11px">Tipo Cliente</label>
+        <select id="vmTipoCliente" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+          <option value="consumidor_final">Consumidor Final</option>
+          <option value="mides">MIDES</option>
+          <option value="comercio">Comercio</option>
+          <option value="comercio_especial">Comercio Especial</option>
+          <option value="comercio_mides">Comercio Mides</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px">Modo</label>
+        <div style="display:flex;gap:4px">
+          <button id="btnMostradorRetira" onclick="setMostradorModo('retira')" style="flex:1;background:#38bdf8;color:#000;padding:8px;border:none;border-radius:6px;font-weight:bold">Retira</button>
+          <button id="btnMostradorDomicilio" onclick="setMostradorModo('domicilio')" style="flex:1;background:#1f2937;color:#94a3b8;padding:8px;border:none;border-radius:6px">Domicilio</button>
+        </div>
+        <input type="hidden" id="vmModo" value="retira">
+      </div>
+      <div><label style="font-size:11px">Producto</label><select id="vmProducto" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></select></div>
+      <div><label style="font-size:11px">Tipo Operación</label>
+        <select id="ventaTipoOperacion" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+          <option value="solo_gas">Solo Gas (trae envase)</option>
+          <option value="garrafa_completa">Garrafa Completa (gas+envase)</option>
+          <option value="solo_envase_vacio">Solo Envase Vacío</option>
+        </select>
+      </div>
+      <div><label style="font-size:11px">Cantidad</label><input type="number" id="vmCant" value="1" min="1" oninput="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+      <div><label style="font-size:11px">Precio Unitario</label><input type="number" id="vmPrecio" value="0" oninput="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+      <div><label style="font-size:11px">Flete</label><input type="number" id="vmFlete" value="0" oninput="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><div id="vmFleteInfo" style="font-size:10px;color:#f59e0b;margin-top:4px"></div></div>
+      <div><label style="font-size:11px">Cliente</label><input type="text" id="vmCliente" placeholder="Mostrador" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"></div>
+      <div><label style="font-size:11px">Pago</label><select id="vmPago" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><option value="contado">Contado</option><option value="credito">Crédito</option><option value="transferencia">Transferencia</option></select></div>
+      <div><label style="font-size:11px">TOTAL A COBRAR</label><div id="vmTotal" style="font-size:28px;font-weight:900;color:#22c55e">$0</div></div>
     </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label style="font-size:11px">Modo *</label><select id="ventaModo" onchange="actualizarReglaFlete()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="domicilio">Domicilio (lleva flete)</option><option value="retira">Retira en local (sin flete)</option></select></div>
-      <div><label style="font-size:11px">Producto *</label><select id="ventaProducto" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
-    </div>
-    <div style="margin-top:8px;background:#0f172a;padding:8px;border-radius:8px;border:1px dashed #334155">
-  <p style="font-size:11px;color:#f59e0b;font-weight:bold;margin-bottom:6px">🔥 GAS FRACCIONADO DE TUBO 43.5 - $160/KG</p>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-    <button onclick="ventaRapidaFraccionado(1)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">1kg<br><b>$160</b></button>
-    <button onclick="ventaRapidaFraccionado(1.5)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">1.5kg<br><b>$240</b></button>
-    <button onclick="ventaRapidaFraccionado(2)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">2kg<br><b>$320</b></button>
-    <button onclick="ventaRapidaFraccionado(2.5)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">2.5kg<br><b>$400</b></button>
-    <button onclick="ventaRapidaFraccionado(3)" style="background:#1e293b;border:1px solid #334155;color:white;padding:6px;border-radius:6px;font-size:12px">3kg<br><b>$480</b></button>
+    <button onclick="guardarVentaMostrador()" style="width:100%;background:#22c55e;color:white;padding:12px;border:none;border-radius:8px;font-weight:900;margin-top:12px">💾 GUARDAR VENTA MOSTRADOR</button>
+    <div id="ventasHoyTabla" style="margin-top:16px"></div>
   </div>
+  <div id="ventaCamioneta" class="hidden"><div id="informeCamionetaList" class="card" style="color:#64748b">Sin ventas APP hoy</div></div>
 </div>
 
 
-
-    
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-      <div><label style="font-size:11px">Cantidad</label><input type="number" id="ventaCantidad" value="1" min="1" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-      <div><label style="font-size:11px">Precio Unit.</label><input type="number" id="ventaPrecio" value="0" onchange="calcularTotalMostrador()" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
-      <div><label style="font-size:11px">Pago</label><select id="ventaPago" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="credito">Crédito</option></select></div>
-    </div>
-
-    <div id="boxFlete" style="background:#0f172a;padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid #334155">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <label style="font-size:12px;font-weight:bold">🚚 FLETE</label>
-        <span id="fleteReglaTexto" style="font-size:10px;color:#94a3b8">Calculando regla...</span>
-      </div>
-      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-        <input type="number" id="ventaFlete" value="0" min="0" style="width:120px;padding:8px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:white">
-        <span style="font-size:11px;color:#64748b" id="fleteAyuda">Si es Retira = $0, si es Comercio = $0, si es Consumidor Final/MIDES domicilio = $120 obligatorio</span>
-      </div>
-    </div>
-
-    <div style="background:#1e293b;padding:12px;border-radius:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #0ea5e9">
-      <span style="font-weight:bold">TOTAL A COBRAR:</span><b id="ventaTotalTexto" style="font-size:22px;color:#22c55e">$0</b>
-    </div>
-
-    <button onclick="guardarVentaMostrador()" style="background:#16a34a;color:white;padding:12px 16px;border:none;border-radius:8px;font-weight:bold;width:100%">💾 Guardar Venta Mostrador</button>
-
-    <div style="margin-top:20px"><h4 style="margin-bottom:8px">Ventas Hoy (Mostrador)</h4><div id="ventasHoyTabla" style="font-size:12px">Cargando...</div></div>
-  </div>
-
-  <div id="tabVentasCamioneta" class="card hidden">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>🚚 Ventas Camioneta (vienen de APP)</h3><span id="informeStatus" style="font-size:11px;color:#94a3b8"></span></div>
-    <div id="informeResumen" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px"></div>
-    <div id="informeCamionetaList"></div>
-  </div>
-</div>
+  
 
  <!-- FINANZAS -->
   <div id="view-finanzas" class="view-section hidden">
@@ -1178,9 +1163,10 @@ function calcularFraccTotal(){
   const el=document.getElementById('fraccTotalTexto');
   if(el) el.textContent=`$${k*160} (${k}kg x $160)`;
 }
- 
- // --- VENTAS MEGAL FINAL - CORREGIDO - FLETE $150 ---
-// --- VENTAS MEGAL FINAL - CORREGIDO SIN DUPLICADOS - FLETE $150 ---
+
+
+
+// --- VENTAS MEGAL FINAL VERIFICADO - GUARDA / MUESTRA / DESCUENTA STOCK / FLETE $150 ---
 window.PRODUCTOS_MEGAL_DEFAULT = window.PRODUCTOS_MEGAL_DEFAULT || [
   {id:'11', nombre:'Garrafa 11kg', tipo:'gas', precio_compra:550, precio_venta:750, kg:11},
   {id:'13', nombre:'Garrafa 13kg', tipo:'gas', precio_compra:600, precio_venta:850, kg:13},
@@ -1189,80 +1175,142 @@ window.PRODUCTOS_MEGAL_DEFAULT = window.PRODUCTOS_MEGAL_DEFAULT || [
 window._modoMostrador = window._modoMostrador || 'retira';
 
 function cambiarTabVentas(t){
-  const tabM=document.getElementById('ventaMostrador')||document.getElementById('tabVentasMostrador');
-  const tabC=document.getElementById('ventaCamioneta')||document.getElementById('tabVentasCamioneta');
-  const btnM=document.getElementById('tabVentaMostrador')||document.getElementById('btnVentasMostrador');
-  const btnC=document.getElementById('tabVentaCamioneta')||document.getElementById('btnVentasCamioneta');
-  if(tabM) tabM.classList.add('hidden');
-  if(tabC) tabC.classList.add('hidden');
-  if(btnM){ btnM.style.background='#1f2937'; btnM.style.color='#94a3b8'; }
-  if(btnC){ btnC.style.background='#1f2937'; btnC.style.color='#94a3b8'; }
-  if(t==='mostrador'){ if(tabM) tabM.classList.remove('hidden'); if(btnM){ btnM.style.background='#0ea5e9'; btnM.style.color='white'; } cargarProductosParaVentas(); cargarVentasHoy(); }
-  if(t==='camioneta'){ if(tabC) tabC.classList.remove('hidden'); if(btnC){ btnC.style.background='#0ea5e9'; btnC.style.color='white'; } cargarInformeCamioneta(); }
+  const m=document.getElementById('ventaMostrador'); const c=document.getElementById('ventaCamioneta');
+  const bm=document.getElementById('tabVentaMostrador'); const bc=document.getElementById('tabVentaCamioneta');
+  if(m) m.classList.add('hidden'); if(c) c.classList.add('hidden');
+  if(bm){ bm.style.background='#1f2937'; bm.style.color='#94a3b8'; }
+  if(bc){ bc.style.background='#1f2937'; bc.style.color='#94a3b8'; }
+  if(t==='mostrador'){ if(m) m.classList.remove('hidden'); if(bm){ bm.style.background='#0ea5e9'; bm.style.color='white'; } cargarProductosParaVentas(); cargarVentasHoy(); }
+  else { if(c) c.classList.remove('hidden'); if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } }
 }
-function getTipoCliente(){ return document.getElementById('vmTipoCliente')?.value || document.getElementById('ventaTipoCliente')?.value || 'consumidor_final'; }
-function getModoVenta(){ return document.getElementById('vmModo')?.value || window._modoMostrador || 'retira'; }
-function setMostradorModo(m){ window._modoMostrador=m; const bR=document.getElementById('btnMostradorRetira'); const bD=document.getElementById('btnMostradorDomicilio'); if(bR&&bD){ if(m==='retira'){ bR.style.background='#38bdf8'; bR.style.color='#000'; bD.style.background='#1f2937'; bD.style.color='#94a3b8'; } else { bD.style.background='#38bdf8'; bD.style.color='#000'; bR.style.background='#1f2937'; bR.style.color='#94a3b8'; } } const im=document.getElementById('vmModo'); if(im) im.value=m; actualizarReglaFlete(); }
+
+function getTipoCliente(){ return document.getElementById('vmTipoCliente')?.value || 'consumidor_final'; }
+function getModoVenta(){ return document.getElementById('vmModo')?.value || window._modoMostrador; }
+
+function setMostradorModo(modo){
+  window._modoMostrador=modo;
+  document.getElementById('vmModo').value=modo;
+  const bR=document.getElementById('btnMostradorRetira'); const bD=document.getElementById('btnMostradorDomicilio');
+  if(modo==='retira'){ bR.style.background='#38bdf8'; bR.style.color='#000'; bD.style.background='#1f2937'; bD.style.color='#94a3b8'; }
+  else { bD.style.background='#38bdf8'; bD.style.color='#000'; bR.style.background='#1f2937'; bR.style.color='#94a3b8'; }
+  actualizarReglaFlete();
+}
+
 function actualizarReglaFlete(){
   const tipo=getTipoCliente(); const modo=getModoVenta();
-  const fleteInput=document.getElementById('vmFlete')||document.getElementById('ventaFlete');
-  const texto=document.getElementById('vmFleteInfo')||document.getElementById('fleteReglaTexto');
+  const fleteInput=document.getElementById('vmFlete'); const info=document.getElementById('vmFleteInfo');
   if(!fleteInput) return;
-  if(modo==='retira'){ fleteInput.value=0; fleteInput.disabled=true; if(texto) texto.textContent='Retira en local = $0 - BLOQUEADO'; }
-  else if(String(tipo).includes('comercio')){ fleteInput.value=0; fleteInput.disabled=true; if(texto) texto.textContent='Comercio = $0 - BLOQUEADO'; }
-  else { fleteInput.disabled=false; if(parseInt(fleteInput.value)===0) fleteInput.value=150; if(texto) texto.textContent='Domicilio = $150 obligatorio'; }
+  // REGLA MEGAL OFICIAL
+  if(modo==='retira'){
+    fleteInput.value=0; fleteInput.disabled=true; fleteInput.style.background='#111827';
+    if(info) info.textContent='Retira en local = $0 BLOQUEADO';
+  } else if(String(tipo).includes('comercio')){
+    fleteInput.value=0; fleteInput.disabled=true; fleteInput.style.background='#111827';
+    if(info) info.textContent='Comercio nunca lleva flete = $0 BLOQUEADO';
+  } else {
+    fleteInput.disabled=false; fleteInput.style.background='#0f172a';
+    if(parseInt(fleteInput.value)===0) fleteInput.value=150;
+    if(info) info.textContent='Domicilio Consumidor/MIDES = $150 (editable)';
+  }
   calcularTotalMostrador();
 }
+
 function calcularTotalMostrador(){
-  const cant=parseInt(document.getElementById('vmCant')?.value||document.getElementById('ventaCantidad')?.value)||1;
-  const precio=parseFloat(document.getElementById('vmPrecio')?.value||document.getElementById('ventaPrecio')?.value)||0;
-  const flete=parseFloat(document.getElementById('vmFlete')?.value||document.getElementById('ventaFlete')?.value)||0;
-  const el=document.getElementById('vmTotal')||document.getElementById('ventaTotalTexto')||document.getElementById('totalACobrar');
-  if(el){ if(el.tagName==='INPUT') el.value=cant*precio+flete; else el.textContent='$'+(cant*precio+flete); }
+  const cant=parseInt(document.getElementById('vmCant')?.value)||1;
+  const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
+  const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
+  const total=cant*precio+flete;
+  const el=document.getElementById('vmTotal'); if(el) el.textContent='$'+total;
+  return total;
 }
+
 async function cargarProductosParaVentas(){
   try{
-    const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); let lista=j.data||[];
+    const r=await fetch(API+'?table=productos',{cache:'no-store'});
+    const j=await r.json(); let lista=j.data||[];
     if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT;
     window.productosCache=lista;
-    ['ventaProducto','vmProducto'].forEach(idSel=>{
-      const sel=document.getElementById(idSel); if(!sel) return;
-      sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre||p.id} ($${p.precio_venta||0})</option>`).join('');
-    });
-  }catch(e){ console.error(e); }
+    const sel=document.getElementById('vmProducto'); if(!sel) return;
+    sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre||p.id} ($${p.precio_venta||0})</option>`).join('');
+    if(!sel.dataset.listener){
+      sel.dataset.listener='1';
+      sel.addEventListener('change',()=>{
+        const opt=sel.selectedOptions[0]; const precio=opt?.dataset?.precio||0;
+        const inp=document.getElementById('vmPrecio'); if(inp && precio>0){ inp.value=precio; calcularTotalMostrador(); }
+      });
+    }
+  }catch(e){ console.error('productos ventas',e); }
 }
+
 async function guardarVentaMostrador(){
-  const prodId=document.getElementById('vmProducto')?.value||document.getElementById('ventaProducto')?.value;
-  const cantidad=parseInt(document.getElementById('vmCant')?.value||document.getElementById('ventaCantidad')?.value)||1;
-  const precio=parseFloat(document.getElementById('vmPrecio')?.value||document.getElementById('ventaPrecio')?.value)||0;
+  const prodId=document.getElementById('vmProducto')?.value;
+  const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
+  const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
+  const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
   const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
+  const tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
   const tipoCliente=getTipoCliente(); const modo=getModoVenta();
-  const flete=parseFloat(document.getElementById('vmFlete')?.value||document.getElementById('ventaFlete')?.value)||0;
   const pago=document.getElementById('vmPago')?.value||'contado';
-  const kg= (String(prodId).includes('11')?11:String(prodId).includes('13')?13:String(prodId).includes('45')?45:13);
+  
   if(!prodId) return alert('Seleccioná producto');
-  const idVenta='V_'+Date.now(); const total=cantidad*precio+flete; const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
-  await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:idVenta, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:'solo_gas', tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg})});
-  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${cantidad}x ${kg}kg a ${cliente}`, metodo:pago})});
-  alert(`✅ Venta $${total}`); await cargarVentasHoy();
+  if(modo==='retira' && flete!==0) return alert('Retira en local debe ser $0 - corregí flete');
+  if(String(tipoCliente).includes('comercio') && flete!==0) return alert('Comercio nunca lleva flete');
+
+  const id='V_'+Date.now(); const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
+  const total=cantidad*precio+flete;
+  const kg = String(prodId).includes('11')?11:String(prodId).includes('13')?13:String(prodId).includes('45')?45:13;
+
+  // 1. GUARDAR EN POSTGRES VENTAS
+  const resp=await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:tipoCliente, modo, canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago, kilos:kg
+  })});
+  const respJ=await resp.json().catch(()=>({})); console.log('Venta guardada DB',respJ);
+
+  // 2. DESCONTAR STOCK AUTOMÁTICO
+  await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad});
+
+  // 3. FINANZAS
+  await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${cantidad}x ${kg}kg ${cliente} flete $${flete}`, metodo:pago
+  })});
+
+  alert(`✅ Venta guardada: ${cantidad}x ${kg}kg = $${total} (flete $${flete} incluido)`);
+  await cargarVentasHoy(); if(typeof cargarStock==='function') cargarStock(); if(typeof cargarResumen==='function') cargarResumen();
 }
+
 async function cargarVentasHoy(){
   try{
-    const r=await fetch(`${API}?table=ventas`,{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
+    const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
     const hoy=new Date().toISOString().split('T')[0]; const ayer=new Date(Date.now()-86400000).toISOString().split('T')[0];
+    // solo mostrador de hoy/ayer
     ventas=ventas.filter(v=>{ if(v.canal==='app'||v.modo==='app') return false; const fv=(v.fecha||'').toString().split('T')[0]; return fv===hoy||fv===ayer||v.hoy===hoy||v.canal==='mostrador'; });
-    ventas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    ventas.sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
     const el=document.getElementById('ventasHoyTabla'); if(!el) return;
     if(!ventas.length){ el.innerHTML=`<div style="padding:12px;background:#0f172a;border-radius:8px;color:#64748b;text-align:center">Sin ventas hoy (${hoy})</div>`; return; }
-    el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th>Cliente</th><th>Prod</th><th>Flete</th><th>Total</th></tr></thead><tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${v.fecha_local||(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||'Mostrador'}</td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id} x${v.cantidad}</td><td style="padding:4px;border:1px solid #1f2937">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;color:#22c55e;font-weight:900">$${v.total||0}</td></tr>`).join('')}</tbody></table>`;
-  }catch(e){ console.error(e); }
+    const totalDia=ventas.reduce((s,v)=>s+(parseFloat(v.total)||0),0);
+    el.innerHTML=`<div style="margin-bottom:8px;color:#94a3b8;font-size:12px"><b>${ventas.length} ventas hoy</b> - Total $${totalDia}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#0f172a"><th style="padding:6px;border:1px solid #1f2937">Hora</th><th style="padding:6px;border:1px solid #1f2937">Cliente</th><th style="padding:6px;border:1px solid #1f2937">Prod</th><th style="padding:6px;border:1px solid #1f2937">Cant</th><th style="padding:6px;border:1px solid #1f2937">Flete</th><th style="padding:6px;border:1px solid #1f2937">Total</th><th style="padding:6px;border:1px solid #1f2937">Modo</th></tr></thead>
+      <tbody>${ventas.map(v=>`<tr><td style="padding:4px;border:1px solid #1f2937">${v.fecha_local||(v.fecha||'').substring(11,19)}</td><td style="padding:4px;border:1px solid #1f2937">${v.cliente_nombre||'Mostrador'}<br><small style="color:#94a3b8">${v.tipo_cliente||''}</small></td><td style="padding:4px;border:1px solid #1f2937">${v.producto_id}</td><td style="padding:4px;border:1px solid #1f2937;text-align:center">x${v.cantidad||1}</td><td style="padding:4px;border:1px solid #1f2937;color:${v.flete>0?'#f59e0b':'#64748b'}">$${v.flete||0}</td><td style="padding:4px;border:1px solid #1f2937;font-weight:900;color:#22c55e">$${v.total||0}</td><td style="padding:4px;border:1px solid #1f2937"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${v.modo==='retira'?'#334155':'#f59e0b'};color:${v.modo==='retira'?'#94a3b8':'#000'}">${v.modo||''}</span></td></tr>`).join('')}</tbody>
+    </table>`;
+  }catch(e){ console.error('cargarVentasHoy',e); }
 }
-async function cargarInformeCamioneta(){ const c=document.getElementById('informeCamionetaList'); if(c) c.innerHTML='<div style="color:#64748b">Sin ventas APP hoy</div>'; }
-function extraerKgDeProducto(id){ const s=String(id).toLowerCase(); if(s.includes('11')) return 11; if(s.includes('13')) return 13; if(s.includes('45')) return 45; return 13; }
-async function ajustarStockAutomatico(o){ try{ const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); let dep=j.data||[]; let item=dep.find(d=>String(d.producto_id)===String(o.kg))||{producto_id:String(o.kg), llenas:10, vacias:5}; let l=parseInt(item.llenas)||0; let v=parseInt(item.vacias)||0; l=Math.max(0,l-o.cantidad); await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'balance_inicial', producto_id:String(o.kg), llenas:l, vacias:v})}); }catch(e){} }
-function ventaRapidaFraccionado(k){ const el=document.getElementById('vmKilos'); if(el) el.value=k; }
-function actualizarPrecioMostrador(){ calcularTotalMostrador(); }
-function cargarRepartidoresEnVentas(){}
+
+async function ajustarStockAutomatico({tipoVenta, kg, cantidad}){
+  try{
+    const r=await fetch(API+'?table=deposito',{cache:'no-store'}); const j=await r.json(); let dep=j.data||[];
+    let item=dep.find(d=>String(d.producto_id)===String(kg));
+    if(!item) item={producto_id:String(kg), llenas:20, vacias:10};
+    let llenas=parseInt(item.llenas)||0; let vacias=parseInt(item.vacias)||0;
+    // LÓGICA MEGAL:
+    if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
+    else if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; } // cliente trae vacío
+    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
+    console.log(`Stock ${kg}kg: ${item.llenas}/${item.vacias} -> ${llenas}/${vacias} (${tipoVenta})`);
+    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'balance_inicial', producto_id:String(kg), llenas, vacias})});
+  }catch(e){ console.error('stock auto',e); }
+}
+
 
 // --- FINANZAS EMPRESA COMPLETA ---
 
