@@ -268,9 +268,10 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
 
   
   <!-- TAB 3: OTROS -->
-  <div id="tabStockOtros" class="hidden">
-    <div id="stockOtrosCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px"></div>
-  </div>
+<div id="tabStockOtros" class="hidden">
+  <div id="stockOtrosCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+  <table style="width:100%;margin-top:16px;border-collapse:collapse"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937">Producto</th><th style="padding:8px;border:1px solid #1f2937">Stock</th><th style="padding:8px;border:1px solid #1f2937">Min</th><th style="padding:8px;border:1px solid #1f2937">Compra</th><th style="padding:8px;border:1px solid #1f2937">Venta</th><th style="padding:8px;border:1px solid #1f2937">Estado</th><th style="padding:8px;border:1px solid #1f2937">Acción</th></tr></thead><tbody id="tablaStockOtros"></tbody></table>
+</div>
 
   <div class="card" style="margin-top:16px">
     <h3>📋 Historial Movimientos Stock</h3>
@@ -1021,13 +1022,69 @@ window.cargarStock = async function(){
       }).join('');
     }
 
-    const otros = productos.filter(p=> !['11','13','45','43'].some(k=> String(p.id).includes(k)));
+    // OTROS PRODUCTOS - TODOS LOS QUE NO SON GAS 11/13/45/43.5
+    const otros = productos.filter(p=> {
+      const id = String(p.id).toLowerCase();
+      return !['11','13','45','43'].some(k=> id===k || id.includes(k+'kg') || id.includes('garrafa')) && (p.tipo||'gas')!=='gas' || !['11','13','45','43.5'].includes(String(p.id));
+    });
+    // Si tu filtro deja afuera todo, usa fallback: todo lo que no es 11,13,45,43.5
+    const otrosFinal = otros.length ? otros : productos.filter(p=> !['11','13','45','43.5','43'].includes(String(p.id)));
+    
     const otrosDiv = document.getElementById('stockOtrosCards');
-    if(otrosDiv) otrosDiv.innerHTML = otros.length ? otros.map(p=>`<div class="card"><b>${p.nombre||p.id}</b><br><span style="color:#94a3b8">$${p.precio_venta||0}</span></div>`).join('') : '<div class="card" style="color:#64748b">Sin otros productos</div>';
-
-  }catch(e){ console.error('cargarStock',e); }
-};
-
+    const tablaOtros = document.getElementById('tablaStockOtros');
+    
+    if(otrosDiv){
+      if(!otrosFinal.length){
+        otrosDiv.innerHTML = '<div class="card" style="color:#64748b;text-align:center;padding:20px">Sin otros productos<br><small style="font-size:10px">Agregá en Productos: Reguladores, Mangueras, Abrazaderas, etc</small></div>';
+      } else {
+        otrosDiv.innerHTML = otrosFinal.map(p=>{
+          const depItem = dep.find(d=> String(d.producto_id).toLowerCase()===String(p.id).toLowerCase());
+          const stock = depItem ? (parseInt(depItem.llenas)||0) : (parseInt(p.stock_actual)||0) || 0;
+          const stockMin = parseInt(p.stock_minimo)||2;
+          const vacias = depItem ? (parseInt(depItem.vacias)||0) : 0;
+          const para_cambio = depItem ? (parseInt(depItem.para_cambio)||0) : 0;
+          const total = stock + vacias + para_cambio;
+          const compra = parseFloat(p.precio_compra)||0;
+          const venta = parseFloat(p.precio_venta)||0;
+          const gan = venta-compra;
+          const margen = venta>0?((gan/venta)*100).toFixed(1):0;
+          const bajo = stock <= stockMin;
+          const color = bajo ? '#ef4444' : total<5 ? '#f59e0b' : '#22c55e';
+          
+          return `<div class="card" style="border-left:4px solid ${color};padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div><b style="font-size:15px">${p.nombre||p.id}</b><br><span style="font-size:10px;color:#64748b">${p.id} • ${p.tipo||'accesorio'} • Prov: ${p.proveedor_id||'-'}</span></div>
+              <span style="font-size:10px;background:${bajo?'#ef444420':'#0f172a'};color:${bajo?'#ef4444':'#94a3b8'};padding:4px 8px;border-radius:12px">${bajo?'🔴 BAJO STOCK':'Total: '+total}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center">
+              <div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:${color}">${stock}</div><div style="font-size:9px;color:#94a3b8">STOCK</div><div style="font-size:9px;color:#64748b">Min: ${stockMin}</div></div>
+              <div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:14px;font-weight:900;color:#94a3b8">$${compra}</div><div style="font-size:9px;color:#94a3b8">COMPRA</div><div style="font-size:9px;color:#22c55e">Venta $${venta}</div></div>
+              <div style="background:${gan>=0?'#22c55e15':'#ef444415'};padding:10px;border-radius:8px"><div style="font-size:14px;font-weight:900;color:${gan>=0?'#22c55e':'#ef4444'}">$${gan}</div><div style="font-size:9px;color:#94a3b8">GANANCIA</div><div style="font-size:9px;color:${margen>=30?'#22c55e':margen>=15?'#f59e0b':'#ef4444'}">${margen}% margen</div></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button onclick="abrirModalIngresoInicial('${p.id}')" style="background:#334155;color:white;padding:6px 10px;border:none;border-radius:6px;font-size:11px;flex:1">📦 Ajustar Stock</button>
+              <button onclick="editarProducto('${p.id}')" style="background:#1f2937;color:#94a3b8;padding:6px 10px;border:1px solid #334155;border-radius:6px;font-size:11px">✏️ Editar</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+    
+    if(tablaOtros){
+      if(!otrosFinal.length){
+        tablaOtros.innerHTML = '<tr><td colspan="7" style="padding:12px;text-align:center;color:#64748b">Sin otros productos</td></tr>';
+      } else {
+        tablaOtros.innerHTML = otrosFinal.map(p=>{
+          const depItem = dep.find(d=> String(d.producto_id).toLowerCase()===String(p.id).toLowerCase());
+          const stock = depItem ? (parseInt(depItem.llenas)||0) : 0;
+          const stockMin = parseInt(p.stock_minimo)||2;
+          const compra = parseFloat(p.precio_compra)||0;
+          const venta = parseFloat(p.precio_venta)||0;
+          return `<tr style="${stock<=stockMin?'background:rgba(239,68,68,0.08)':''}"><td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b><br><span style="font-size:10px;color:#64748b">${p.nombre||''}</span></td><td style="padding:8px;border:1px solid #1f2937;text-align:center;font-weight:900;color:${stock<=stockMin?'#ef4444':'#22c55e'}">${stock}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${stockMin}</td><td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#94a3b8">$${compra}</td><td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#22c55e;font-weight:bold">$${venta}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${stock<=stockMin?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
+        }).join('');
+      }
+    }
+ 
 window.cargarTuboEnUso = async function(){
   const tuboDiv = document.getElementById('stockTuboEnUso');
   if(!tuboDiv) return;
