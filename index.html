@@ -1290,15 +1290,26 @@ window.calcularTotalMostrador = function(){
   const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
   const el=document.getElementById('vmTotal'); if(el) el.textContent='$'+(cant*precio+flete);
 };
+
 window.cargarProductosParaVentas = async function(){
-  try{
-    const r=await fetch(API+'?table=productos',{cache:'no-store'}); const j=await r.json(); let lista=j.data||[];
-    if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT;
-    window.productosCache=lista;
-    const sel=document.getElementById('vmProducto'); if(!sel) return;
-    sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre||p.id} ($${p.precio_venta||0})</option>`).join('');
-  }catch(e){ console.error(e); }
+  const r=await fetch(API+'?table=productos',{cache:'no-store'}); 
+  let lista=(await r.json()).data||[];
+  if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT;
+  // Agregamos los fraccionados si no están
+  const fracs=[
+    {id:'FRACC_1', nombre:'Gas Fracc 1kg', tipo:'fraccionado', precio_venta:160, precio_compra:0, kg:1},
+    {id:'FRACC_1.5', nombre:'Gas Fracc 1.5kg', tipo:'fraccionado', precio_venta:240, precio_compra:0, kg:1.5},
+    {id:'FRACC_2', nombre:'Gas Fracc 2kg', tipo:'fraccionado', precio_venta:320, precio_compra:0, kg:2},
+    {id:'FRACC_2.5', nombre:'Gas Fracc 2.5kg', tipo:'fraccionado', precio_venta:400, precio_compra:0, kg:2.5},
+    {id:'FRACC_3', nombre:'Gas Fracc 3kg', tipo:'fraccionado', precio_venta:480, precio_compra:0, kg:3},
+  ];
+  fracs.forEach(f=>{ if(!lista.find(p=>p.id===f.id)) lista.push(f); });
+  
+  window.productosCache=lista;
+  const sel=document.getElementById('vmProducto'); 
+  if(sel) sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre} ($${p.precio_venta||0})</option>`).join('');
 };
+
 window.cargarVentasHoy = async function(){
   try{
     const r=await fetch(API+'?table=ventas',{cache:'no-store'}); const j=await r.json(); let ventas=j.data||[];
@@ -1320,25 +1331,46 @@ window.cambiarTabVentas = function(t){
   if(t==='mostrador'){ if(m) m.classList.remove('hidden'); if(bm){ bm.style.background='#0ea5e9'; bm.style.color='white'; } cargarProductosParaVentas(); cargarVentasHoy(); }
   else { if(c) c.classList.remove('hidden'); if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } }
 };
+
 window.guardarVentaMostrador = async function(){
   try{
     const prodId=document.getElementById('vmProducto')?.value;
+    let tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
+    // Si es fraccionado, forzamos el tipo
+    if(String(prodId).toLowerCase().startsWith('fracc') || String(prodId).toLowerCase().startsWith('frac')){
+      tipoOp='fraccionado';
+    }
     const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
     const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
     const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
     const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
-    const tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
     if(!prodId) return alert('Seleccioná producto');
-    const id='V_'+Date.now(); const ahora=new Date(); const fechaISO=ahora.toISOString(); const fechaLocal=ahora.toLocaleString('es-UY'); const hoy=fechaISO.split('T')[0];
-    const total=cantidad*precio+flete; const kg=extraerKgDeProducto(prodId);
+    
+    const id='V_'+Date.now(); 
+    const ahora=new Date(); 
+    const fechaISO=ahora.toISOString(); 
+    const fechaLocal=ahora.toLocaleString('es-UY'); 
+    const hoy=fechaISO.split('T')[0];
+    const total=cantidad*precio+flete; 
+    
+    let kg=extraerKgDeProducto(prodId);
+    if(String(prodId).toLowerCase().startsWith('fracc')){
+      // Extrae 1, 1.5, 2, etc de FRACC_1.5
+      const m=String(prodId).match(/([\d.]+)/);
+      kg=m?parseFloat(m[0]):1;
+    }
+    
     await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:getTipoCliente(), modo:getModoVenta(), canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago:document.getElementById('vmPago')?.value||'contado', kilos:kg})});
+    
     const res=await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
     console.log('stock res',res);
+    
     await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:document.getElementById('vmPago')?.value||'contado'})});
     alert(`✅ Venta $${total} - ${cantidad}x ${kg}kg (${tipoOp}) - Stock actualizado`);
     await cargarVentasHoy(); await cargarStock(); await cargarTuboEnUso();
   }catch(e){ console.error(e); alert('❌ Error: '+e.message); }
 };
+   
 
 
 
