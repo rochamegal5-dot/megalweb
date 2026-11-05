@@ -1082,14 +1082,11 @@ window.cargarStock = async function(){
       }).join('');
     }
 
-    // OTROS PRODUCTOS - TODOS LOS QUE NO SON GAS 11/13/45/43.5
-    const otros = productos.filter(p=> {
-      const id = String(p.id).toLowerCase();
-      return !['11','13','45','43'].some(k=> id===k || id.includes(k+'kg') || id.includes('garrafa')) && (p.tipo||'gas')!=='gas' || !['11','13','45','43.5'].includes(String(p.id));
-    });
-    // Si tu filtro deja afuera todo, usa fallback: todo lo que no es 11,13,45,43.5
-    const otrosFinal = otros.length ? otros : productos.filter(p=> !['11','13','45','43.5','43'].includes(String(p.id)));
-    
+    // OTROS - SOLO LISTADO, sin FRACC y sin 11/13/45/43.5
+    const otrosFinal = productos
+      .filter(p=> !['11','13','45','43.5','43'].includes(String(p.id)))
+      .filter(p=> !String(p.id).toLowerCase().startsWith('fracc'));
+
        // OTROS - SOLO LISTADO
     const otrosFinal = productos
       .filter(p=> !['11','13','45','43.5','43'].includes(String(p.id)))
