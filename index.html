@@ -1069,7 +1069,7 @@ window.cargarStock = async function(){
         }).join('');
       }
     }
-    
+
     if(tablaOtros){
       if(!otrosFinal.length){
         tablaOtros.innerHTML = '<tr><td colspan="7" style="padding:12px;text-align:center;color:#64748b">Sin otros productos</td></tr>';
@@ -1084,6 +1084,14 @@ window.cargarStock = async function(){
         }).join('');
       }
     }
+
+  }catch(e){ 
+    console.error('cargarStock',e); 
+  }
+}; // <-- ESTE CIERRE TE FALTABA
+
+
+
  
 window.cargarTuboEnUso = async function(){
   const tuboDiv = document.getElementById('stockTuboEnUso');
