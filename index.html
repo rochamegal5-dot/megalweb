@@ -978,8 +978,70 @@ async function guardarProveedor(){
 async function eliminarProveedor(id){ if(!confirm('¿Borrar proveedor?')) return; try{ await fetch(`${API}?table=proveedores&id=${id}`,{method:'DELETE'}); cargarProveedores(); }catch(e){ alert(e.message); } }
     
 // --- STOCK ---
-// --- STOCK ---
+
 window.cargarStock = async function(){
+  try{
+    const rDep = await fetch(API+'?table=deposito',{cache:'no-store'});
+    const jDep = await rDep.json();
+    let dep = jDep.data || [];
+    const rProd = await fetch(API+'?table=productos',{cache:'no-store'});
+    const productos = (await rProd.json()).data || [];
+
+    if(!dep.length){
+      dep = [
+        {producto_id:'11', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'13', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'45', llenas:0, vacias:0, para_cambio:0, en_uso:0, kilos_restantes:0},
+        {producto_id:'43.5', llenas:4, vacias:3, para_cambio:0, en_uso:1, kilos_restantes:43.5},
+      ];
+    }
+    window.depositoCache = dep;
+
+    // GAS incluye 11, 13, 45 y 43.5
+    const gases = dep.filter(d=> ['11','13','45','43.5','43'].includes(String(d.producto_id)) || String(d.producto_id).includes('43'));
+    const gasCards = document.getElementById('stockGasCards');
+    const tablaGas = document.getElementById('tablaStockGas');
+    
+    if(gasCards){
+      gasCards.innerHTML = gases.map(d=>{
+        const pid=String(d.producto_id);
+        const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0;
+        const enUso=parseInt(d.en_uso)||0;
+        const kilos=parseFloat(d.kilos_restantes)||0;
+        const total=llenas+vacias+cambio+enUso;
+        const color = total<5 ? '#ef4444' : total<10 ? '#f59e0b' : '#22c55e';
+        const es43 = pid.includes('43');
+        return `<div class="card" style="border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between"><b style="font-size:22px">${pid}kg</b><span style="font-size:10px;background:#0f172a;padding:4px 8px;border-radius:12px">Total: ${total}</span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr ${es43?'1fr':''};gap:8px;margin-top:12px;text-align:center"><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#22c55e">${llenas}</div><div style="font-size:9px;color:#94a3b8">LLENAS</div></div><div style="background:#0f172a;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#94a3b8">${vacias}</div><div style="font-size:9px;color:#94a3b8">VACÍAS</div></div><div style="background:#ef444420;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#ef4444">${cambio}</div><div style="font-size:9px;color:#ef4444">P/CAMBIO</div></div>${es43?`<div style="background:#0ea5e920;padding:10px;border-radius:8px"><div style="font-size:20px;font-weight:900;color:#0ea5e9">${enUso}</div><div style="font-size:9px;color:#0ea5e9">EN USO</div><div style="font-size:8px;color:#64748b">${kilos.toFixed(1)}kg</div></div>`:''}</div></div>`;
+      }).join('');
+    }
+    if(tablaGas){
+      tablaGas.innerHTML = gases.map(d=>{
+        const llenas=parseInt(d.llenas)||0, vacias=parseInt(d.vacias)||0, cambio=parseInt(d.para_cambio)||0, total=llenas+vacias+cambio;
+        return `<tr><td style="padding:10px;border:1px solid #1f2937;font-weight:bold">${d.producto_id}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#22c55e;font-weight:900">${llenas}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center">${vacias}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;color:#ef4444">${cambio}</td><td style="padding:10px;border:1px solid #1f2937;text-align:center;font-weight:900">${total}</td><td style="padding:10px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${d.producto_id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
+      }).join('');
+    }
+
+    // OTROS - SOLO LISTADO, sin FRACC y sin 11/13/45/43.5
+    const otrosFinal = productos
+      .filter(p=> !['11','13','45','43.5','43'].includes(String(p.id)))
+      .filter(p=> !String(p.id).toLowerCase().startsWith('fracc'));
+
+    const tablaOtros = document.getElementById('tablaStockOtros');
+    if(tablaOtros){
+      tablaOtros.innerHTML = otrosFinal.length ? otrosFinal.map(p=>{
+        const depItem = dep.find(d=> String(d.producto_id).toLowerCase()===String(p.id).toLowerCase());
+        const stock = depItem ? (parseInt(depItem.llenas)||0) : 0;
+        const stockMin = parseInt(p.stock_minimo)||2;
+        return `<tr style="${stock<=stockMin?'background:rgba(239,68,68,0.08)':''}"><td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b> ${p.nombre||''}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center;color:${stock<=stockMin?'#ef4444':'#22c55e'}">${stock}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${stockMin}</td><td style="padding:8px;border:1px solid #1f2937;text-align:right">$${p.precio_compra||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#22c55e">$${p.precio_venta||0}</td><td style="padding:8px;border:1px solid #1f2937;text-align:center">${stock<=stockMin?'<span style="color:#ef4444">🔴 Bajo</span>':'<span style="color:#22c55e">🟢 OK</span>'}</td><td style="padding:8px;border:1px solid #1f2937"><button onclick="abrirModalIngresoInicial('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px">Ajustar</button></td></tr>`;
+      }).join('') : '<tr><td colspan="7" style="padding:12px;text-align:center;color:#64748b">Sin otros productos</td></tr>';
+    }
+
+  }catch(e){ 
+    console.error('cargarStock',e); 
+  }
+};    
+////
+  window.cargarStock = async function(){
   try{
     const rDep = await fetch(API+'?table=deposito',{cache:'no-store'});
     const jDep = await rDep.json();
