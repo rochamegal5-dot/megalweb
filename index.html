@@ -515,26 +515,26 @@ let tubo43Cache=null;
 const CATEGORIAS_FIN={ingreso:['Venta Mostrador','Venta Camioneta (APP)','Venta Fraccionado','Cobranza Cliente','Aporte Capital','Otro Ingreso'], egreso:['Compra Gas','Flete Proveedor','Sueldos','Combustible','Mantenimiento Vehículo','Alquiler','Servicios','Impuestos','Repuestos','Publicidad','Viáticos','Comisión','Otro Egreso']};
 
 
-
-
-function mostrarSeccion(id,btn){
-  document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
-  const el=document.getElementById('view-'+id);
-  if(el) el.classList.remove('hidden');
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  if(id==='resumen') cargarResumen();
-  if(id==='stock'){ cargarStock(); cambiarTabStock('gas'); }
-  if(id==='finanzas') cargarFinanzas();
-  if(id==='gps'){ setTimeout(()=>{initGpsMaps(); cargarGpsVivo();},150); }
-  if(id==='productos') cargarProductosCatalogo();
-  if(id==='clientes') cargarClientes();
-  if(id==='proveedores') cargarProveedores();
-  if(id==='repartidores') cargarRepartidores();
-  if(id==='ventas'){ cambiarTabVentas('mostrador'); }
-  if(id==='camaras') cargarCamaras();
-  if(id==='marketing'){ cambiarTabMarketing('campanas'); cargarMarketing(); }
+function mostrarSeccion(id, btn){
+ document.querySelectorAll('.view-section').forEach(s=>s.classList.add('hidden'));
+ const el=document.getElementById(`view-${id}`); if(el) el.classList.remove('hidden');
+ document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('bg-blue-800','font-bold'); b.classList.add('hover:bg-blue-800'); });
+ if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
+ setTimeout(()=>{
+  if(id==='stock'){ try{ cargarStock(); }catch(e){} }
+  if(id==='ventas'){ try{ cargarCaja(); cargarVentasHoy(); cargarInformeCamioneta(); cargarRepartidoresEnVentas(); actualizarReglaFlete(); calcularTotalMostrador(); }catch(e){} }
+  if(id==='finanzas'){ try{ cargarFinanzas(); }catch(e){} }
+  if(id==='camaras'){ try{ cargarCamaras(); }catch(e){} }
+  if(id==='marketing'){ try{ cargarMarketing(); }catch(e){} }
+  if(id==='clientes'){ try{ cargarClientes(); }catch(e){} }
+  if(id==='productos'){ try{ cargarProductosCatalogo(); }catch(e){} }
+  if(id==='proveedores'){ try{ cargarProveedores(); }catch(e){} }
+  if(id==='repartidores'){ try{ cargarRepartidores(); }catch(e){} }
+  if(id==='resumen' && typeof dashMap!=='undefined' && dashMap) dashMap.invalidateSize();
+  if(id==='gps'){ if(typeof gpsMap!=='undefined' && gpsMap) gpsMap.invalidateSize(); if(typeof gpsMapHist!=='undefined' && gpsMapHist) gpsMapHist.invalidateSize(); try{ cargarPuntosRuta(); }catch(e){} }
+ },100);
 }
+
 // ================= FIN PRINCIPIO =================
 
 // ================= AQUÍ VAN TUS MÓDULOS =================
