@@ -523,7 +523,7 @@ function mostrarSeccion(id, btn){
  if(btn){ btn.classList.add('bg-blue-800','font-bold'); btn.classList.remove('hover:bg-blue-800'); }
  setTimeout(()=>{
   if(id==='stock'){ try{ cargarStock(); }catch(e){} }
-  if(id==='ventas'){ try{ cargarCaja(); cargarVentasHoy(); cargarInformeCamioneta(); cargarRepartidoresEnVentas(); actualizarReglaFlete(); calcularTotalMostrador(); }catch(e){} }
+  if(id==='ventas'){ try{ cargarCaja(); cargarVentasHoy(); cargarInformeCamioneta(); actualizarReglaFlete(); calcularTotalMostrador(); }catch(e){} }
   if(id==='finanzas'){ try{ cargarFinanzas(); }catch(e){} }
   if(id==='camaras'){ try{ cargarCamaras(); }catch(e){} }
   if(id==='marketing'){ try{ cargarMarketing(); }catch(e){} }
@@ -1246,39 +1246,46 @@ window.calcularTotalMostrador = function(){
   const el=document.getElementById('vmTotal'); if(el) el.textContent='$'+(cant*precio+flete);
 };
 
+
 window.cargarProductosParaVentas = async function(){
   try{
-    const r=await fetch(API+'?table=productos',{cache:'no-store'}); 
-    let lista=(await r.json()).data||[];
-    if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT;
-    const fracs=[
-      {id:'FRACC_1', nombre:'Fracc 1kg', tipo:'fraccionado', precio_venta:160, kg:1},
-      {id:'FRACC_1.5', nombre:'Fracc 1.5kg', tipo:'fraccionado', precio_venta:240, kg:1.5},
-      {id:'FRACC_2', nombre:'Fracc 2kg', tipo:'fraccionado', precio_venta:320, kg:2},
-      {id:'FRACC_2.5', nombre:'Fracc 2.5kg', tipo:'fraccionado', precio_venta:400, kg:2.5},
-      {id:'FRACC_3', nombre:'Fracc 3kg', tipo:'fraccionado', precio_venta:480, kg:3},
+    let lista=[];
+    try{
+      const r=await fetch(API+'?table=productos',{cache:'no-store'}); 
+      const j=await r.json();
+      lista=j.data||[];
+    }catch(e){ lista=[]; }
+    if(!lista.length) lista=window.PRODUCTOS_MEGAL_DEFAULT||[
+      {id:'11', nombre:'Garrafa 11kg', precio_venta:750, kg:11},
+      {id:'13', nombre:'Garrafa 13kg', precio_venta:850, kg:13},
+      {id:'45', nombre:'Garrafa 45kg', precio_venta:2800, kg:45},
+      {id:'43.5', nombre:'Tubo 43.5kg', precio_venta:3400, kg:43.5}
     ];
-    fracs.forEach(f=>{ if(!lista.find(p=>String(p.id).toLowerCase()===String(f.id).toLowerCase())) lista.push(f); });
+    // agrega fraccionados siempre
+    const fracs=[
+      {id:'FRACC_1', nombre:'Fracc 1kg', precio_venta:160, kg:1},
+      {id:'FRACC_1.5', nombre:'Fracc 1.5kg', precio_venta:240, kg:1.5},
+      {id:'FRACC_2', nombre:'Fracc 2kg', precio_venta:320, kg:2},
+      {id:'FRACC_2.5', nombre:'Fracc 2.5kg', precio_venta:400, kg:2.5},
+      {id:'FRACC_3', nombre:'Fracc 3kg', precio_venta:480, kg:3}
+    ];
+    fracs.forEach(f=>{
+      if(!lista.find(p=> String(p.id).toLowerCase()===String(f.id).toLowerCase())) lista.push(f);
+    });
     window.productosCache=lista;
-    const sel=document.getElementById('vmProducto'); 
-    if(sel){
-      sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}" data-kg="${p.kg||extraerKgDeProducto(p.id)}">${p.id} - ${p.nombre} ($${p.precio_venta||0})</option>`).join('');
-      // listener para precio automático
-      sel.onchange = function(){
-        const opt=this.selectedOptions[0];
-        const precio=opt?.dataset?.precio||0;
-        const pInput=document.getElementById('vmPrecio');
-        if(pInput && precio>0){ pInput.value=precio; calcularTotalMostrador(); }
-        // si es fraccionado, bloquea tipo operación a fraccionado
-        const tipoOp=document.getElementById('ventaTipoOperacion');
-        if(tipoOp){
-          if(String(this.value).toLowerCase().startsWith('fracc')) tipoOp.value='fraccionado';
-          else if(tipoOp.value==='fraccionado') tipoOp.value='solo_gas';
-        }
-      };
-    }
-  }catch(e){ console.error('cargarProductosParaVentas',e); }
+    const sel=document.getElementById('vmProducto');
+    if(!sel){ console.log('vmProducto no existe'); return; }
+    sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta||0}">${p.id} - ${p.nombre} ($${p.precio_venta||0})</option>`).join('');
+    sel.onchange = function(){
+      const opt=this.selectedOptions[0];
+      const precio=opt?.dataset?.precio||0;
+      const inp=document.getElementById('vmPrecio');
+      if(inp && precio>0){ inp.value=precio; calcularTotalMostrador(); }
+    };
+    console.log('Productos cargados:', lista.length);
+  }catch(e){ console.error('cargarProductosParaVentas error',e); }
 };
+
 
 
 window.cargarVentasHoy = async function(){
