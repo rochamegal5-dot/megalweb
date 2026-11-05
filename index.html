@@ -1002,7 +1002,8 @@ window.cargarStock = async function(){
     }
     window.depositoCache = dep;
 
-    const gases = dep.filter(d=> ['11','13','45'].includes(String(d.producto_id)) || String(d.producto_id)==='11' || String(d.producto_id)==='13' || String(d.producto_id)==='45' );
+    // GAS incluye 11, 13, 45 y 43.5
+    const gases = dep.filter(d=> ['11','13','45','43.5','43'].includes(String(d.producto_id)) || String(d.producto_id).includes('43'));
     const gasCards = document.getElementById('stockGasCards');
     const tablaGas = document.getElementById('tablaStockGas');
     
