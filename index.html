@@ -1122,25 +1122,30 @@ window.cambiarTabStock = function(tab){
   if(tab==='otros'){ document.getElementById('tabStockOtros')?.classList.remove('hidden'); const b=document.getElementById('btnStockOtros'); if(b){ b.style.background='#0ea5e9'; b.style.color='white'; } }
 };
 
-  window.ajustarStockAutomatico = async function({tipoVenta, kg, cantidad, prodId}){
+
+window.ajustarStockAutomatico = async function({tipoVenta, kg, cantidad, prodId}){
   try{
+    // Si es fraccionado, NO tocar stock acá, lo hace el backend en api/postgres.js
+    // Así no se descuenta 2 veces
+    if(tipoVenta==='fraccionado' || String(prodId||'').toUpperCase().startsWith('FRACC') || String(prodId||'')==='43.5'){
+      console.log('Fraccionado: descuento lo hace el backend, no acá');
+      return {ok:true, fracc:true};
+    }
     const r=await fetch(API+'?table=deposito',{cache:'no-store'}); 
     const dep=(await r.json()).data||[];
-    // Fraccionado: descuenta del tubo 43.5
-    if(tipoVenta==='fraccionado' || String(prodId||'').toUpperCase().startsWith('FRACC') || String(prodId||'').toUpperCase().startsWith('FRAC')){
-      let tubo = dep.find(d=> String(d.producto_id)==='43.5') || dep.find(d=> String(d.producto_id).includes('43'));
-      if(!tubo) tubo={producto_id:'43.5', llenas:4, vacias:3, para_cambio:0, en_uso:1, kilos_restantes:43.5};
-      let kilosRest=parseFloat(tubo.kilos_restantes);
-      if(isNaN(kilosRest)) kilosRest=43.5;
-      const descontar=(parseFloat(kg)||1)*cantidad;
-      kilosRest=Math.max(0,kilosRest-descontar);
-      console.log(`Fracc: ${descontar}kg - Restante: ${kilosRest}kg`);
-      // Guarda con todas las columnas
-      await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:'43.5', llenas:parseInt(tubo.llenas)||4, vacias:parseInt(tubo.vacias)||3, para_cambio:parseInt(tubo.para_cambio)||0, en_uso:1, kilos_restantes:kilosRest, accion:'balance_inicial'})});
-      // Forzar recarga visual
-      setTimeout(()=>{ if(typeof cargarTuboEnUso==='function') cargarTuboEnUso(); if(typeof cargarStock==='function') cargarStock(); },300);
-      return {ok:true, kilosRest};
-    }
+    let item = dep.find(d=> String(d.producto_id)===String(kg) || String(d.producto_id)===String(prodId));
+    if(!item) return {ok:true};
+    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
+    if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
+    else if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
+    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
+    else if(tipoVenta==='fallada'){ llenas=Math.max(0,llenas-cantidad); para_cambio+=cantidad; }
+    else { llenas=Math.max(0,llenas-cantidad); }
+    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_en_uso:item.kilos_en_uso||0, accion:'balance_inicial'})});
+    return {ok:true};
+  }catch(e){ console.error('ajustarStock error',e); return {ok:false}; }
+};
+    
     // Resto de garrafas 11/13/45
     let item = dep.find(d=> String(d.producto_id)===String(kg) || String(d.producto_id)===String(prodId));
     if(!item) return {ok:true};
@@ -1368,6 +1373,8 @@ window.guardarVentaMostrador = async function(){
     }
     
     await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:getTipoCliente(), modo:getModoVenta(), canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago:document.getElementById('vmPago')?.value||'contado', kilos:kg})});
+     // ... después de await fetch ventas ...
+    setTimeout(()=>{ if(typeof cargarTuboEnUso==='function') cargarTuboEnUso(); }, 500);
     
     const res=await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
     console.log('stock res',res);
@@ -1379,7 +1386,7 @@ window.guardarVentaMostrador = async function(){
 };
    
 
-
+   
 
 // --- FINANZAS EMPRESA COMPLETA ---
 
