@@ -19,6 +19,23 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS finanzas (id SERIAL PRIMARY KEY, fecha DATE DEFAULT CURRENT_DATE, tipo TEXT, categoria TEXT, descripcion TEXT, monto DOUBLE PRECISION DEFAULT 0, metodo_pago TEXT DEFAULT 'contado')`;
     await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
+    // FIX: tu tabla ventas ya existe pero le faltan columnas, hay que agregarlas
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS repartidor_id TEXT DEFAULT ''`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_cliente TEXT DEFAULT 'consumidor_final'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS modo TEXT DEFAULT 'mostrador'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pago TEXT DEFAULT 'contado'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS flete DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad INTEGER DEFAULT 1`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre TEXT DEFAULT 'Cliente'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS producto_id TEXT DEFAULT '13'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_hora TIMESTAMP DEFAULT NOW()`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_venta TEXT DEFAULT 'mostrador'`;
+
+await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_en_uso DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFAULT 0`;
 
     const c = await sql`SELECT COUNT(*) as c FROM deposito`;
     if (parseInt(c.rows[0].c) === 0) {
