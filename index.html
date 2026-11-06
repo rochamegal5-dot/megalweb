@@ -365,7 +365,19 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
       <div><label style="font-size:11px">TOTAL A COBRAR</label><div id="vmTotal" style="font-size:28px;font-weight:900;color:#22c55e">$0</div></div>
     </div>
     <button onclick="guardarVentaMostrador()" style="width:100%;background:#22c55e;color:white;padding:12px;border:none;border-radius:8px;font-weight:900;margin-top:12px">💾 GUARDAR VENTA MOSTRADOR</button>
-   <!-- CIERRE DE CAJA -->
+  
+    <!-- APERTURA / CAMBIO INICIAL -->
+<div style="margin-top:14px; background:#0f172a; border:1px solid #f59e0b; border-radius:12px; padding:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+  <div>
+    <b>💵 Cambio inicial del día</b>
+    <div style="font-size:12px; color:#94a3b8;">Con cuánto arrancás la jornada. Ej: $2000 para dar cambio.</div>
+    <div id="textoCambioInicial" style="font-size:13px; margin-top:4px; color:#fbbf24;">Hoy todavía no cargaste cambio inicial</div>
+  </div>
+  <input id="inputCambioInicial" type="number" placeholder="Ej: 2000" style="width:130px; padding:10px; border-radius:8px; border:1px solid #334155; background:#020617; color:#fff; font-size:16px;">
+  <button onclick="guardarCambioInicial()" style="background:#f59e0b; color:#000; border:0; padding:10px 14px; border-radius:8px; font-weight:bold; cursor:pointer;">Guardar Cambio</button>
+</div>
+    
+    <!-- CIERRE DE CAJA -->
 <div style="margin-top:14px; background:#1e293b; border:1px solid #334155; border-radius:12px; padding:14px;">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <div>
@@ -1472,6 +1484,30 @@ window.guardarVentaMostrador = async function(){
   let _tipoCierreActual = 'parcial';
 let _datosCierreActual = null;
 
+// --- CAMBIO INICIAL / APERTURA ---
+window.getCambioInicial = function(){
+  const hoy = new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
+  const guardado = localStorage.getItem('cambio_inicial_' + hoy);
+  return guardado ? parseFloat(guardado) : 0;
+};
+
+window.guardarCambioInicial = async function(){
+  const hoy = new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
+  const valor = parseFloat(document.getElementById('inputCambioInicial').value || 0);
+  if(!valor && valor !== 0) return alert('Poné el cambio inicial, ej: 2000');
+  localStorage.setItem('cambio_inicial_' + hoy, String(valor));
+  try{
+    await fetch('/api/postgres?table=finanzas', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({tipo:'apertura_caja', fecha:hoy, fecha_local:hoy, hoy:hoy, monto:valor, descripcion:'Cambio inicial jornada', canal:'mostrador'})});
+  }catch(e){}
+  const txt = document.getElementById('textoCambioInicial');
+  if(txt) txt.textContent = 'Cambio inicial hoy: $' + valor.toFixed(0);
+  const inp = document.getElementById('inputCambioInicial');
+  if(inp) inp.value = '';
+  alert('✅ Cambio inicial guardado: $' + valor);
+  actualizarResumenCaja();
+};
+
+// --- RESUMEN CAJA CON CAMBIO ---
 window.actualizarResumenCaja = async function(){
   try{
     const hoy = new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
@@ -1481,9 +1517,13 @@ window.actualizarResumenCaja = async function(){
     const total = ventas.reduce((s,v)=> s + parseFloat(v.total||v.monto||0), 0);
     const contado = ventas.filter(v => String(v.pago||v.metodo_pago||'Contado').toLowerCase().includes('cont')).reduce((s,v)=> s + parseFloat(v.total||0),0);
     const otro = total - contado;
+    const cambioInicial = getCambioInicial();
+    const esperadoEnCaja = cambioInicial + contado;
     const el = document.getElementById('resumenCajaHoy');
-    if(el) el.innerHTML = `Hoy ${hoy} — <b style="color:#fff;">${ventas.length} ventas | Total $${total.toFixed(0)} | Efectivo $${contado.toFixed(0)} | Otro pago $${otro.toFixed(0)}</b>`;
-    return {hoy, ventas, total, contado, otro};
+    if(el) el.innerHTML = `Hoy ${hoy} — <b style="color:#fff;">${ventas.length} ventas | Total $${total.toFixed(0)} | Cambio inicial $${cambioInicial.toFixed(0)} | En caja $${esperadoEnCaja.toFixed(0)} | Otro pago $${otro.toFixed(0)}</b>`;
+    const txt = document.getElementById('textoCambioInicial');
+    if(txt && cambioInicial > 0) txt.textContent = 'Cambio inicial hoy: $' + cambioInicial.toFixed(0);
+    return {hoy, ventas, total, contado, otro, cambioInicial, esperadoEnCaja};
   }catch(e){ console.error(e); return null; }
 };
 
@@ -1495,19 +1535,22 @@ window.hacerCierreCaja = async function(tipo){
   document.getElementById('tituloCierre').textContent = tipo === 'final' ? '🔒 Cierre Final de Caja' : '📋 Arqueo Parcial';
   document.getElementById('detalleCierre').innerHTML = `
     Fecha: <b>${datos.hoy}</b><br>
+    Cambio inicial: <b>$${datos.cambioInicial.toFixed(0)}</b><br>
     Ventas: <b>${datos.ventas.length}</b><br>
     Total vendido: <b>$${datos.total.toFixed(0)}</b><br>
-    En efectivo (Contado): <b style="color:#22c55e;">$${datos.contado.toFixed(0)}</b><br>
+    Ventas en efectivo (Contado): <b style="color:#22c55e;">$${datos.contado.toFixed(0)}</b><br>
     Otro pago (transferencia / fiado): <b>$${datos.otro.toFixed(0)}</b><br>
-    ${tipo==='final' ? '<span style="color:#fca5a5;">Este cierre CIERRA el día. Mañana arranca en $0.</span>' : '<span style="color:#93c5fd;">Arqueo solo para controlar, NO cierra el día.</span>'}
+    <hr style="border-color:#334155;">
+    En caja tiene que haber: <b style="color:#22c55e; font-size:16px;">$${datos.esperadoEnCaja.toFixed(0)}</b> (cambio inicial + efectivo)<br>
+    ${tipo==='final' ? '<span style="color:#fca5a5;">Cierre Final: contá toda la plata incluyendo el cambio. Mañana arranca en $0.</span>' : '<span style="color:#93c5fd;">Arqueo solo para controlar, NO cierra el día.</span>'}
   `;
   const inp = document.getElementById('efectivoCierre');
-  inp.value = datos.contado.toFixed(0);
+  inp.value = datos.esperadoEnCaja.toFixed(0);
   document.getElementById('notaCierre').value = '';
   document.getElementById('difCierre').textContent = '';
   inp.oninput = () => {
     const real = parseFloat(inp.value||0);
-    const dif = real - datos.contado;
+    const dif = real - datos.esperadoEnCaja;
     const d = document.getElementById('difCierre');
     d.textContent = dif === 0 ? '✅ Caja exacta' : dif > 0 ? `🟢 Sobran $${dif.toFixed(0)}` : `🔴 Faltan $${Math.abs(dif).toFixed(0)}`;
     d.style.color = dif === 0 ? '#22c55e' : dif > 0 ? '#22c55e' : '#ef4444';
@@ -1520,7 +1563,7 @@ window.guardarCierreCaja = async function(){
   if(!_datosCierreActual) return;
   const efectivoReal = parseFloat(document.getElementById('efectivoCierre').value || 0);
   const nota = document.getElementById('notaCierre').value || '';
-  const dif = efectivoReal - _datosCierreActual.contado;
+  const dif = efectivoReal - _datosCierreActual.esperadoEnCaja;
   const payload = {
     tipo: _tipoCierreActual === 'final' ? 'cierre_final' : 'arqueo_parcial',
     fecha: _datosCierreActual.hoy,
@@ -1528,29 +1571,26 @@ window.guardarCierreCaja = async function(){
     hoy: _datosCierreActual.hoy,
     total_ventas: _datosCierreActual.total,
     cantidad_ventas: _datosCierreActual.ventas.length,
-    efectivo_esperado: _datosCierreActual.contado,
+    cambio_inicial: _datosCierreActual.cambioInicial,
+    efectivo_esperado: _datosCierreActual.esperadoEnCaja,
     efectivo_real: efectivoReal,
     diferencia: dif,
     nota: nota,
     canal: 'mostrador'
   };
   try{
-    // Guarda en finanzas para que lo veas en Resumen / Finanzas
     await fetch('/api/postgres?table=finanzas', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    // También en tabla cierres si existe, si no, no rompe
     try{ await fetch('/api/postgres?table=cierres_caja', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }catch(e){}
     alert(_tipoCierreActual === 'final' ? '🔒 Cierre Final guardado. Día cerrado.' : '📋 Arqueo guardado. Podés seguir vendiendo.');
     document.getElementById('modalCierre').style.display = 'none';
-    // Si es final, reseteamos el resumen visual a 0 para mañana
     if(_tipoCierreActual === 'final'){
       const el = document.getElementById('resumenCajaHoy');
-      if(el) el.innerHTML = '✅ Día cerrado - ' + _datosCierreActual.hoy + ' | Total $' + _datosCierreActual.total.toFixed(0);
+      if(el) el.innerHTML = '✅ Día cerrado - ' + _datosCierreActual.hoy + ' | Total $' + _datosCierreActual.total.toFixed(0) + ' | Cambio inicial $' + _datosCierreActual.cambioInicial.toFixed(0);
     }
     if(typeof cargarVentasHoy === 'function') cargarVentasHoy();
     actualizarResumenCaja();
   }catch(e){ console.error(e); alert('Error guardando cierre: ' + e.message); }
-}; 
-
+};
    
 
 // --- FINANZAS EMPRESA COMPLETA ---
