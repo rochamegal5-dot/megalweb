@@ -1591,7 +1591,66 @@ window.guardarCierreCaja = async function(){
     actualizarResumenCaja();
   }catch(e){ console.error(e); alert('Error guardando cierre: ' + e.message); }
 };
-   
+
+    // --- EDITAR / ELIMINAR PRODUCTOS ---
+window.editarProducto = async function(id){
+  try{
+    // 1. Buscar el producto actual
+    const r = await fetch('/api/postgres?table=productos&t=' + Date.now());
+    const j = await r.json();
+    const prod = (j.data||[]).find(p => String(p.id) === String(id));
+    if(!prod) return alert('No encontré el producto ' + id);
+
+    // 2. Pedir nuevos valores con prompt simple (sin modal, para que no falle)
+    const nuevoNombre = prompt('Nombre:', prod.nombre || '');
+    if(nuevoNombre === null) return;
+    const nuevaVenta = prompt('Precio VENTA $:', prod.precio_venta || prod.precio || prod.venta || 0);
+    if(nuevaVenta === null) return;
+    const nuevaCompra = prompt('Precio COMPRA $:', prod.precio_compra || prod.compra || 0);
+    if(nuevaCompra === null) return;
+
+    const payload = {
+      id: String(id),
+      nombre: nuevoNombre,
+      precio_venta: parseFloat(nuevaVenta) || 0,
+      precio: parseFloat(nuevaVenta) || 0,
+      venta: parseFloat(nuevaVenta) || 0,
+      precio_compra: parseFloat(nuevaCompra) || 0,
+      compra: parseFloat(nuevaCompra) || 0,
+      tipo: prod.tipo || 'gas',
+      kg: prod.kg || prod.kilos || 0
+    };
+
+    // 3. Intentar actualizar: primero PUT, si no anda, POST con mismo id (upsert)
+    let ok = false;
+    try{
+      const r2 = await fetch('/api/postgres?table=productos&id=' + encodeURIComponent(id), {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      const j2 = await r2.json().catch(()=>({}));
+      if(j2.ok || r2.ok) ok = true;
+    }catch(e){}
+    if(!ok){
+      const r3 = await fetch('/api/postgres?table=productos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      const j3 = await r3.json().catch(()=>({}));
+      if(!r3.ok && !j3.ok) throw new Error(j3.error || 'No se pudo guardar');
+    }
+
+    alert('✅ Producto ' + id + ' actualizado');
+    if(typeof cargarProductos === 'function') cargarProductos();
+    if(typeof cargarProductosParaVentas === 'function') cargarProductosParaVentas();
+  }catch(e){ console.error(e); alert('❌ Error editando: ' + e.message); }
+};
+
+window.eliminarProducto = async function(id){
+  if(!confirm('¿Borrar el producto ' + id + '? Esto no se puede deshacer.')) return;
+  try{
+    const r = await fetch('/api/postgres?table=productos&id=' + encodeURIComponent(id), {method:'DELETE'});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok && !j.ok) throw new Error(j.error || 'No se pudo borrar');
+    alert('✅ Producto ' + id + ' borrado');
+    if(typeof cargarProductos === 'function') cargarProductos();
+    if(typeof cargarProductosParaVentas === 'function') cargarProductosParaVentas();
+  }catch(e){ console.error(e); alert('❌ Error borrando: ' + e.message); }
+};
 
 // --- FINANZAS EMPRESA COMPLETA ---
 
