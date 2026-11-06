@@ -103,11 +103,21 @@ export default async function handler(req, res) {
       }
 
       // VENTAS
+
+      // VENTAS - CON DESCUENTO AUTOMATICO DEL TUBO 43.5
       if (table === 'ventas') {
         const vid = body.id || 'v_'+Date.now();
+        const esFracc = String(body.producto_id||'').toUpperCase().startsWith('FRACC') || String(body.producto_id||'')==='43.5';
+        let kilosFracc = 0;
+        if(esFracc){
+          // Extraer kilos: FRACC_1 = 1kg, FRACC_1.5 = 1.5kg, etc
+          const match = String(body.producto_id).match(/([0-9]+(?:\.[0-9]+)?)/);
+          const kgPorUnidad = match ? parseFloat(match[1]) : (parseFloat(body.kilos)||1);
+          kilosFracc = kgPorUnidad * (parseInt(body.cantidad)||1);
+        }
         await sql`INSERT INTO ventas (id, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id) VALUES (${vid}, ${body.producto_id||'13'}, ${body.cliente_nombre||'Cliente'}, ${parseInt(body.cantidad)||1}, ${parseFloat(body.total)||0}, ${parseFloat(body.flete)||0}, ${body.pago||'contado'}, ${body.tipo_cliente||'consumidor_final'}, ${body.modo||'mostrador'}, ${body.repartidor_id||''})`;
-        // Descontar stock
-        if (body.producto_id && body.producto_id !== '43.5') {
+        // Descontar stock normal
+        if (body.producto_id && body.producto_id !== '43.5' && !esFracc) {
           const dep = await sql`SELECT * FROM deposito WHERE producto_id=${body.producto_id}`;
           if (dep.rows[0]) {
             const nl = Math.max(0, (parseInt(dep.rows[0].llenas)||0) - (parseInt(body.cantidad)||1));
@@ -115,6 +125,26 @@ export default async function handler(req, res) {
             await sql`UPDATE deposito SET llenas=${nl}, vacias=${nv} WHERE producto_id=${body.producto_id}`;
           }
         }
+        // DESCUENTO DEL TUBO 43.5 PARA FRACCIONADO - ESTO ES LO QUE FALTABA
+        if(esFracc && kilosFracc>0){
+          const dep43 = await sql`SELECT * FROM deposito WHERE producto_id='43.5'`;
+          let kilosActual = 43.5;
+          if(dep43.rows[0]){
+            kilosActual = parseFloat(dep43.rows[0].kilos_en_uso ?? dep43.rows[0].kilos_restantes ?? 43.5);
+          }
+          const nuevoKilos = Math.max(0, kilosActual - kilosFracc);
+          await sql`INSERT INTO deposito (producto_id, llenas, vacias, kilos_en_uso) VALUES ('43.5',0,0,${nuevoKilos}) ON CONFLICT (producto_id) DO UPDATE SET kilos_en_uso=${nuevoKilos}`;
+          console.log(`FRACCIONADO: ${kilosFracc}kg descontado, restante ${nuevoKilos}kg`);
+        }
+        // Auto ingreso en finanzas
+        await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE, 'ingreso', 'Venta Mostrador', ${'Venta ' + (body.producto_id||'') + ' - ' + (body.cliente_nombre||'')}, ${parseFloat(body.total)||0}, ${body.pago||'contado'})`;
+        if ((parseFloat(body.flete)||0) > 0) {
+          await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE, 'ingreso', 'Venta Mostrador', ${'Flete - ' + (body.cliente_nombre||'')}, ${parseFloat(body.flete)||0}, ${body.pago||'contado'})`;
+        }
+        return res.status(200).json({ ok: true, id: vid, descontado: kilosFracc });
+      }
+
+ 
         // Auto ingreso en finanzas
         await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE, 'ingreso', 'Venta Mostrador', ${'Venta ' + (body.producto_id||'') + ' - ' + (body.cliente_nombre||'')}, ${parseFloat(body.total)||0}, ${body.pago||'contado'})`;
         if ((parseFloat(body.flete)||0) > 0) {
