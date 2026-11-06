@@ -20,22 +20,25 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
     // FIX: tu tabla ventas ya existe pero le faltan columnas, hay que agregarlas
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS repartidor_id TEXT DEFAULT ''`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_cliente TEXT DEFAULT 'consumidor_final'`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS modo TEXT DEFAULT 'mostrador'`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pago TEXT DEFAULT 'contado'`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS flete DOUBLE PRECISION DEFAULT 0`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total DOUBLE PRECISION DEFAULT 0`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad INTEGER DEFAULT 1`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre TEXT DEFAULT 'Cliente'`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS producto_id TEXT DEFAULT '13'`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_hora TIMESTAMP DEFAULT NOW()`;
-await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_venta TEXT DEFAULT 'mostrador'`;
-
-await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_en_uso DOUBLE PRECISION DEFAULT 0`;
-await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
-await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFAULT 0`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS repartidor_id TEXT DEFAULT ''`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_cliente TEXT DEFAULT 'consumidor_final'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS modo TEXT DEFAULT 'mostrador'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS pago TEXT DEFAULT 'contado'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS flete DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS total DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad INTEGER DEFAULT 1`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_nombre TEXT DEFAULT 'Cliente'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS producto_id TEXT DEFAULT '13'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_hora TIMESTAMP DEFAULT NOW()`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_venta TEXT DEFAULT 'mostrador'`;
+    await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_en_uso DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
+    await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFAULT 0`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_local TEXT DEFAULT ''`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS hoy TEXT DEFAULT ''`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS canal TEXT DEFAULT 'mostrador'`;
+    await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'solo_gas'`;
 
     const c = await sql`SELECT COUNT(*) as c FROM deposito`;
     if (parseInt(c.rows[0].c) === 0) {
@@ -53,6 +56,18 @@ await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFA
       return res.status(200).json({ data: rows, ok: true });
     }
 
+    if (req.method === 'DELETE') {
+      if (!id) return res.status(200).json({ ok: false, error: 'falta id' });
+      try {
+        if (table === 'ventas') await sql`DELETE FROM ventas WHERE id=${id}`;
+        else if (table === 'productos') await sql`DELETE FROM productos WHERE id=${id}`;
+        else if (table === 'clientes') await sql`DELETE FROM clientes WHERE id=${id}`;
+        else if (table === 'proveedores') await sql`DELETE FROM proveedores WHERE id=${id}`;
+        else if (table === 'finanzas') await sql`DELETE FROM finanzas WHERE id=${parseInt(id)}`;
+      } catch (e) {}
+      return res.status(200).json({ ok: true });
+    }
+
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
@@ -60,6 +75,10 @@ await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFA
       if (table === 'deposito') {
         if (body.accion === 'reset_tubo_43' || body.accion === 'iniciar_tubo_43') {
           await sql`UPDATE deposito SET kilos_en_uso=43.5, kilos_restantes=43.5 WHERE producto_id='43.5'`;
+          if (body.borrar_ventas) {
+            await sql`DELETE FROM ventas WHERE producto_id LIKE 'FRACC%' OR producto_id='fraccionado' OR cliente_nombre='PRUEBA'`;
+            await sql`DELETE FROM finanzas WHERE categoria='Venta' AND fecha = CURRENT_DATE`;
+          }
           return res.status(200).json({ ok: true, kilos: 43.5, restante: 43.5 });
         }
         if (body.accion === 'venta_fraccionada') {
@@ -93,7 +112,13 @@ await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFA
         // Si es fraccionado y viene cantidad >1 (ej 2 x 1kg) multiplica
         if (esFracc && body.cantidad) kilosVend = kilosVend * 1; // ya viene kilos totales desde front, no multiplicar
 
-        await sql`INSERT INTO ventas (id, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id, kilos) VALUES (${vid}, ${pidRaw || '13'}, ${body.cliente_nombre || 'Cliente'}, ${parseInt(body.cantidad) || 1}, ${parseFloat(body.total) || 0}, ${parseFloat(body.flete) || 0}, ${body.pago || 'contado'}, ${body.tipo_cliente || 'consumidor_final'}, ${body.modo || 'mostrador'}, ${body.repartidor_id || ''}, ${kilosVend || 0}) ON CONFLICT (id) DO NOTHING`;
+        const fechaParaGuardar = body.fecha || body.fecha_hora || new Date().toISOString();
+        const fechaLocalParaGuardar = body.fecha_local || '';
+        const hoyParaGuardar = body.hoy || fechaParaGuardar.split('T')[0];
+        const canalParaGuardar = body.canal || body.modo || 'mostrador';
+        const tipoParaGuardar = body.tipo || body.tipo_venta || 'solo_gas';
+
+        await sql`INSERT INTO ventas (id, fecha, fecha_hora, fecha_local, hoy, canal, tipo, tipo_venta, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id, kilos) VALUES (${vid}, ${fechaParaGuardar}, ${fechaParaGuardar}, ${fechaLocalParaGuardar}, ${hoyParaGuardar}, ${canalParaGuardar}, ${tipoParaGuardar}, ${tipoParaGuardar}, ${pidRaw || '13'}, ${body.cliente_nombre || 'Cliente'}, ${parseInt(body.cantidad) || 1}, ${parseFloat(body.total) || 0}, ${parseFloat(body.flete) || 0}, ${body.pago || 'contado'}, ${body.tipo_cliente || 'consumidor_final'}, ${body.modo || 'mostrador'}, ${body.repartidor_id || ''}, ${kilosVend || 0}) ON CONFLICT (id) DO NOTHING`;
 
         let restante = null;
         if (esFracc) {
