@@ -1334,44 +1334,61 @@ window.cargarVentasHoy = async function(){
 
 window.guardarVentaMostrador = async function(){
   try{
-    const prodId=document.getElementById('vmProducto')?.value;
-    let tipoOp=document.getElementById('ventaTipoOperacion')?.value||'solo_gas';
-    // Si es fraccionado, forzamos el tipo
+    const prodId = document.getElementById('vmProducto')?.value;
+    let tipoOp = document.getElementById('ventaTipoOperacion')?.value || 'solo_gas';
     if(String(prodId).toLowerCase().startsWith('fracc') || String(prodId).toLowerCase().startsWith('frac')){
-      tipoOp='fraccionado';
+      tipoOp = 'fraccionado';
     }
-    const cantidad=parseInt(document.getElementById('vmCant')?.value)||1;
-    const precio=parseFloat(document.getElementById('vmPrecio')?.value)||0;
-    const flete=parseFloat(document.getElementById('vmFlete')?.value)||0;
-    const cliente=document.getElementById('vmCliente')?.value||'Mostrador';
+    const cantidad = parseInt(document.getElementById('vmCant')?.value) || 1;
+    const precio = parseFloat(document.getElementById('vmPrecio')?.value) || 0;
+    const flete = parseFloat(document.getElementById('vmFlete')?.value) || 0;
+    const cliente = document.getElementById('vmCliente')?.value || 'Mostrador';
     if(!prodId) return alert('Seleccioná producto');
-    
-    const id='V_'+Date.now(); 
-    const ahora=new Date(); 
-    const fechaISO=ahora.toISOString(); 
-    const fechaLocal=ahora.toLocaleString('es-UY'); 
-    const hoy=fechaISO.split('T')[0];
-    const total=cantidad*precio+flete; 
-    
-    let kg=extraerKgDeProducto(prodId);
-    if(String(prodId).toLowerCase().startsWith('fracc')){
-      // Extrae 1, 1.5, 2, etc de FRACC_1.5
-      const m=String(prodId).match(/([\d.]+)/);
-      kg=m?parseFloat(m[0]):1;
+
+    const id = 'V_' + Date.now();
+    const ahora = new Date();
+    const fechaISO = ahora.toISOString();
+    const fechaLocal = ahora.toLocaleString('es-UY');
+    const hoy = fechaISO.split('T')[0];
+    const total = cantidad * precio + flete;
+
+    let kg = 0;
+    if(String(prodId).toLowerCase().startsWith('fracc') || String(prodId).toLowerCase().startsWith('frac')){
+      const m = String(prodId).match(/([\d.]+)/);
+      kg = m ? parseFloat(m[0]) : 1;
     }
-    
-    await fetch(API+'?table=ventas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:getTipoCliente(), modo:getModoVenta(), canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago:document.getElementById('vmPago')?.value||'contado', kilos:kg})});
-     // ... después de await fetch ventas ...
-    setTimeout(()=>{ if(typeof cargarTuboEnUso==='function') cargarTuboEnUso(); }, 500);
-    
-    const res=await ajustarStockAutomatico({tipoVenta:tipoOp, kg, cantidad, prodId});
-    console.log('stock res',res);
-    
-    await fetch(API+'?table=finanzas',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:document.getElementById('vmPago')?.value||'contado'})});
+
+    // Usá API_ERP que es /api/postgres, NO API solo
+    const API_VENTAS = (typeof API_ERP !== 'undefined' ? API_ERP : '/api/postgres');
+
+    // 1. ÚNICO descuento: lo hace el backend en /ventas
+    const rVenta = await fetch(API_VENTAS + '?table=ventas', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id, fecha:fechaISO, fecha_local:fechaLocal, hoy, tipo:tipoOp, tipo_cliente:getTipoCliente(), modo:getModoVenta(), canal:'mostrador', producto_id:prodId, cantidad, precio_unitario:precio, flete, total, cliente_nombre:cliente, pago:document.getElementById('vmPago')?.value||'contado', kilos:kg})
+    });
+    const jVenta = await rVenta.json();
+    console.log('VENTA', jVenta);
+
+    // 2. NO llamar a ajustarStockAutomatico para fraccionado, el backend ya descontó
+    // Si es 11/13/45, el backend también ya descontó llenas/vacias, por eso lo sacamos
+    // const res = await ajustarStockAutomatico(...); // <- BORRADO, era el doble descuento
+
+    // 3. Finanzas
+    await fetch(API_VENTAS + '?table=finanzas', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id:'FIN_'+Date.now(), fecha:hoy, tipo:'ingreso', categoria:'venta_mostrador', monto:total, descripcion:`Venta ${tipoOp} ${cantidad}x ${kg}kg a ${cliente}`, metodo_pago:document.getElementById('vmPago')?.value||'contado'})
+    });
+
     alert(`✅ Venta $${total} - ${cantidad}x ${kg}kg (${tipoOp}) - Stock actualizado`);
-    await cargarVentasHoy(); await cargarStock(); await cargarTuboEnUso();
+
+    // 4. Recargar TODO después del alert, con anti-caché
+    await cargarVentasHoy();
+    await cargarStock();
+    if(typeof cargarTuboEnUso === 'function') await cargarTuboEnUso();
+
   }catch(e){ console.error(e); alert('❌ Error: '+e.message); }
 };
+
    
 
    
