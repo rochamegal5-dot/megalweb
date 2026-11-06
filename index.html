@@ -1273,32 +1273,81 @@ window.calcularTotalMostrador = function(){
   const el=document.getElementById('vmTotal'); if(el) el.textContent='$'+(cant*precio+flete);
 };
 
-window.cargarProductosParaVentas = function(){
-  console.log('FORZANDO carga productos VM');
-  const lista=[
-    {id:'11', nombre:'Garrafa 11kg', precio_venta:750, kg:11},
-    {id:'13', nombre:'Garrafa 13kg', precio_venta:850, kg:13},
-    {id:'45', nombre:'Garrafa 45kg', precio_venta:2800, kg:45},
-    {id:'43.5', nombre:'Tubo 43.5kg Madre', precio_venta:3400, kg:43.5},
-    {id:'FRACC_1', nombre:'Fracc 1kg', precio_venta:160, kg:1},
-    {id:'FRACC_1.5', nombre:'Fracc 1.5kg', precio_venta:240, kg:1.5},
-    {id:'FRACC_2', nombre:'Fracc 2kg', precio_venta:320, kg:2},
-    {id:'FRACC_2.5', nombre:'Fracc 2.5kg', precio_venta:400, kg:2.5},
-    {id:'FRACC_3', nombre:'Fracc 3kg', precio_venta:480, kg:3}
-  ];
-  window.productosCache=lista;
-  const sel=document.getElementById('vmProducto');
+window.cargarProductosParaVentas = async function(){
+  const sel = document.getElementById('vmProducto');
   if(!sel){ alert('No encuentro vmProducto'); return; }
-  sel.innerHTML='<option value="">-- Seleccione --</option>' + lista.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta}">${p.id} - ${p.nombre} ($${p.precio_venta})</option>`).join('');
-  sel.onchange = function(){
-    const opt=this.selectedOptions[0];
-    const precio=opt?.dataset?.precio||0;
-    const inp=document.getElementById('vmPrecio');
-    if(inp){ inp.value=precio; calcularTotalMostrador(); }
-  };
-  console.log('OK productos forzados', lista.length);
-};    
 
+  let lista = [];
+
+  try{
+    // 1. Leer del módulo Productos real
+    const r = await fetch('/api/postgres?table=productos&t=' + Date.now());
+    const j = await r.json();
+    const prods = (j.data || j || []).filter(p => p && (p.id || p.codigo));
+
+    console.log('Productos desde modulo Productos:', prods.length, prods);
+
+    // 2. Precio por kg del fraccionado desde Productos
+    // En Productos tenés un producto "fraccionado" con Venta = precio por kg
+    // Si está en 300, cambialo a 160 en Productos. Si no existe, usa 160.
+    const fracProd = prods.find(p => String(p.id || p.codigo || '').toLowerCase().includes('fracc'));
+    const precioKg = fracProd ? parseFloat(fracProd.precio_venta || fracProd.precio || fracProd.venta || 160) : 160;
+
+    // 3. Gas / Tubo desde Productos, sin fraccionado
+    const gas = prods.filter(p => !String(p.id || p.codigo || '').toLowerCase().includes('fracc'));
+
+    gas.forEach(p => {
+      const id = String(p.id || p.codigo);
+      let precio = parseFloat(p.precio_venta || p.precio || p.venta || 0);
+      // 43.5 en Productos está en $0, lo dejamos en 3400 como respaldo
+      if((!precio || precio <= 0) && id === '43.5') precio = 3400;
+      if(!precio || precio <= 0) return; // no mostrar productos sin precio
+      const kg = parseFloat(p.kg || p.kilos || (id === '11' ? 11 : id === '13' ? 13 : id === '45' ? 45 : id === '43.5' ? 43.5 : 0));
+      lista.push({ id, nombre: p.nombre || p.name || id, precio_venta: precio, kg });
+    });
+
+    // 4. Si Productos está vacío, respaldo con los viejos (para no quedarte sin ventas)
+    if(lista.length === 0){
+      console.log('Productos vacío, usando respaldo');
+      lista = [
+        {id:'11', nombre:'Garrafa 11kg', precio_venta:1029, kg:11},
+        {id:'13', nombre:'Garrafa 13kg', precio_venta:1216, kg:13},
+        {id:'45', nombre:'Garrafa 45kg', precio_venta:4210, kg:45},
+        {id:'43.5', nombre:'Tubo 43.5kg Madre', precio_venta:3400, kg:43.5},
+      ];
+    }
+
+    // 5. FRACC generados del precio por kg REAL de Productos
+    [1, 1.5, 2, 2.5, 3].forEach(k => {
+      lista.push({ id:'FRACC_' + k, nombre:'Fracc ' + k + 'kg', precio_venta: Math.round(k * precioKg), kg: k });
+    });
+
+  }catch(e){
+    console.error('Error leyendo Productos, uso respaldo', e);
+    lista = [
+      {id:'11', nombre:'Garrafa 11kg', precio_venta:1029, kg:11},
+      {id:'13', nombre:'Garrafa 13kg', precio_venta:1216, kg:13},
+      {id:'45', nombre:'Garrafa 45kg', precio_venta:4210, kg:45},
+      {id:'43.5', nombre:'Tubo 43.5kg Madre', precio_venta:3400, kg:43.5},
+      {id:'FRACC_1', nombre:'Fracc 1kg', precio_venta:160, kg:1},
+      {id:'FRACC_1.5', nombre:'Fracc 1.5kg', precio_venta:240, kg:1.5},
+      {id:'FRACC_2', nombre:'Fracc 2kg', precio_venta:320, kg:2},
+      {id:'FRACC_2.5', nombre:'Fracc 2.5kg', precio_venta:400, kg:2.5},
+      {id:'FRACC_3', nombre:'Fracc 3kg', precio_venta:480, kg:3}
+    ];
+  }
+
+  // 6. Lo mismo que antes, pero con la lista de Productos
+  window.productosCache = lista;
+  sel.innerHTML = '<option value="">-- Seleccione --</option>' + lista.map(p => `<option value="${p.id}" data-precio="${p.precio_venta}">${p.id} - ${p.nombre} ($${p.precio_venta})</option>`).join('');
+  sel.onchange = function(){
+    const opt = this.selectedOptions[0];
+    const precio = opt?.dataset?.precio || 0;
+    const inp = document.getElementById('vmPrecio');
+    if(inp){ inp.value = precio; calcularTotalMostrador(); }
+  };
+  console.log('OK productos desde Productos', lista.length);
+};
 
 
 window.cargarVentasHoy = async function(){
