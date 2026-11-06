@@ -1051,9 +1051,7 @@ window.cargarStock = async function(){
     console.error('cargarStock',e); 
   }
 };
-   
-
- window.cargarTuboEnUso = async function(){
+   window.cargarTuboEnUso = async function(){
   const tuboDiv = document.getElementById('stockTuboEnUso');
   if(!tuboDiv) return;
   try{
@@ -1061,8 +1059,8 @@ window.cargarStock = async function(){
     const r = await fetch(API+'?table=deposito',{cache:'no-store'});
     const j = await r.json();
     let dep = j.data || [];
-    let tubo = dep.find(d=> String(d.producto_id)==='43.5') || dep.find(d=> String(d.producto_id).includes('43')) || {producto_id:'43.5', kilos_restantes:43.5, en_uso:1, llenas:4, vacias:3, para_cambio:0};
-    const kilosRest = parseFloat(tubo.kilos_restantes)||43.5;
+    let tubo = dep.find(d=> String(d.producto_id)==='43.5') || {producto_id:'43.5', kilos_en_uso:43.5, kilos_restantes:43.5, en_uso:1, llenas:4, vacias:3, para_cambio:0};
+    const kilosRest = parseFloat(tubo.kilos_en_uso ?? tubo.kilos_restantes ?? 43.5);
     const usado = 43.5 - kilosRest;
     const porcentajeRest = (kilosRest/43.5*100).toFixed(1);
     const puedeCambiar = kilosRest <= 6;
