@@ -1051,46 +1051,66 @@ window.cargarStock = async function(){
     console.error('cargarStock',e); 
   }
 };
-   window.cargarTuboEnUso = async function(){
+
+
+window.cargarTuboEnUso = async function(){
   const tuboDiv = document.getElementById('stockTuboEnUso');
   if(!tuboDiv) return;
   try{
-    tuboDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Cargando tubo 43.5...</div>';
     const r = await fetch(API+'?table=deposito',{cache:'no-store'});
     const j = await r.json();
-    let dep = j.data || [];
-    let tubo = dep.find(d=> String(d.producto_id)==='43.5') || {producto_id:'43.5', kilos_en_uso:43.5, kilos_restantes:43.5, en_uso:1, llenas:4, vacias:3, para_cambio:0};
+    const dep = j.data || [];
+    let tubo = dep.find(d=> String(d.producto_id)==='43.5');
+    if(!tubo){
+      // Si no existe, crearlo
+      await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:'43.5', kilos_en_uso:43.5, accion:'balance_inicial'})});
+      tubo = {producto_id:'43.5', kilos_en_uso:43.5};
+    }
     const kilosRest = parseFloat(tubo.kilos_en_uso ?? tubo.kilos_restantes ?? 43.5);
-    const usado = 43.5 - kilosRest;
-    const porcentajeRest = (kilosRest/43.5*100).toFixed(1);
+    const usado = Math.max(0, 43.5 - kilosRest);
+    const porc = Math.max(0, Math.min(100, (kilosRest/43.5*100))).toFixed(1);
     const puedeCambiar = kilosRest <= 6;
     const casiVacio = kilosRest <= 2;
     tuboDiv.innerHTML = `
-      <h3 style="margin-bottom:20px">🧪 Tubo 43.5kg En Uso - Solo lectura</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3>🧪 Tubo 43.5kg En Uso - Solo lectura</h3>
+        <button onclick="resetTubo43()" style="background:#334155;color:white;padding:6px 12px;border:none;border-radius:6px;font-size:11px">🔄 Reset a 43.5kg</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <div style="background:#22c55e15;padding:20px;border-radius:12px;text-align:center;border:2px solid #22c55e30">
           <div style="font-size:11px;color:#22c55e;font-weight:bold">GAS RESTANTE</div>
-          <div style="font-size:42px;font-weight:900;color:#22c55e;margin:8px 0">${kilosRest.toFixed(1)}<span style="font-size:20px">kg</span></div>
-          <div style="font-size:11px;color:#64748b">${porcentajeRest}% del tubo</div>
+          <div style="font-size:42px;font-weight:900;color:#22c55e;margin:8px 0">${kilosRest.toFixed(1)}<span style="font-size:18px">kg</span></div>
+          <div style="font-size:11px;color:#64748b">${porc}% del tubo</div>
         </div>
         <div style="background:#ef444415;padding:20px;border-radius:12px;text-align:center;border:2px solid #ef444430">
           <div style="font-size:11px;color:#ef4444;font-weight:bold">GAS VENDIDO</div>
-          <div style="font-size:42px;font-weight:900;color:#ef4444;margin:8px 0">${usado.toFixed(1)}<span style="font-size:20px">kg</span></div>
+          <div style="font-size:42px;font-weight:900;color:#ef4444;margin:8px 0">${usado.toFixed(1)}<span style="font-size:18px">kg</span></div>
           <div style="font-size:11px;color:#64748b">Total fraccionado vendido</div>
         </div>
       </div>
       <div style="background:#0f172a;padding:16px;border-radius:12px">
         <div style="background:#1f2937;height:32px;border-radius:16px;overflow:hidden;position:relative">
-          <div style="background:${casiVacio ? '#ef4444' : puedeCambiar ? '#f59e0b' : '#22c55e'};height:100%;width:${porcentajeRest}%;transition:width 0.5s"></div>
+          <div style="background:${casiVacio?'#ef4444':puedeCambiar?'#f59e0b':'#22c55e'};height:100%;width:${porc}%;transition:width 0.5s"></div>
           <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900">${kilosRest.toFixed(1)}kg / 43.5kg</div>
         </div>
       </div>
-      ${puedeCambiar ? `<div style="margin-top:20px;background:${casiVacio ? '#ef444420' : '#f59e0b20'};padding:16px;border-radius:12px;text-align:center;border:1px solid ${casiVacio ? '#ef4444' : '#f59e0b'}"><div style="color:${casiVacio ? '#ef4444' : '#f59e0b'};font-weight:bold;margin-bottom:8px">${casiVacio?'🔴 TUBO CASI VACÍO - CAMBIAR YA':'🟡 TUBO PARA CAMBIO - Quedan '+kilosRest.toFixed(1)+'kg'}</div><button onclick="cambiarTubo43()" style="background:${casiVacio ? '#ef4444' : '#f59e0b'};color:white;padding:14px 24px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO - Pasar a vacío</button></div>` : `<div style="margin-top:20px;background:#1f2937;padding:12px;border-radius:8px;text-align:center;font-size:11px;color:#64748b">Se cambia automáticamente con menos de 6kg. Faltan ${(kilosRest-6).toFixed(1)}kg - Las ventas se hacen desde Módulo Ventas</div>`}
+      ${puedeCambiar ? `<div style="margin-top:16px;background:${casiVacio?'#ef444420':'#f59e0b20'};padding:12px;border-radius:10px;text-align:center"><div style="color:${casiVacio?'#ef4444':'#f59e0b'};font-weight:bold">${casiVacio?'🔴 TUBO VACÍO':'🟡 FALTAN '+kilosRest.toFixed(1)+'kg'}</div><button onclick="cambiarTubo43()" style="margin-top:8px;background:${casiVacio?'#ef4444':'#f59e0b'};color:white;padding:10px 20px;border:none;border-radius:8px;font-weight:900;width:100%">🔄 CAMBIAR TUBO</button></div>` : `<div style="margin-top:12px;text-align:center;color:#64748b;font-size:11px">Faltan ${(kilosRest-6).toFixed(1)}kg para cambio - Ventas desde Módulo Ventas</div>`}
     `;
   }catch(e){
-    tuboDiv.innerHTML = `<div style="color:#ef4444;padding:20px">Error: ${e.message}<br><button onclick="cargarTuboEnUso()" style="margin-top:12px;background:#334155;color:white;padding:8px 16px;border:none;border-radius:6px">Reintentar</button></div>`;
+    tuboDiv.innerHTML = `<div style="color:#ef4444;padding:20px">Error: ${e.message}<br><button onclick="cargarTuboEnUso()" style="margin-top:10px;background:#334155;color:white;padding:8px 14px;border:none;border-radius:6px">Reintentar</button></div>`;
   }
 };
+window.resetTubo43 = async function(){
+  if(!confirm('¿Resetear tubo a 43.5kg?')) return;
+  await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'iniciar_tubo_43', producto_id:'43.5'})});
+  cargarTuboEnUso();
+};
+window.cambiarTubo43 = async function(){
+  if(!confirm('¿Cambiar tubo vacío por uno lleno? Se pondrá en 43.5kg')) return;
+  await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'iniciar_tubo_43', producto_id:'43.5'})});
+  cargarTuboEnUso();
+};
+    
 
 
 
