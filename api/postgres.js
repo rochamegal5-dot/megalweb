@@ -84,10 +84,15 @@ export default async function handler(req, res) {
           }
           return res.status(200).json({ ok: true });
         }
-        if (body.accion === 'iniciar_tubo_43') {
+        if (body.accion === 'iniciar_tubo_43' || body.accion === 'reset_tubo_43') {
           await sql`INSERT INTO deposito (producto_id, llenas, vacias, kilos_en_uso) VALUES ('43.5',0,0,43.5) ON CONFLICT (producto_id) DO UPDATE SET kilos_en_uso=43.5`;
-          return res.status(200).json({ ok: true });
+          // Borrar ventas fraccionadas de prueba si querés empezar de 0
+          if(body.borrar_ventas){
+            await sql`DELETE FROM ventas WHERE producto_id='43.5' OR producto_id LIKE 'FRACC%'`;
+          }
+          return res.status(200).json({ ok: true, kilos:43.5 });
         }
+       
         if (body.accion === 'venta_fraccionada') {
           const ex = await sql`SELECT * FROM deposito WHERE producto_id='43.5'`;
           let kilos = parseFloat(ex.rows[0]?.kilos_en_uso)||43.5;
