@@ -179,72 +179,43 @@ export default async function handler(req, res){
     )`;
 
     // ========== GET ==========
+    // ========== GET ==========
     if(req.method==='GET'){
       if(!table){
         return res.status(200).json({data:[], error:'no table'});
       }
-
       try{
-        // Deposito - SIEMPRE con kilos_restantes
         if(table==='deposito'){
           const r = await sql`SELECT * FROM deposito ORDER BY producto_id`;
-          let rows = r.rows || [];
-          // Si no hay datos, crear iniciales
+          let rows = r.rows || r;
           if(rows.length===0){
             await sql`INSERT INTO deposito (producto_id, llenas, vacias, para_cambio, en_uso, kilos_restantes) VALUES ('11', 20, 5, 0, 0, 0), ('13', 20, 5, 0, 0, 0), ('43.5', 4, 3, 0, 1, 43.5), ('45', 10, 5, 0, 0, 0) ON CONFLICT (producto_id) DO NOTHING`;
             const r2 = await sql`SELECT * FROM deposito ORDER BY producto_id`;
-            rows = r2.rows || [];
+            rows = r2.rows || r2;
           }
           return res.status(200).json({data: rows});
         }
-
-        // Ventas - con filtro de hoy y canal
         if(table==='ventas'){
-          let query = `SELECT * FROM ventas`;
-          let conditions = [];
-          if(hoy==='1' || hoy==='true'){
-            conditions.push(`(hoy = CURRENT_DATE OR fecha::date = CURRENT_DATE OR canal='mostrador')`);
-          }
-          if(canal){
-            conditions.push(`canal='${canal}'`);
-          }
-          if(desde && hasta){
-            conditions.push(`fecha >= '${desde}' AND fecha <= '${hasta}'`);
-          }
-          if(conditions.length>0){
-            query += ` WHERE ` + conditions.join(' AND ');
-          }
-          query += ` ORDER BY fecha DESC LIMIT 300`;
-          const r = await sql.query(query);
-          return res.status(200).json({data: r.rows || []});
+          const r = await sql`SELECT * FROM ventas ORDER BY fecha DESC LIMIT 300`;
+          return res.status(200).json({data: r.rows || r});
         }
-
-        // GPS - últimas 100 ubicaciones
         if(table==='gps_locations'){
           const r = await sql`SELECT * FROM gps_locations ORDER BY fecha DESC LIMIT 100`;
-          return res.status(200).json({data: r.rows || []});
+          return res.status(200).json({data: r.rows || r});
         }
-
-        // Finanzas con filtros
         if(table==='finanzas'){
-          let q = `SELECT * FROM finanzas`;
-          if(desde && hasta){
-            q += ` WHERE fecha >= '${desde}' AND fecha <= '${hasta}'`;
-          }
-          q += ` ORDER BY fecha DESC LIMIT 300`;
-          const r = await sql.query(q);
-          return res.status(200).json({data: r.rows || []});
+          const r = await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 300`;
+          return res.status(200).json({data: r.rows || r});
         }
-
-        // Resto de tablas genéricas
-        const r = await sql.query(`SELECT * FROM ${table} ORDER BY created_at DESC, id DESC LIMIT 300`);
+        // generico - usar query con string para evitar error de template
+        const r = await sql.query(`SELECT * FROM ${table} LIMIT 300`);
         return res.status(200).json({data: r.rows || []});
-
       }catch(e){
         console.error('GET ERROR', table, e.message);
         return res.status(200).json({data:[], error:e.message});
       }
     }
+  
         // ========== POST ==========
     if(req.method==='POST'){
       
