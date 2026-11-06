@@ -1146,19 +1146,7 @@ window.ajustarStockAutomatico = async function({tipoVenta, kg, cantidad, prodId}
   }catch(e){ console.error('ajustarStock error',e); return {ok:false}; }
 };
     
-    // Resto de garrafas 11/13/45
-    let item = dep.find(d=> String(d.producto_id)===String(kg) || String(d.producto_id)===String(prodId));
-    if(!item) return {ok:true};
-    let llenas=parseInt(item.llenas)||0, vacias=parseInt(item.vacias)||0, para_cambio=parseInt(item.para_cambio)||0;
-    if(tipoVenta==='solo_gas'){ llenas=Math.max(0,llenas-cantidad); vacias+=cantidad; }
-    else if(tipoVenta==='garrafa_completa'){ llenas=Math.max(0,llenas-cantidad); }
-    else if(tipoVenta==='solo_envase_vacio'){ vacias=Math.max(0,vacias-cantidad); }
-    else if(tipoVenta==='fallada'){ llenas=Math.max(0,llenas-cantidad); para_cambio+=cantidad; }
-    else { llenas=Math.max(0,llenas-cantidad); }
-    await fetch(API+'?table=deposito',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({producto_id:item.producto_id, llenas, vacias, para_cambio, en_uso:item.en_uso||0, kilos_restantes:item.kilos_restantes||0, accion:'balance_inicial'})});
-    return {ok:true};
-  }catch(e){ console.error('ajustarStock error',e); return {ok:false}; }
-};  
+   
 
 
  
