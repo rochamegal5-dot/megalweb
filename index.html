@@ -680,10 +680,10 @@ async function cargarGpsVivo(){
 
 
 // --- REPARTIDORES ---
-const API_REP = '/api/postgres';
+// --- REPARTIDORES ---
 async function cargarRepartidores(){
   try{
-    const r = await fetch(API_REP + '?table=repartidores&t=' + Date.now());
+    const r = await fetch('/api/postgres?table=repartidores&t=' + Date.now());
     const j = await r.json();
     console.log('REPARTIDORES cargados:', j);
     repCache = j.data || [];
@@ -732,7 +732,7 @@ async function guardarRepartidor(){
   try{
     const payload = {id: String(id), nombre, telefono};
     console.log('Guardando repartidor:', payload);
-    const r = await fetch(API_REP + '?table=repartidores', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const r = await fetch('/api/postgres?table=repartidores', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const txt = await r.text();
     console.log('Respuesta guardar repartidor:', r.status, txt);
     let j = {};
@@ -750,13 +750,12 @@ async function guardarRepartidor(){
 async function eliminarRepartidor(id){
   if(!confirm('¿Borrar repartidor?')) return;
   try{
-    const r = await fetch(API_REP + '?table=repartidores&id=' + encodeURIComponent(id), {method:'DELETE'});
+    const r = await fetch('/api/postgres?table=repartidores&id=' + encodeURIComponent(id), {method:'DELETE'});
     const txt = await r.text();
     console.log('Borrar repartidor:', r.status, txt);
     await cargarRepartidores();
   }catch(e){ alert(e.message); }
 }
-
 // --- PRODUCTOS ---
 let productosCacheFiltrado = [];
 
