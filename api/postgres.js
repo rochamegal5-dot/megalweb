@@ -44,6 +44,8 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS hoy TEXT DEFAULT ''`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS canal TEXT DEFAULT 'mostrador'`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'solo_gas'`;
+    await sql`CREATE TABLE IF NOT EXISTS gps_locations (id SERIAL PRIMARY KEY, repartidor_id TEXT, device_id TEXT, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, velocidad DOUBLE PRECISION, speed DOUBLE PRECISION, bateria DOUBLE PRECISION, battery DOUBLE PRECISION, fecha_local TEXT, hoy TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`;
+    await sql`CREATE TABLE IF NOT EXISTS puntos_ref (id TEXT PRIMARY KEY, nombre TEXT, direccion TEXT, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitud DOUBLE PRECISION, longitud DOUBLE PRECISION)`;
 
     const c = await sql`SELECT COUNT(*) as c FROM deposito`;
     if (parseInt(c.rows[0].c) === 0) {
@@ -58,6 +60,8 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
       else if (table === 'clientes') rows = (await sql`SELECT * FROM clientes ORDER BY nombre`).rows;
       else if (table === 'proveedores') rows = (await sql`SELECT * FROM proveedores ORDER BY nombre`).rows;
       else if (table === 'repartidores') rows = (await sql`SELECT * FROM repartidores ORDER BY nombre`).rows;
+      else if (table === 'gps_locations') rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
+      else if (table === 'puntos_ref') rows = (await sql`SELECT * FROM puntos_ref ORDER BY nombre`).rows;  
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
       return res.status(200).json({ data: rows, ok: true });
     }
@@ -151,6 +155,17 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
       if (table === 'clientes') { await sql`INSERT INTO clientes (id, nombre, telefono, direccion, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.direccion || ''}, ${body.tipo || 'consumidor_final'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
      if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
+     if (table === 'gps_locations') {
+  const lat = parseFloat(body.lat ?? body.latitude ?? 0) || 0;
+  const lng = parseFloat(body.lng ?? body.longitude ?? 0) || 0;
+  const vel = parseFloat(body.velocidad ?? body.speed ?? 0) || 0;
+  const bat = parseFloat(body.bateria ?? body.battery ?? 0) || 0;
+  const repId = String(body.repartidor_id || body.device_id || body.repartidor || '');
+  const fechaLocal = body.fecha_local || body.hoy || new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
+  await sql`INSERT INTO gps_locations (repartidor_id, device_id, lat, lng, latitude, longitude, velocidad, speed, bateria, battery, fecha_local, hoy) VALUES (${repId}, ${repId}, ${lat}, ${lng}, ${lat}, ${lng}, ${vel}, ${vel}, ${bat}, ${bat}, ${fechaLocal}, ${fechaLocal})`;
+  return res.status(200).json({ ok: true });
+}
+if (table === 'puntos_ref') { await sql`INSERT INTO puntos_ref (id, nombre, direccion, lat, lng, latitud, longitud) VALUES (${body.id}, ${body.nombre}, ${body.direccion||''}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, direccion=${body.direccion||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
       return res.status(200).json({ ok: true });
     }
