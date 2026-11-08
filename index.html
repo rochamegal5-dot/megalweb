@@ -721,7 +721,7 @@ async function cargarGpsVivo(){
     const [rGps, pts] = await Promise.all([ fetch('/api/postgres?table=gps_locations'), cargarPuntosRefGps() ]);
     const j=await rGps.json(); const todos=j.data||[];
     const ultimos={};
-    todos.forEach(p=>{ const id=p.repartidor_id||p.device_id||p.repartidor||'sin-id'; if(!ultimos[id] || gpsFecha(p) > gpsFecha(ultimos[id])) ultimos[id]=p; });
+    todos.forEach(p=>{ const id=String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? 'sin-id'); if(!ultimos[id] || gpsFecha(p) > gpsFecha(ultimos[id])) ultimos[id]=p; });
     asegurarLeaflet(()=>{
       if(!gpsMapa) gpsMapa=crearMapa('gpsMap', -34.4833, -54.3333);
       pintarPuntosEnMapa(gpsMapa, pts);
@@ -729,17 +729,17 @@ async function cargarGpsVivo(){
       const sel=document.getElementById('gpsRepartidor')?.value||'todos';
       let panel='';
       Object.entries(ultimos).forEach(([id,p])=>{
-        if(sel!=='todos' && sel!==id) return;
+        if(sel!=='todos' && String(sel)!==String(id)) return;
         const lat=gpsLat(p), lng=gpsLng(p);
         if(!lat||!lng) return;
-        const rep=gpsRepartidoresCache.find(x=>x.id===id); const nombre=rep?.nombre||p.nombre||id;
+        const rep=gpsRepartidoresCache.find(x=>String(x.id)===String(id)); const nombre=rep?.nombre||p.nombre||id;
         const vel=gpsVel(p); const bat=p.bateria ?? p.battery ?? '—';
         const fecha=gpsFecha(p); const haceMin=Math.round((Date.now()-fecha.getTime())/60000);
         const estado= haceMin>10?'🔴 Sin señal': vel>3?'🟢 En movimiento':'🟡 Detenido';
         const mk=L.marker([lat,lng]).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
         gpsMarkers[id]=mk;
         panel+=`<div style="border-left:4px solid ${colorRepartidor(id)};padding-left:8px;margin-bottom:10px"><b>${nombre}</b> ${estado}<br>🚀 <b style="font-size:20px">${vel.toFixed(0)} km/h</b><br>🔋 Batería: ${bat}%<br>🕒 Hace ${haceMin} min - ${fecha.toLocaleTimeString('es-UY')}<br>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`;
-        if(document.getElementById('gpsSeguir')?.value==='1' && sel===id) gpsMapa.setView([lat,lng],15);
+        if(document.getElementById('gpsSeguir')?.value==='1' && String(sel)===String(id)) gpsMapa.setView([lat,lng],15);
       });
       const panelDiv=document.getElementById('gpsPanelVivo'); if(panelDiv) panelDiv.innerHTML=panel||'Sin señal de ningún repartidor.<br><br>Revisá que GasTrack esté mandando a <b>/api/postgres?table=gps_locations</b>.';
       if(est) { est.textContent = Object.keys(ultimos).length ? `● En vivo - ${Object.keys(ultimos).length} en línea` : '● Sin señal'; est.style.color = Object.keys(ultimos).length ? '#22c55e' : '#ef4444'; }
@@ -752,7 +752,7 @@ async function cargarGpsHistorico(){
   const rep=document.getElementById('gpsRepartidor')?.value||'todos'; const fecha=document.getElementById('gpsHistFecha')?.value||hoyUY();
   try{
     const r=await fetch('/api/postgres?table=gps_locations'); const j=await r.json(); const todos=(j.data||[]).filter(p=>{
-      const f=(p.fecha_local||p.hoy||(p.created_at||'').slice(0,10)||''); if(f!==fecha) return false; if(rep!=='todos' && (p.repartidor_id||p.device_id)!==rep) return false; return true;
+      const f=(p.fecha_local||p.hoy||(p.created_at||'').slice(0,10)||''); if(f!==fecha) return false; if(rep!=='todos' && String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? '')!==String(rep)) return false; return true;
     }).sort((a,b)=>gpsFecha(a)-gpsFecha(b));
     gpsHistPuntos=todos;
     asegurarLeaflet(()=>{
@@ -764,7 +764,7 @@ async function cargarGpsHistorico(){
       gpsMapaHist.fitBounds(gpsRecorridoLine.getBounds());
       // CORREGIDO: distancia con gpsLat/gpsLng, no solo lat/lng
       let km=0, vmax=0; for(let i=1;i<todos.length;i++){ const a=todos[i-1], b=todos[i]; const d=Math.sqrt(Math.pow((gpsLat(b)-gpsLat(a))*111,2)+Math.pow((gpsLng(b)-gpsLng(a))*111*Math.cos(gpsLat(a)*Math.PI/180),2)); km+=d; vmax=Math.max(vmax, gpsVel(b)); }
-      document.getElementById('gpsHistResumen').innerHTML=`<b>Recorrido ${fecha}</b><br>📍 Puntos: ${todos.length} &nbsp; 🛣️ Distancia aprox: ${km.toFixed(1)} km &nbsp; 🚀 Vel. máx: ${vmax.toFixed(0)} km/h<br>🕒 Primero: ${gpsFecha(todos[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(todos[todos.length-1]).toLocaleTimeString('es-UY')}`;
+      document.getElementById('gpsHistResumen').innerHTML=`<b>Recorrido ${fecha}</b><br>📍 Puntos: ${todos.length} &nbsp; 🛣 Distancia aprox: ${km.toFixed(1)} km &nbsp; 🚀 Vel. máx: ${vmax.toFixed(0)} km/h<br>🕒 Primero: ${gpsFecha(todos[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(todos[todos.length-1]).toLocaleTimeString('es-UY')}`;
       setTimeout(()=>gpsMapaHist.invalidateSize(),100);
     });
   }catch(e){ console.log('GPS hist error',e); }
@@ -778,23 +778,25 @@ function reproducirRecorridoGps(){
     gpsPlayTimer=setInterval(()=>{ const p=gpsHistPuntos[gpsPlayIdx]; if(!p){ clearInterval(gpsPlayTimer); return; } const lat=gpsLat(p), lng=gpsLng(p); if(lat&&lng) gpsMapaHist.setView([lat,lng],15); gpsPlayIdx++; },800);
   });
 }
+
 async function cargarInformeDiaGps(){
   const fecha=document.getElementById('gpsInformeFecha')?.value||hoyUY(); const div=document.getElementById('gpsInformeContenido'); if(div) div.innerHTML='Generando informe...';
   try{
     const r=await fetch('/api/postgres?table=gps_locations'); const j=await r.json(); const todos=(j.data||[]).filter(p=>(p.fecha_local||p.hoy||(p.created_at||'').slice(0,10)||'')===fecha);
-    const porRep={}; todos.forEach(p=>{ const id=p.repartidor_id||p.device_id||'sin-id'; (porRep[id]=porRep[id]||[]).push(p); });
+    const porRep={}; todos.forEach(p=>{ const id=String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? 'sin-id'); (porRep[id]=porRep[id]||[]).push(p); });
     let html=`<h3 style="margin:0">📋 Informe GPS - ${fecha}</h3><p>Total puntos del día: <b>${todos.length}</b></p>`;
     if(!todos.length){ html+='Sin registros ese día. Revisá que GasTrack haya mandado.'; }
     for(const [id, arr] of Object.entries(porRep)){
       arr.sort((a,b)=>gpsFecha(a)-gpsFecha(b));
       // CORREGIDO: distancia con gpsLat/gpsLng
       let km=0, vmax=0, tiempoMov=0, paradas=0; for(let i=1;i<arr.length;i++){ const a=arr[i-1], b=arr[i]; const d=Math.sqrt(Math.pow((gpsLat(b)-gpsLat(a))*111,2)+Math.pow((gpsLng(b)-gpsLng(a))*111*Math.cos(gpsLat(a)*Math.PI/180),2)); km+=d; const v=gpsVel(b); vmax=Math.max(vmax,v); if(v>3) tiempoMov+=5; if(v<=3) paradas++; }
-      const rep=gpsRepartidoresCache.find(x=>x.id===id); const nombre=rep?.nombre||id;
-      html+=`<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin:8px 0"><b>${nombre}</b><br>🛣️ Km: <b>${km.toFixed(1)} km</b> &nbsp; 🚀 Vel. máx: <b>${vmax.toFixed(0)} km/h</b><br>🕒 Primero: ${gpsFecha(arr[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(arr[arr.length-1]).toLocaleTimeString('es-UY')}<br>📍 Puntos: ${arr.length} &nbsp; ⏱️ Tiempo en movimiento aprox: ${tiempoMov} min &nbsp; 🛑 Paradas aprox: ${paradas}<br>🔋 Última batería: ${arr[arr.length-1].bateria ?? arr[arr.length-1].battery ?? '—'}%</div>`;
+      const rep=gpsRepartidoresCache.find(x=>String(x.id)===String(id)); const nombre=rep?.nombre||id;
+      html+=`<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin:8px 0"><b>${nombre}</b><br>🛣 Km: <b>${km.toFixed(1)} km</b> &nbsp; 🚀 Vel. máx: <b>${vmax.toFixed(0)} km/h</b><br>🕒 Primero: ${gpsFecha(arr[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(arr[arr.length-1]).toLocaleTimeString('es-UY')}<br>📍 Puntos: ${arr.length} &nbsp; ⏱ Tiempo en movimiento aprox: ${tiempoMov} min &nbsp; 🛑 Paradas aprox: ${paradas}<br>🔋 Última batería: ${arr[arr.length-1].bateria ?? arr[arr.length-1].battery ?? '—'}%</div>`;
     }
     if(div) div.innerHTML=html;
   }catch(e){ if(div) div.innerHTML='Error generando informe: '+e.message; }
 }
+  
 // Auto-inicio GPS
 function initGpsHook(){
   const origMostrar = window.mostrarSeccion;
