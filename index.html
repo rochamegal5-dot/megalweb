@@ -680,7 +680,7 @@ async function cargarGpsVivo(){
 
 
 // --- REPARTIDORES ---
-
+const API_REP = '/api/postgres';
 async function cargarRepartidores(){
   try{
     const r = await fetch(API_REP + '?table=repartidores&t=' + Date.now());
