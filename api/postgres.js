@@ -16,6 +16,11 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT DEFAULT 'gas', precio DOUBLE PRECISION DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS clientes (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, direccion TEXT, tipo TEXT DEFAULT 'consumidor_final')`;
     await sql`CREATE TABLE IF NOT EXISTS proveedores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT, rut TEXT, direccion TEXT)`;
+   await sql`CREATE TABLE IF NOT EXISTS repartidores (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT)`;
+await sql`ALTER TABLE repartidores ADD COLUMN IF NOT EXISTS nombre TEXT DEFAULT ''`;
+await sql`ALTER TABLE repartidores ADD COLUMN IF NOT EXISTS telefono TEXT DEFAULT ''`;
+await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_venta DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PRECISION DEFAULT 0`;
     await sql`CREATE TABLE IF NOT EXISTS finanzas (id SERIAL PRIMARY KEY, fecha DATE DEFAULT CURRENT_DATE, tipo TEXT, categoria TEXT, descripcion TEXT, monto DOUBLE PRECISION DEFAULT 0, metodo_pago TEXT DEFAULT 'contado')`;
     await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_restantes DOUBLE PRECISION DEFAULT 0`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS kilos DOUBLE PRECISION DEFAULT 0`;
@@ -52,6 +57,7 @@ export default async function handler(req, res) {
       else if (table === 'productos') rows = (await sql`SELECT * FROM productos ORDER BY id`).rows;
       else if (table === 'clientes') rows = (await sql`SELECT * FROM clientes ORDER BY nombre`).rows;
       else if (table === 'proveedores') rows = (await sql`SELECT * FROM proveedores ORDER BY nombre`).rows;
+      else if (table === 'repartidores') rows = (await sql`SELECT * FROM repartidores ORDER BY nombre`).rows;
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
       return res.status(200).json({ data: rows, ok: true });
     }
@@ -63,6 +69,7 @@ export default async function handler(req, res) {
         else if (table === 'productos') await sql`DELETE FROM productos WHERE id=${id}`;
         else if (table === 'clientes') await sql`DELETE FROM clientes WHERE id=${id}`;
         else if (table === 'proveedores') await sql`DELETE FROM proveedores WHERE id=${id}`;
+        else if (table === 'repartidores') await sql`DELETE FROM repartidores WHERE id=${id}`;
         else if (table === 'finanzas') await sql`DELETE FROM finanzas WHERE id=${parseInt(id)}`;
       } catch (e) {}
       return res.status(200).json({ ok: true });
@@ -140,9 +147,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, id: vid, fracc: esFracc, kilos: kilosVend, restante });
       }
 
-      if (table === 'productos') { await sql`INSERT INTO productos (id, nombre, tipo, precio) VALUES (${body.id}, ${body.nombre}, ${body.tipo || 'gas'}, ${parseFloat(body.precio) || 0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
+     if (table === 'productos') { const pv = parseFloat(body.precio_venta ?? body.precio ?? body.venta ?? 0) || 0; const pc = parseFloat(body.precio_compra ?? body.compra ?? 0) || 0; await sql`INSERT INTO productos (id, nombre, tipo, precio, precio_venta, precio_compra) VALUES (${body.id}, ${body.nombre}, ${body.tipo || 'gas'}, ${pv}, ${pv}, ${pc}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, tipo=${body.tipo || 'gas'}, precio=${pv}, precio_venta=${pv}, precio_compra=${pc}`; return res.status(200).json({ ok: true }); }
       if (table === 'clientes') { await sql`INSERT INTO clientes (id, nombre, telefono, direccion, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.direccion || ''}, ${body.tipo || 'consumidor_final'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
+     if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
       return res.status(200).json({ ok: true });
     }
