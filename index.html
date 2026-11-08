@@ -718,7 +718,7 @@ async function cargarGpsVivo(){
     const ultimos={};
     todos.forEach(p=>{ const id=p.repartidor_id||p.device_id||p.repartidor||'sin-id'; if(!ultimos[id] || new Date(p.created_at||p.fecha_hora||p.timestamp) > new Date(ultimos[id].created_at||ultimos[id].fecha_hora||ultimos[id].timestamp)) ultimos[id]=p; });
     asegurarLeaflet(()=>{
-      if(!gpsMapa) gpsMapa=crearMapa('gpsMap', -34.90, -54.95);
+      if(!gpsMapa) gpsMapa=crearMapa('gpsMap', -34.4833, -54.3333);
       pintarPuntosEnMapa(gpsMapa, pts);
       // limpiar marcadores viejos
       Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
@@ -752,7 +752,7 @@ async function cargarGpsHistorico(){
     }).sort((a,b)=>new Date(a.created_at||a.fecha_hora)-new Date(b.created_at||b.fecha_hora));
     gpsHistPuntos=todos;
     asegurarLeaflet(()=>{
-      if(!gpsMapaHist) gpsMapaHist=crearMapa('gpsMapHist', -34.90, -54.95);
+      if(!gpsMapaHist) gpsMapaHist=crearMapa('gpsMapHist', -34.4833, -54.3333);
       if(gpsRecorridoLine){ try{gpsMapaHist.removeLayer(gpsRecorridoLine)}catch(e){} }
       if(!todos.length){ document.getElementById('gpsHistResumen').innerHTML='Sin registros ese día para ese repartidor.'; return; }
       const coords=todos.map(p=>[parseFloat(p.lat||p.latitude), parseFloat(p.lng||p.longitude)]).filter(c=>c[0]&&c[1]);
