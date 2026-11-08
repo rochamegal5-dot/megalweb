@@ -678,11 +678,16 @@ async function cargarGpsVivo(){
    
 
 
+
 // --- REPARTIDORES ---
+let repCache = [];
+const API_REP = '/api/postgres';
+
 async function cargarRepartidores(){
   try{
-    const r = await fetch(`${API}?table=repartidores`);
+    const r = await fetch(API_REP + '?table=repartidores&t=' + Date.now());
     const j = await r.json();
+    console.log('REPARTIDORES cargados:', j);
     repCache = j.data || [];
     const tbody = document.getElementById('tablaRepartidores');
     const sel = document.getElementById('selRepartidor');
@@ -699,7 +704,6 @@ async function cargarRepartidores(){
           <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarRepartidor('${rep.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarRepartidor('${rep.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">Borrar</button></td>
         </tr>`).join('');
     }
-    // Llenar selects donde se usa repartidor
     const options = '<option value="">-- Todos --</option>' + repCache.map(rep => `<option value="${rep.id}">${rep.nombre}</option>`).join('');
     const options2 = '<option value="">-- Seleccione Repartidor --</option>' + repCache.map(rep => `<option value="${rep.id}">${rep.nombre}</option>`).join('');
     if(sel) sel.innerHTML = options;
@@ -717,7 +721,7 @@ function abrirModalRepartidor(){
 }
 function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); m.classList.add('hidden'); m.style.display='none'; }
 function editarRepartidor(id){
-  const rep = repCache.find(r=>r.id===id); if(!rep) return;
+  const rep = repCache.find(r=>String(r.id)===String(id)); if(!rep) return alert('No encontré ' + id);
   document.getElementById('repId').value=rep.id; document.getElementById('repNombre').value=rep.nombre; document.getElementById('repTelefono').value=rep.telefono||'';
   document.getElementById('tituloModalRep').textContent='Editar Repartidor';
   document.getElementById('modalRepartidor').classList.remove('hidden'); document.getElementById('modalRepartidor').style.display='flex';
@@ -728,12 +732,32 @@ async function guardarRepartidor(){
   const telefono = document.getElementById('repTelefono').value.trim();
   if(!nombre) return alert('Nombre obligatorio');
   try{
-    await fetch(`${API}?table=repartidores`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, nombre, telefono})});
-    cerrarModalRepartidor(); cargarRepartidores();
-  }catch(e){ alert('Error: '+e.message); }
+    const payload = {id: String(id), nombre, telefono};
+    console.log('Guardando repartidor:', payload);
+    const r = await fetch(API_REP + '?table=repartidores', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const txt = await r.text();
+    console.log('Respuesta guardar repartidor:', r.status, txt);
+    let j = {};
+    try{ j = JSON.parse(txt); }catch(e){}
+    if(!r.ok && !j.ok) throw new Error(j.error || txt.slice(0,300));
+    if(j.ok === false) throw new Error(j.error || 'Backend dijo ok:false');
+    cerrarModalRepartidor();
+    await cargarRepartidores();
+    alert('✅ Repartidor guardado: ' + nombre);
+  }catch(e){
+    console.error(e);
+    alert('❌ No se pudo guardar: ' + e.message);
+  }
 }
-async function eliminarRepartidor(id){ if(!confirm('¿Borrar repartidor?')) return; try{ await fetch(`${API}?table=repartidores&id=${id}`,{method:'DELETE'}); cargarRepartidores(); }catch(e){ alert(e.message); } }
-  
+async function eliminarRepartidor(id){
+  if(!confirm('¿Borrar repartidor?')) return;
+  try{
+    const r = await fetch(API_REP + '?table=repartidores&id=' + encodeURIComponent(id), {method:'DELETE'});
+    const txt = await r.text();
+    console.log('Borrar repartidor:', r.status, txt);
+    await cargarRepartidores();
+  }catch(e){ alert(e.message); }
+}
 
 // --- PRODUCTOS ---
 let productosCacheFiltrado = [];
