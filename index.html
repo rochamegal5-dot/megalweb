@@ -1461,8 +1461,6 @@ if(!window._clientesInputInit){
   });
 }
 
-// --- PROVEEDORES ---
-
 
 // --- PROVEEDORES ---
 async function cargarProveedores(){
@@ -2344,60 +2342,26 @@ function enviarMktMasivo(){
   const prev=document.getElementById('mktPreviewEnvio'); if(prev) prev.innerHTML=`✅ Simulado: se enviaría <b>"${msg}"</b> a <b>${cant} clientes</b> del segmento <b>${seg}</b>`;
   const nid='mkt_'+Date.now(); marketingCache.push({id:nid, nombre:'Masivo '+seg, tipo:'whatsapp', estado:'activa', descripcion:msg, presupuesto:0, conversiones:0}); localStorage.setItem('megal_marketing',JSON.stringify(marketingCache)); cargarMarketing();
 }
-    
+
+
 // FIX - Esta función faltaba y por eso rompía guardarProducto y el botón Cancelar
 function cerrarModalProducto(){
   const m=document.getElementById('modalProducto');
-  if(m){ 
-    m.classList.add('hidden'); 
-    m.style.display='none'; 
+  if(m){
+    m.classList.add('hidden');
+    m.style.display='none';
   }
 }
 
 function cerrarModalProveedor(){ const m=document.getElementById('modalProveedor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 function cerrarModalCliente(){ const m=document.getElementById('modalCliente'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
 function cerrarModalRepartidor(){ const m=document.getElementById('modalRepartidor'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-function cerrarModalFinanza(){ const m=document.getElementById('modalFinanza'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-function cerrarModalCamara(){ const m=document.getElementById('modalCamara'); if(m){ m.classList.add('hidden'); m.style.display='none'; } }
-
-  // ================= FINAL DEL SCRIPT - NO BORRAR =================
-document.addEventListener('DOMContentLoaded',()=>{
-  const hoy=new Date().toISOString().split('T')[0];
-  const f=document.getElementById('finFecha');
-  if(f) f.value=hoy;
-  try{ cargarResumen(); }catch(e){}
-
-  // 👇 ACÁ ADENTRO, porque acá ya existe el input
-  const inputClientes = document.getElementById('fileClientes');
-  if(inputClientes){
-    inputClientes.addEventListener('change', async (e)=>{
-      const file = e.target.files[0]; if(!file) return;
-      const texto = await file.text();
-      // parsearCSVGoogle YA devuelve [{nombre, telefono, tipo}] - son 1263, no hay que restar 1
-      const lista = parsearCSVGoogle(texto);
-      clientesImportTemp = lista;
-
-      const countEl = document.getElementById('countPreview');
-      if(countEl) countEl.textContent = lista.length;
-
-      const prev = document.getElementById('previewImport');
-      if(prev){
-        prev.innerHTML = lista.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;font-size:12px"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span>${c.tipo}</span></div>`).join('') + (lista.length>20?`<div style="font-size:12px;color:#666;padding:4px">+${lista.length-20} más... total ${lista.length}</div>`:`<div style="font-size:12px;padding:4px">Total: ${lista.length} contactos</div>`);
-      }
-
-      const btn = document.getElementById('btnImportarClientes');
-      if(btn) btn.textContent = 'Importar ' + lista.length + ' contactos';
-    });
-  }
-});
-    
-    
-    
-
+// NO duplicar cerrarModalImportarClientes, cerrarModalFinanza, cerrarModalCamara acá - ya existen arriba en su módulo
+// NO duplicar DOMContentLoaded acá - ya existe uno en CLIENTES con guarda window._clientesInputInit
 
 </script>
 </body>
 </html>
+
     
 
