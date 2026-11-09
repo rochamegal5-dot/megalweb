@@ -24,25 +24,35 @@ body{background:#d1d5db;color:#1f2937;height:100vh;display:flex;overflow:hidden}
 input,select{padding:10px;background:#ffffff;border:1px solid #9ca3af;color:#1f2937;border-radius:8px}
 #gpsMap,#gpsMapHist{height:500px;width:100%;border-radius:12px}
 table{width:100%;font-size:12px;border-collapse:collapse;background:#ffffff}
-th{padding:6px;border:1px solid #d1d5db;text-align:left;background:#374151;color:white}
-td{padding:6px;border:1px solid #d1d5db;text-align:left;color:#1f2937}
-.etiqueta-punto{
-  background: white;
-  color: #111;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-}
-.etiqueta-punto::before{ display:none; }
-.card[style*="#0f172a"], .card[style*="#111827"], .card[style*="#1e293b"]{
-  background:#e5e7eb !important;
-  color:#1f2937 !important;
-  border-color:#9ca3af !important;
-}
+th{padding:6px;border:1px solid #d1d5db;text-align:left;background:#374151 !important;color:white !important}
+td{padding:6px;border:1px solid #d1d5db;text-align:left;color:#1f2937;background:#ffffff !important}
+.etiqueta-punto{background:white;color:#111;font-size:11px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.etiqueta-punto::before{display:none}
 #headerStatus{color:#dcfce7 !important}
+/* 👇 PARCHE FINAL: todo lo negro / gris oscuro que venga con style a mano pasa a gris claro */
+/* Cubre div, span, input, select, button, td, p, etc. que genera el JS */
+[style*="#0f172a"], [style*="#111827"], [style*="#1e293b"], [style*="#1f2937"], [style*="#020617"], [style*="#000000"]{
+  background:#f8fafc !important;
+  color:#1f2937 !important;
+  border-color:#d1d5db !important;
+}
+/* Los encabezados de tabla sí quedan gris oscuro con letra blanca para que se lean */
+th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
+  background:#374151 !important;
+  color:white !important;
+}
+/* Los textos chiquitos grises que quedaban invisibles en fondo claro */
+[style*="#94a3b8"], [style*="#64748b"]{
+  color:#4b5563 !important;
+}
+/* Los contenedores de Finanzas / Ventas / Stock que son div con fondo oscuro */
+#finUltimos div, #finTopIngresos div, #finTopEgresos div, #finFlujoCaja div,
+#resUltimasVentas div, #ventasHoyTabla div, #listaCierresHoy div,
+#stockGasCards div, #stockTuboEnUso div{
+  background:#f8fafc !important;
+  color:#1f2937 !important;
+}
+#finUltimos b, #resUltimasVentas b{ color:#1f2937 !important; }
 </style>
 
 
