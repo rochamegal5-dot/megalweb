@@ -1404,8 +1404,8 @@ function parsearCSVGoogle(texto){
   if(campo!=='' || fila.length) { fila.push(campo); filas.push(fila); }
   return filas;
 }
-   
- async function confirmarImportacionClientes(){
+
+async function confirmarImportacionClientes(){
   const file = document.getElementById('fileClientes').files[0];
   if(!file) return alert('Subí primero el archivo CSV');
   const texto = await file.text();
@@ -1420,40 +1420,37 @@ function parsearCSVGoogle(texto){
   const idxDir = header.findIndex(h=>h.includes('address') && h.includes('value'));
   const idxDir2 = idxDir === -1 ? header.findIndex(h=>h.includes('address') || h.includes('direc')) : idxDir;
 
-  // 👇 Importa TODAS las filas, sin contar, sin filtrar por teléfono
+  const lista = [];
   for(let i=1;i<filas.length;i++){
     const f = filas[i];
     let first = (idxNombre>=0 ? (f[idxNombre]||'').trim() : '');
     let middle = (idxMiddle>=0 ? (f[idxMiddle]||'').trim() : '');
     let last = (idxApellido>=0 ? (f[idxApellido]||'').trim() : '');
-    // Si Middle es solo número (ej: 373) y no es nombre, no lo pongas en el nombre
     let middleEsNumero = /^\d+$/.test(middle);
     let nombre = [first, middleEsNumero ? '' : middle, last].filter(Boolean).join(' ').trim();
     let telefono = idxTel>=0 ? (f[idxTel]||'').trim().replace(/[^0-9+]/g,'') : '';
     const direccion = idxDir2>=0 ? (f||'') : '';
-
-    // Si el nombre viene todo junto tipo "098805613 Mabel PRIETO", separá número y nombre
     const m = nombre.match(/^(\+?\d{6,})\s+(.+)$/);
-    if(m){
-      if(!telefono) telefono = m[1];
-      nombre = m[2];
-    }
-    // Si First venía vacío y Middle era número tipo "373 Machado", usá ese número como teléfono si no hay otro
+    if(m){ if(!telefono) telefono = m[1]; nombre = m[2]; }
     if(!telefono && middleEsNumero && middle.length >= 3) telefono = middle;
+    if(!nombre && !telefono && !direccion) continue;
+    lista.push({ nombre: nombre || telefono || 'Sin nombre', telefono: telefono || '', direccion, tipo: 'consumidor_final' });
+  }
 
-    if(!nombre && !telefono && !direccion) continue; // solo saltea filas totalmente vacías
-    try{
-      await fetch('/api/postgres?table=clientes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ nombre: nombre || telefono || 'Sin nombre', telefono: telefono || '', direccion, tipo: 'consumidor_final' }) });
-    }catch(e){}
-    const divPrev = document.getElementById('previewImport');
-    if(divPrev) divPrev.innerHTML = `Importando... fila ${i} de ${filas.length - 1}`;
+  const divPrev = document.getElementById('previewImport');
+  // De a 20 en paralelo
+  for(let i=0;i<lista.length;i+=20){
+    const tanda = lista.slice(i, i+20);
+    await Promise.all(tanda.map(c => fetch('/api/postgres?table=clientes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(c) }).catch(()=>{})));
+    if(divPrev) divPrev.innerHTML = `Importando... ${Math.min(i+20, lista.length)} de ${lista.length}`;
   }
   alert('Listo ✅ Se importó toda la lista');
   cerrarModalImportarClientes();
   if(typeof cargarClientes === 'function') cargarClientes();
   if(typeof filtrarClientes === 'function') filtrarClientes();
 }
-    
+
+  
    
 function exportarClientesCSV(){
   let csv='Nombre,Telefono,Direccion,Tipo\n';
