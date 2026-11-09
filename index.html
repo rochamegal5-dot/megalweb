@@ -978,18 +978,21 @@ async function cargarGpsHistorico(){
     }).sort((a,b)=>gpsFecha(a)-gpsFecha(b));
     gpsHistPuntos=todos;
 
-    // 👇 OBSERVACIONES - acá sí existe todos
-    const obsHist = generarObservacionesGps(todos);
-    const divHist = document.getElementById('gpsObsHist');
-    if(divHist){
-      if(!obsHist.length) divHist.innerHTML = '✅ Sin observaciones: sin detenciones en 0 ni excesos de velocidad.';
-      else divHist.innerHTML = obsHist.map(o => {
-        const icono = o.tipo === 'parada' ? '🛑' : '⚠️';
-        const color = o.tipo === 'parada' ? '#f59e0b' : '#ef4444';
-        return `<div style="border-left:4px solid ${color};background:#1e293b;padding:6px 10px;margin-bottom:6px;border-radius:8px;">${icono} <b>${o.repartidor}</b> - ${o.texto}<br><small>${formatoHoraGps(o.inicio)} a ${formatoHoraGps(o.fin)} | 📍 ${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}</small></div>`;
-      }).join('');
-    }
+// 👇 OBSERVACIONES - acá sí existe todos
+const obsHist = generarObservacionesGps(todos);
+const divHist = document.getElementById('gpsObsHist');
+const totalParadas = obsHist.filter(o => o.tipo === 'parada').length;
+const totalExcesos = obsHist.filter(o => o.tipo === 'exceso').length;
+if(divHist){
+  if(!obsHist.length) divHist.innerHTML = '✅ Sin observaciones: sin detenciones en 0 ni excesos de velocidad.';
+  else divHist.innerHTML = `<div style="margin-bottom:10px;"><b>🛑 ${totalParadas} detenciones en 0 | ⚠️ ${totalExcesos} excesos de velocidad</b></div>` + obsHist.map(o => {
+    const icono = o.tipo === 'parada' ? '🛑' : '⚠️';
+    const color = o.tipo === 'parada' ? '#f59e0b' : '#ef4444';
+    return `<div style="border-left:4px solid ${color};background:#1e293b;padding:6px 10px;margin-bottom:6px;border-radius:8px;">${icono} <b>${o.repartidor}</b> - ${o.texto}<br><small>${formatoHoraGps(o.inicio)} a ${formatoHoraGps(o.fin)} | 📍 ${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}</small></div>`;
+  }).join('');
+}
 
+  
     asegurarLeaflet(()=>{
       if(!gpsMapaHist) gpsMapaHist=crearMapa('gpsMapHist', -34.4833, -54.3333);
       if(gpsRecorridoLine){ try{gpsMapaHist.removeLayer(gpsRecorridoLine)}catch(e){} }
