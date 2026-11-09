@@ -796,7 +796,7 @@ const icono = L.divIcon({
 const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
 
      gpsMarkers[id]=mk;
-        panel+=`<div style="border-left:4px solid ${colorRepartidor(id)};padding-left:8px;margin-bottom:10px"><b>${nombre}</b> ${estado}<br>🚀 <b style="font-size:20px">${vel.toFixed(0)} km/h</b><br>🔋 Batería: ${bat}%<br>🕒 Hace ${haceMin} min - ${fecha.toLocaleTimeString('es-UY')}<br>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`;
+        panel+=`<div style="flex:1; min-width:280px; border-left:4px solid ${colorRepartidor(id)}; padding:10px; background:#1e293b; border-radius:10px; margin-bottom:0">
         if(document.getElementById('gpsSeguir')?.value==='1' && String(sel)===String(id)) gpsMapa.setView([lat,lng],15);
       });
       const panelDiv=document.getElementById('gpsPanelVivo'); if(panelDiv) panelDiv.innerHTML=panel||'Sin señal de ningún repartidor.<br><br>Revisá que GasTrack esté mandando a <b>/api/postgres?table=gps_locations</b>.';
