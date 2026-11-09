@@ -670,6 +670,8 @@ async function cargarResumen(){
 
 // ============ GPS - LIFE360 MEGAL - POSTGRES ============
 let gpsMapa=null, gpsMapaHist=null, gpsMarkers={}, gpsPuntosMarkers=[], gpsRecorridoLine=null, gpsHistPuntos=[], gpsInterval=null, gpsRepartidoresCache=[];
+let modoPunto = false;
+let puntosRefGuardados = [];    
 const GPS_COLORES=['#ef4444','#0ea5e9','#22c55e','#f59e0b','#a855f7','#ec4899','#14b8a6'];
 function hoyUY(){ return new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'}); }
 // CORREGIDO: helpers para que funcione con lat/lng o latitude/longitude
@@ -697,8 +699,12 @@ function cambiarTabGps(tab){
   if(tab==='informe'){ document.getElementById('gpsInformeTab')?.classList.remove('hidden'); const f=document.getElementById('gpsInformeFecha'); if(f&&!f.value) f.value=hoyUY(); }
 }
 function mostrarInformeDiaGps(){ cambiarTabGps('informe'); }
-function colorRepartidor(id){ let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))%1000; return GPS_COLORES[h%GPS_COLORES.length]; }
-async function cargarRepartidoresGps(){
+function colorRepartidor(id){
+  if (String(id) === "8") return "#EF4444"; // Jose - rojo
+  if (String(id) === "7") return "#2563EB"; // Antonio - azul
+  let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))%1000; return GPS_COLORES[h%GPS_COLORES.length];
+}
+  async function cargarRepartidoresGps(){
   try{
     const r=await fetch('/api/postgres?table=repartidores'); const j=await r.json(); gpsRepartidoresCache=j.data||[];
     const sel=document.getElementById('gpsRepartidor'); if(!sel) return;
@@ -709,11 +715,14 @@ async function cargarRepartidoresGps(){
 }
 async function cargarPuntosRefGps(){
   try{
-    const r=await fetch('/api/postgres?table=puntos_ref'); const j=await r.json(); const pts=j.data||[];
-    const div=document.getElementById('gpsPuntosRef'); if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.direccion||''}`).join('<br>'):'Sin puntos cargados. Agregalos desde Puntos de Referencia.';
+    const r=await fetch('/api/postgres?table=puntos_referencia'); // 👈 ANTES decía puntos_ref
+    const j=await r.json(); const pts=j.data||[];
+    const div=document.getElementById('gpsPuntosRef');
+    if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.categoria||''} - ${p.notas||''}`).join('<br>'):'Sin puntos cargados. Apretá 📍 Agregar punto y hacé clic en el mapa.';
     return pts;
   }catch(e){ return []; }
 }
+
 function pintarPuntosEnMapa(mapa, pts){
   gpsPuntosMarkers.forEach(m=>{ try{mapa.removeLayer(m)}catch(e){} }); gpsPuntosMarkers=[];
   (pts||[]).forEach(p=>{ const lat=gpsLat(p), lng=gpsLng(p); if(!lat||!lng) return; const mk=L.marker([lat,lng]).addTo(mapa).bindPopup(`<b>📍 ${p.nombre||p.id}</b><br>${p.direccion||''}`); gpsPuntosMarkers.push(mk); });
@@ -727,6 +736,37 @@ async function cargarGpsVivo(){
     todos.forEach(p=>{ const id=String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? 'sin-id'); if(!ultimos[id] || gpsFecha(p) > gpsFecha(ultimos[id])) ultimos[id]=p; });
     asegurarLeaflet(()=>{
       if(!gpsMapa) gpsMapa=crearMapa('gpsMap', -34.4833, -54.3333);
+      // 👇 PEGAR ACÁ - SOLO UNA VEZ, DESPUÉS DE CREAR EL MAPA
+if (!gpsMapa._puntoClickAgregado) {
+  gpsMapa._puntoClickAgregado = true;
+  gpsMapa.on('click', async (e) => {
+    if (!modoPunto) return;
+    modoPunto = false;
+    gpsMapa.getContainer().style.cursor = '';
+    const nombre = prompt('Nombre del punto (ej: Casa María):');
+    if (!nombre) return;
+    const categoria = prompt('Categoría: Cliente, Depósito, Casa, Taller', 'Cliente') || 'General';
+    const notas = prompt('Notas (opcional):', '') || '';
+    const nuevo = { nombre, lat: e.latlng.lat, lng: e.latlng.lng, categoria, notas };
+    const r = await fetch('/api/postgres?table=puntos_referencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nuevo)
+    });
+    const j = await r.json();
+    if (j.ok) { alert('Punto guardado ✅'); cargarGpsVivo(); }
+    else alert('Error: ' + (j.error || 'no se pudo guardar'));
+  });
+}
+
+// Y esta función al lado, para el botón:
+function activarModoPunto() {
+  modoPunto = true;
+  if (gpsMapa) gpsMapa.getContainer().style.cursor = 'crosshair';
+  alert('Ahora hacé clic en el mapa donde querés guardar el punto');
+}
+
+      
       pintarPuntosEnMapa(gpsMapa, pts);
       Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
       const sel=document.getElementById('gpsRepartidor')?.value||'todos';
@@ -739,7 +779,7 @@ async function cargarGpsVivo(){
         const vel=gpsVel(p); const bat=p.bateria ?? p.battery ?? '—';
         const fecha=gpsFecha(p); const haceMin=Math.round((Date.now()-fecha.getTime())/60000);
         const estado= haceMin>10?'🔴 Sin señal': vel>3?'🟢 En movimiento':'🟡 Detenido';
-       
+               
 const color = colorRepartidor(id);
 const icono = L.divIcon({
   className: '',
@@ -759,6 +799,8 @@ const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${n
     });
   }catch(e){ console.log('GPS vivo error',e); if(est) est.textContent='● Error al cargar'; }
 }
+
+    
    
     
 function cambiarRepartidorGps(){ cargarGpsVivo(); }
