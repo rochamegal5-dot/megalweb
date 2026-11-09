@@ -251,25 +251,25 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
   </div>
 </div>
 
-  <!-- CLIENTES -->
+<!-- CLIENTES -->
 <div id="view-clientes" class="view-section hidden" style="padding:16px">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <h3>👥 Clientes - 【entity-WhatsApp¦canonical_name=WhatsApp】 Sync</h3>
+    <h3>👥 Clientes - WApp Sync</h3>
     <div style="display:flex;gap:8px">
-      <button onclick="abrirModalImportarClientes()" style="background:#25D366;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📲 Importar 【entity-WhatsApp¦canonical_name=WhatsApp】</button>
+      <button onclick="abrirModalImportarClientes()" style="background:#25D366;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📲 Importar WApp</button>
       <button onclick="abrirModalCliente()" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px">+ Nuevo</button>
     </div>
   </div>
 
   <div class="card" style="display:flex;gap:8px;align-items:center">
-    <input type="text" id="buscarCliente" oninput="filtrarClientes()" placeholder="Buscar por nombre, teléfono, dirección..." style="flex:1;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:white">
-    <select id="filtroTipoCliente" onchange="filtrarClientes()" style="padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
+    <input type="text" id="buscarCliente" oninput="filtrarClientes()" placeholder="Buscar por nombre, teléfono, dirección..." style="flex:1;padding:8px;background:#ffffff;border:1px solid #9ca3af;border-radius:8px;color:#1f2937">
+    <select id="filtroTipoCliente" onchange="filtrarClientes()" style="padding:8px;background:#ffffff;border:1px solid #9ca3af;border-radius:6px;color:#1f2937">
       <option value="">Todos</option>
       <option value="consumidor_final">Consumidor Final</option>
       <option value="comercio">Comercio</option>
       <option value="mides">MIDES</option>
     </select>
-    <span id="contadorClientes" style="font-size:11px;color:#94a3b8"></span>
+     <span id="contadorClientes" style="font-size:11px;color:#94a3b8"></span>
   </div>
 
   <div class="card">
