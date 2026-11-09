@@ -750,67 +750,48 @@ async function cargarGpsVivo(){
     todos.forEach(p=>{ const id=String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? 'sin-id'); if(!ultimos[id] || gpsFecha(p) > gpsFecha(ultimos[id])) ultimos[id]=p; });
     asegurarLeaflet(()=>{
       if(!gpsMapa) gpsMapa=crearMapa('gpsMap', -34.4833, -54.3333);
-      // 👇 PEGAR ACÁ - SOLO UNA VEZ, DESPUÉS DE CREAR EL MAPA
-if (!gpsMapa._puntoClickAgregado) {
-  gpsMapa._puntoClickAgregado = true;
-  gpsMapa.on('click', async (e) => {
-    if (!modoPunto) return;
-    modoPunto = false;
-    gpsMapa.getContainer().style.cursor = '';
-    const nombre = prompt('Nombre del punto (ej: Casa María):');
-    if (!nombre) return;
-    const categoria = prompt('Categoría: Cliente, Depósito, Casa, Taller', 'Cliente') || 'General';
-    const notas = prompt('Notas (opcional):', '') || '';
-    const nuevo = { nombre, lat: e.latlng.lat, lng: e.latlng.lng, categoria, notas };
-    const r = await fetch('/api/postgres?table=puntos_referencia', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevo)
-    });
-    const j = await r.json();
-    if (j.ok) { alert('Punto guardado ✅'); cargarGpsVivo(); }
-    else alert('Error: ' + (j.error || 'no se pudo guardar'));
-  });
-}
-
-function pintarPuntosEnMapa(mapa, pts){
-  gpsPuntosMarkers.forEach(m=>{ try{mapa.removeLayer(m)}catch(e){} }); gpsPuntosMarkers=[];
-  (pts||[]).forEach(p=>{
-    const lat=gpsLat(p), lng=gpsLng(p);
-    if(!lat||!lng) return;
-    // Color según categoría
-    let color = '#F59E0B'; // amarillo por defecto
-    if (p.categoria === 'Cliente') color = '#22C55E';
-    if (p.categoria === 'Depósito') color = '#F59E0B';
-    if (p.categoria === 'Casa') color = '#3B82F6';
-    if (p.categoria === 'Taller') color = '#A855F7';
-
-    const iconoPunto = L.divIcon({
-      className: '',
-      html: `<div style="background:${color}; width:32px; height:32px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.5)"><span style="transform:rotate(45deg); font-size:16px">📍</span></div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32]
-    });
-    const mk = L.marker([lat, lng], { icon: iconoPunto }).addTo(mapa)
-      .bindPopup(`<b>📍 ${p.nombre||p.id}</b><br>🏷️ ${p.categoria||'General'}<br>${p.notas||''}<br><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`);
-    gpsPuntosMarkers.push(mk);
-  });
-}
+      if (!gpsMapa._puntoClickAgregado) {
+        gpsMapa._puntoClickAgregado = true;
+        gpsMapa.on('click', async (e) => {
+          if (!modoPunto) return;
+          modoPunto = false;
+          gpsMapa.getContainer().style.cursor = '';
+          const nombre = prompt('Nombre del punto (ej: Casa María):');
+          if (!nombre) return;
+          const categoria = prompt('Categoría: Cliente, Depósito, Casa, Taller', 'Cliente') || 'General';
+          const notas = prompt('Notas (opcional):', '') || '';
+          const nuevo = { nombre, lat: e.latlng.lat, lng: e.latlng.lng, categoria, notas };
+          const r = await fetch('/api/postgres?table=puntos_referencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevo)
+          });
+          const jj = await r.json();
+          if (jj.ok) { alert('Punto guardado ✅'); cargarGpsVivo(); }
+          else alert('Error: ' + (jj.error || 'no se pudo guardar'));
+        });
+      }
+      pintarPuntosEnMapa(gpsMapa, pts);
+      Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
+      const sel=document.getElementById('gpsRepartidor')?.value||'todos';
+      let panel='';
+      Object.entries(ultimos).forEach(([id,p])=>{
+        if(sel!=='todos' && String(sel)!==String(id)) return;
+        const lat=gpsLat(p), lng=gpsLng(p);
+        if(!lat||!lng) return;
         const rep=gpsRepartidoresCache.find(x=>String(x.id)===String(id)); const nombre=rep?.nombre||p.nombre||id;
         const vel=gpsVel(p); const bat=p.bateria ?? p.battery ?? '—';
         const fecha=gpsFecha(p); const haceMin=Math.round((Date.now()-fecha.getTime())/60000);
         const estado= haceMin>10?'🔴 Sin señal': vel>3?'🟢 En movimiento':'🟡 Detenido';
-               
-const color = colorRepartidor(id);
-const icono = L.divIcon({
-  className: '',
-  html: `<div style="background:${color}; width:22px; height:22px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 11]
-});
-const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
-
-     gpsMarkers[id]=mk;
+        const color = colorRepartidor(id);
+        const icono = L.divIcon({
+          className: '',
+          html: `<div style="background:${color}; width:22px; height:22px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+        const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
+        gpsMarkers[id]=mk;
         panel+=`<div style="flex:1; min-width:280px; border-left:4px solid ${colorRepartidor(id)}; padding:10px; background:#1e293b; border-radius:10px; margin-bottom:0"><b>${nombre}</b> ${estado}<br>🚀 <b style="font-size:20px">${vel.toFixed(0)} km/h</b><br>🔋 Batería: ${bat}%<br>🕒 Hace ${haceMin} min - ${fecha.toLocaleTimeString('es-UY')}<br>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`;
         if(document.getElementById('gpsSeguir')?.value==='1' && String(sel)===String(id)) gpsMapa.setView([lat,lng],15);
       });
@@ -819,8 +800,9 @@ const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${n
       setTimeout(()=>gpsMapa.invalidateSize(),100);
     });
   }catch(e){ console.log('GPS vivo error',e); if(est) est.textContent='● Error al cargar'; }
-}   
-   
+}
+
+
     
 function cambiarRepartidorGps(){ cargarGpsVivo(); }
 async function cargarGpsHistorico(){
