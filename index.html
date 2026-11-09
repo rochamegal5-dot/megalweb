@@ -86,15 +86,21 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   </div>
 
 
-  <div id="gpsVivoTab">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
-      <div class="card" style="flex:1;min-width:280px;padding:10px">
-        <div id="gpsPanelVivo" style="font-size:14px;line-height:1.7">Seleccioná un repartidor para ver su estado en vivo.</div>
-        <hr>
-        <div style="font-weight:900">📍 Puntos de referencia</div>
-        <div id="gpsPuntosRef" style="font-size:13px;margin-top:6px">Cargando puntos...</div>
+    <div id="gpsVivoTab">
+    <!-- 👇 MAPA ARRIBA, GRANDE, TODO EL ANCHO -->
+    <div class="card" style="padding:8px; margin-bottom:8px">
+      <div id="gpsMap" style="height:650px; width:100%; border-radius:12px"></div>
+    </div>
+
+    <!-- 👇 PANEL DE REPARTIDORES ABAJO DEL MAPA -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start">
+      <div class="card" style="flex:2; min-width:280px; padding:10px">
+        <div id="gpsPanelVivo" style="font-size:14px; line-height:1.7; display:flex; gap:8px; flex-wrap:wrap">Seleccioná un repartidor para ver su estado en vivo.</div>
       </div>
-      <div class="card" style="flex:2;min-width:300px;padding:8px"><div id="gpsMap" style="height:500px;width:100%;border-radius:12px"></div></div>
+      <div class="card" style="flex:1; min-width:250px; padding:10px">
+        <div style="font-weight:900">📍 Puntos de referencia</div>
+        <div id="gpsPuntosRef" style="font-size:13px; margin-top:6px">Cargando puntos...</div>
+      </div>
     </div>
   </div>
 
