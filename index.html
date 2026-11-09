@@ -773,15 +773,29 @@ if (!gpsMapa._puntoClickAgregado) {
   });
 }
 
- 
-      pintarPuntosEnMapa(gpsMapa, pts);
-      Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
-      const sel=document.getElementById('gpsRepartidor')?.value||'todos';
-      let panel='';
-      Object.entries(ultimos).forEach(([id,p])=>{
-        if(sel!=='todos' && String(sel)!==String(id)) return;
-        const lat=gpsLat(p), lng=gpsLng(p);
-        if(!lat||!lng) return;
+function pintarPuntosEnMapa(mapa, pts){
+  gpsPuntosMarkers.forEach(m=>{ try{mapa.removeLayer(m)}catch(e){} }); gpsPuntosMarkers=[];
+  (pts||[]).forEach(p=>{
+    const lat=gpsLat(p), lng=gpsLng(p);
+    if(!lat||!lng) return;
+    // Color según categoría
+    let color = '#F59E0B'; // amarillo por defecto
+    if (p.categoria === 'Cliente') color = '#22C55E';
+    if (p.categoria === 'Depósito') color = '#F59E0B';
+    if (p.categoria === 'Casa') color = '#3B82F6';
+    if (p.categoria === 'Taller') color = '#A855F7';
+
+    const iconoPunto = L.divIcon({
+      className: '',
+      html: `<div style="background:${color}; width:32px; height:32px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.5)"><span style="transform:rotate(45deg); font-size:16px">📍</span></div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+    const mk = L.marker([lat, lng], { icon: iconoPunto }).addTo(mapa)
+      .bindPopup(`<b>📍 ${p.nombre||p.id}</b><br>🏷️ ${p.categoria||'General'}<br>${p.notas||''}<br><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`);
+    gpsPuntosMarkers.push(mk);
+  });
+}
         const rep=gpsRepartidoresCache.find(x=>String(x.id)===String(id)); const nombre=rep?.nombre||p.nombre||id;
         const vel=gpsVel(p); const bat=p.bateria ?? p.battery ?? '—';
         const fecha=gpsFecha(p); const haceMin=Math.round((Date.now()-fecha.getTime())/60000);
