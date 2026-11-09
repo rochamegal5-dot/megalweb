@@ -10,20 +10,21 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+<style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
-body{background:#0f172a;color:#e2e8f0;height:100vh;display:flex;overflow:hidden}
-.erp-sidebar{width:260px;background:#111827;border-right:1px solid #1f2937;padding:18px;display:flex;flex-direction:column;gap:8px;overflow:auto}
-.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#1f2937;color:#94a3b8;font-size:13px;border:none;text-align:left}
+body{background:#e5e7eb;color:#1f2937;height:100vh;display:flex;overflow:hidden}
+.erp-sidebar{width:260px;background:#ffffff;border-right:1px solid #d1d5db;padding:18px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#f3f4f6;color:#374151;font-size:13px;border:none;text-align:left}
 .tab.active{background:#0ea5e9;color:white}
-.main{flex:1;overflow:auto;padding:16px;background:#0f172a}
-.card{background:#1e293b;border-radius:12px;padding:16px;border:1px solid #2d3748;margin-bottom:16px}
+.main{flex:1;overflow:auto;padding:16px;background:#e5e7eb}
+.card{background:#ffffff;border-radius:12px;padding:16px;border:1px solid #d1d5db;margin-bottom:16px;color:#1f2937;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .hidden{display:none!important}
 .view-section{display:block}
-input,select{padding:10px;background:#1e293b;border:1px solid #334155;color:white;border-radius:8px}
+input,select{padding:10px;background:#ffffff;border:1px solid #d1d5db;color:#1f2937;border-radius:8px}
 #gpsMap,#gpsMapHist{height:500px;width:100%;border-radius:12px}
 table{width:100%;font-size:12px;border-collapse:collapse}
-th,td{padding:6px;border:1px solid #1f2937;text-align:left}
- .etiqueta-punto{
+th,td{padding:6px;border:1px solid #e5e7eb;text-align:left}
+.etiqueta-punto{
   background: white;
   color: #111;
   font-size: 11px;
@@ -33,8 +34,9 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
   border: 1px solid #ddd;
   box-shadow: 0 1px 4px rgba(0,0,0,.25);
 }
-.etiqueta-punto::before{ display:none; } 
+.etiqueta-punto::before{ display:none; }
 </style>
+
 </head>
 <body>
 <div class="erp-sidebar">
