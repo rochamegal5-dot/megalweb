@@ -738,16 +738,18 @@ function activarModoPunto() {
     if(actual) sel.value=actual;
   }catch(e){ console.log('GPS repartidores error',e); }
 }
+
 async function cargarPuntosRefGps(){
   try{
     const r=await fetch('/api/postgres?table=puntos_ref');
     const j=await r.json(); const pts=j.data||[];
     const div=document.getElementById('gpsPuntosRef');
-    if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.direccion||''}`).join('<br>'):'Sin puntos cargados. Apretá 📍 Agregar punto y hacé clic en el mapa.';
+    if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.direccion||''} <button onclick="editarPunto('${p.id}')" style="background:#f59e0b;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">✏️</button> <button onclick="eliminarPunto('${p.id}','${(p.nombre||'').replace(/'/g,"")}')" style="background:#dc2626;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">❌</button>`).join('<br>'):'Sin puntos cargados. Apretá 📍 Agregar punto y hacé clic en el mapa.';
     return pts;
   }catch(e){ return []; }
 }
 
+ 
     function pintarPuntosEnMapa(mapa, pts){
   if(!mapa || !pts) return;
   if(!window.gpsPuntosMarkers) window.gpsPuntosMarkers = [];
@@ -782,6 +784,12 @@ async function cargarPuntosRefGps(){
   });
 }
 
+async function eliminarPunto(id, nombre){
+  if(!confirm('¿Borrar el punto "' + (nombre || id) + '"?')) return;
+  await fetch('/api/postgres?table=puntos_ref&id=' + encodeURIComponent(id), { method: 'DELETE' });
+  alert('Punto borrado ✅');
+  cargarGpsVivo();
+}   
    
 async function cargarGpsVivo(){
   const est=document.getElementById('gpsEstadoConexion'); if(est) est.textContent='● Actualizando...';
