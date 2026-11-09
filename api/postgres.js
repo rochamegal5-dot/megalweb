@@ -75,10 +75,14 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
         else if (table === 'proveedores') await sql`DELETE FROM proveedores WHERE id=${id}`;
         else if (table === 'repartidores') await sql`DELETE FROM repartidores WHERE id=${id}`;
         else if (table === 'finanzas') await sql`DELETE FROM finanzas WHERE id=${parseInt(id)}`;
+         else if (table === 'puntos_ref') await sql`DELETE FROM puntos_ref WHERE id=${id}`;
       } catch (e) {}
       return res.status(200).json({ ok: true });
     }
+ 
 
+
+    
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
