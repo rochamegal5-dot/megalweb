@@ -1390,7 +1390,7 @@ function parsearCSVGoogle(texto){
   }
   return out;
 }
-
+    
 async function confirmarImportacionClientes(){
   let lista = window.clientesImportTemp;
   if(!lista || !lista.length){
@@ -1407,15 +1407,22 @@ async function confirmarImportacionClientes(){
     vistos.add(k); return true;
   });
   let divPrev = document.getElementById('previewImport');
+  let guardados = 0;
+  let fallaron = 0;
   for(let i=0;i<lista.length;i+=50){
     let tanda = lista.slice(i,i+50);
-    await Promise.all(tanda.map(c=>fetch('/api/postgres?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)}).catch(()=>{})));
-    if(divPrev) divPrev.innerHTML = 'Importando... ' + Math.min(i+50,lista.length) + ' de ' + lista.length;
+    let res = await Promise.all(tanda.map((c, idx)=>{
+      // 👇 AHORA SÍ MANDA ID, si no el backend los rechaza
+      let conId = {id: 'cli_' + Date.now() + '_' + (i+idx) + '_' + Math.floor(Math.random()*1000), nombre: c.nombre, telefono: c.telefono, direccion: c.direccion||'', tipo: c.tipo||'consumidor_final'};
+      return fetch('/api/postgres?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(conId)}).then(r=>r.json()).then(j=>{ if(j.ok!==false) guardados++; else fallaron++; }).catch(()=>{ fallaron++; });
+    }));
+    if(divPrev) divPrev.innerHTML = 'Importando... ' + Math.min(i+50,lista.length) + ' de ' + lista.length + ' | Guardados: ' + guardados;
   }
-  alert('Listo ✅ Se importaron ' + lista.length + ' contactos');
+  alert('Listo ✅ Guardados: ' + guardados + ' | Fallaron: ' + fallaron + ' de ' + lista.length);
   cerrarModalImportarClientes();
   cargarClientes();
 }
+   
 
 async function eliminarCliente(id){
   if(!confirm('¿Borrar este cliente?')) return;
