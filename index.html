@@ -711,6 +711,13 @@ function colorRepartidor(id){
   if (String(id) === "7") return "#2563EB"; // Antonio - azul
   let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))%1000; return GPS_COLORES[h%GPS_COLORES.length];
 }
+
+function activarModoPunto() {
+  modoPunto = true;
+  if (gpsMapa) gpsMapa.getContainer().style.cursor = 'crosshair';
+  alert('Ahora hacé clic en el mapa donde querés guardar el punto');
+}
+    
   async function cargarRepartidoresGps(){
   try{
     const r=await fetch('/api/postgres?table=repartidores'); const j=await r.json(); gpsRepartidoresCache=j.data||[];
@@ -766,14 +773,7 @@ if (!gpsMapa._puntoClickAgregado) {
   });
 }
 
-// Y esta función al lado, para el botón:
-function activarModoPunto() {
-  modoPunto = true;
-  if (gpsMapa) gpsMapa.getContainer().style.cursor = 'crosshair';
-  alert('Ahora hacé clic en el mapa donde querés guardar el punto');
-}
-
-      
+ 
       pintarPuntosEnMapa(gpsMapa, pts);
       Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
       const sel=document.getElementById('gpsRepartidor')?.value||'todos';
