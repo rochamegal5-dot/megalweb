@@ -10,20 +10,22 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-<style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
-body{background:#e5e7eb;color:#1f2937;height:100vh;display:flex;overflow:hidden}
-.erp-sidebar{width:260px;background:#ffffff;border-right:1px solid #d1d5db;padding:18px;display:flex;flex-direction:column;gap:8px;overflow:auto}
-.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#f3f4f6;color:#374151;font-size:13px;border:none;text-align:left}
-.tab.active{background:#0ea5e9;color:white}
-.main{flex:1;overflow:auto;padding:16px;background:#e5e7eb}
-.card{background:#ffffff;border-radius:12px;padding:16px;border:1px solid #d1d5db;margin-bottom:16px;color:#1f2937;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+body{background:#d1d5db;color:#1f2937;height:100vh;display:flex;overflow:hidden}
+.erp-sidebar{width:260px;background:#14532d;border-right:1px solid #166534;padding:18px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.erp-sidebar h1{color:#ffffff !important}
+.tab{padding:10px 14px;border-radius:8px;cursor:pointer;background:#166534;color:white;font-size:13px;border:none;text-align:left;font-weight:700}
+.tab:hover{background:#15803d}
+.tab.active{background:#22c55e;color:#14532d;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.main{flex:1;overflow:auto;padding:16px;background:#d1d5db}
+.card{background:#e5e7eb;border-radius:12px;padding:16px;border:1px solid #9ca3af;margin-bottom:16px;color:#1f2937;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .hidden{display:none!important}
 .view-section{display:block}
-input,select{padding:10px;background:#ffffff;border:1px solid #d1d5db;color:#1f2937;border-radius:8px}
+input,select{padding:10px;background:#ffffff;border:1px solid #9ca3af;color:#1f2937;border-radius:8px}
 #gpsMap,#gpsMapHist{height:500px;width:100%;border-radius:12px}
-table{width:100%;font-size:12px;border-collapse:collapse}
-th,td{padding:6px;border:1px solid #e5e7eb;text-align:left}
+table{width:100%;font-size:12px;border-collapse:collapse;background:#ffffff}
+th{padding:6px;border:1px solid #d1d5db;text-align:left;background:#374151;color:white}
+td{padding:6px;border:1px solid #d1d5db;text-align:left;color:#1f2937}
 .etiqueta-punto{
   background: white;
   color: #111;
@@ -35,7 +37,15 @@ th,td{padding:6px;border:1px solid #e5e7eb;text-align:left}
   box-shadow: 0 1px 4px rgba(0,0,0,.25);
 }
 .etiqueta-punto::before{ display:none; }
+.card[style*="#0f172a"], .card[style*="#111827"], .card[style*="#1e293b"]{
+  background:#e5e7eb !important;
+  color:#1f2937 !important;
+  border-color:#9ca3af !important;
+}
+#headerStatus{color:#dcfce7 !important}
 </style>
+
+
 
 </head>
 <body>
