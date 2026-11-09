@@ -238,6 +238,7 @@ th,td{padding:6px;border:1px solid #e5e7eb;text-align:left}
     <div style="display:flex;gap:8px">
       <button onclick="abrirModalImportarClientes()" style="background:#25D366;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📲 Importar WhatsApp</button>
       <button onclick="abrirModalCliente()" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px">+ Nuevo</button>
+     `<button onclick="eliminarCliente('${p.id}','${(p.nombre||'').replace(/'/g,"")}')" style="background:#dc2626;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">❌</button>`
     </div>
   </div>
 
@@ -1298,6 +1299,17 @@ async function cargarClientes(){
     if(dl){ dl.innerHTML=clientesCache.map(c=>`<option value="${c.nombre}" data-tipo="${c.tipo||'consumidor_final'}">${c.nombre}</option>`).join(''); } 
     const cont=document.getElementById('contadorClientes'); if(cont) cont.textContent=`${clientesCache.length} clientes`;
   }catch(e){ console.error(e); } 
+}
+    async function eliminarCliente(id, nombre){
+  if(!confirm('¿Borrar el cliente "' + (nombre || id) + '"?')) return;
+  try{
+    await fetch('/api/postgres?table=clientes&id=' + encodeURIComponent(id), { method: 'DELETE' });
+    alert('Cliente borrado ✅');
+    if(typeof cargarClientes === 'function') cargarClientes();
+    if(typeof filtrarClientes === 'function') filtrarClientes();
+  }catch(e){
+    alert('Error al borrar: ' + e.message);
+  }
 }
 
 function renderTablaClientes(lista){
