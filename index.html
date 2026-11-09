@@ -114,27 +114,36 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     </div>
   </div>
 
-  <div id="gpsHistTab" class="hidden">
-    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <label style="font-weight:900">Fecha:</label>
-      <input type="date" id="gpsHistFecha" style="padding:8px;border-radius:8px">
-      <button onclick="cargarGpsHistorico()" style="padding:8px 12px;background:#1f2937;color:white;border:none;border-radius:8px;font-weight:900">Ver recorrido</button>
-      <button onclick="reproducirRecorridoGps()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">▶ Reproducir</button>
-    </div>
-    <div class="card" style="padding:8px"><div id="gpsMapHist" style="height:500px;width:100%;border-radius:12px"></div></div>
-    <div class="card" id="gpsHistResumen" style="padding:10px;font-size:14px;line-height:1.6"></div>
+ <div id="gpsHistTab" class="hidden">
+  <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <label style="font-weight:900">Fecha:</label>
+    <input type="date" id="gpsHistFecha" style="padding:8px;border-radius:8px">
+    <button onclick="cargarGpsHistorico()" style="padding:8px 12px;background:#1f2937;color:white;border:none;border-radius:8px;font-weight:900">Ver recorrido</button>
+    <button onclick="reproducirRecorridoGps()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">▶ Reproducir</button>
   </div>
-
-  <div id="gpsInformeTab" class="hidden">
-    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <label style="font-weight:900">Fecha informe:</label>
-      <input type="date" id="gpsInformeFecha" style="padding:8px;border-radius:8px">
-      <button onclick="cargarInformeDiaGps()" style="padding:8px 12px;background:#16a34a;color:white;border:none;border-radius:8px;font-weight:900">Generar informe</button>
-      <button onclick="imprimirInformeGps()" style="padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:900">🖨️ Imprimir / PDF</button>
-    </div>
-    <div class="card" id="gpsInformeContenido" style="padding:10px;font-size:14px;line-height:1.7">Elegí una fecha y generá el informe.</div>
+  <div class="card" style="padding:8px"><div id="gpsMapHist" style="height:500px;width:100%;border-radius:12px"></div></div>
+  <div class="card" style="padding:10px;font-size:14px;line-height:1.6">
+    <h3 style="margin:0 0 8px 0;">🔍 Observaciones del día</h3>
+    <div id="gpsObsHist">Generá el historial para ver las detenciones en 0 y los excesos de velocidad.</div>
+  </div>
+  <div class="card" id="gpsHistResumen" style="padding:10px;font-size:14px;line-height:1.6"></div>
+</div>
+ 
+<div id="gpsInformeTab" class="hidden">
+  <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <label style="font-weight:900">Fecha informe:</label>
+    <input type="date" id="gpsInformeFecha" style="padding:8px;border-radius:8px">
+    <button onclick="cargarInformeDiaGps()" style="padding:8px 12px;background:#16a34a;color:white;border:none;border-radius:8px;font-weight:900">Generar informe</button>
+    <button onclick="imprimirInformeGps()" style="padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:900">🖨 Imprimir / PDF</button>
+  </div>
+  <div class="card" id="gpsInformeContenido" style="padding:10px;font-size:14px;line-height:1.7">Elegí una fecha y generá el informe.</div>
+  <div class="card" style="padding:10px;font-size:14px;line-height:1.7">
+    <h3 style="margin:0 0 8px 0;">🔍 Observaciones del día</h3>
+    <div id="gpsObservaciones">Generá el informe para ver las detenciones en 0 y los excesos de velocidad.</div>
   </div>
 </div>
+
+
  
 <!-- REPARTIDOR -->
   <div id="view-repartidores" class="view-section hidden">
@@ -723,6 +732,77 @@ function colorRepartidor(id){
   let h=0; for(const c of String(id)) h=(h*31+c.charCodeAt(0))%1000; return GPS_COLORES[h%GPS_COLORES.length];
 }
 
+function generarObservacionesGps(todos){
+  const obs = [];
+  // Agrupar por repartidor
+  const porRep = {};
+  todos.forEach(p => {
+    const id = String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? 'sin-id');
+    if(!porRep[id]) porRep[id] = [];
+    porRep[id].push(p);
+  });
+
+  Object.keys(porRep).forEach(id => {
+    const lista = porRep[id].sort((a,b) => gpsFecha(a) - gpsFecha(b));
+    const nombre = lista[0]?.nombre || lista[0]?.repartidor || (id === '7' ? 'Antonio' : id === '8' ? 'Jose' : 'Repartidor ' + id);
+
+    // --- DETENCIONES ---
+    let inicioParada = null;
+    let ultimoParada = null;
+    let latParada = 0, lngParada = 0;
+    lista.forEach(p => {
+      const vel = parseFloat(p.velocidad ?? p.speed ?? 0) || 0;
+      const t = gpsFecha(p);
+      if(vel < 3){
+        if(!inicioParada){ inicioParada = t; latParada = parseFloat(p.lat ?? p.latitude ?? 0); lngParada = parseFloat(p.lng ?? p.longitude ?? 0); }
+        ultimoParada = t;
+      } else {
+        if(inicioParada && ultimoParada){
+          const mins = (ultimoParada - inicioParada) / 60000;
+          if(mins >= 3){
+            obs.push({ tipo:'parada', repartidor:nombre, id, inicio:inicioParada, fin:ultimoParada, mins:Math.round(mins), lat:latParada, lng:lngParada, texto:`Se detuvo por ${Math.round(mins)} minutos` });
+          }
+        }
+        inicioParada = null; ultimoParada = null;
+      }
+    });
+    // Si quedó parado hasta el final
+    if(inicioParada && ultimoParada){
+      const mins = (ultimoParada - inicioParada) / 60000;
+      if(mins >= 3) obs.push({ tipo:'parada', repartidor:nombre, id, inicio:inicioParada, fin:ultimoParada, mins:Math.round(mins), lat:latParada, lng:lngParada, texto:`Se detuvo por ${Math.round(mins)} minutos` });
+    }
+
+    // --- EXCESO DE VELOCIDAD > 40 ---
+    let inicioExceso = null;
+    let ultimoExceso = null;
+    let maxVel = 0;
+    let latExceso = 0, lngExceso = 0;
+    lista.forEach(p => {
+      const vel = parseFloat(p.velocidad ?? p.speed ?? 0) || 0;
+      const t = gpsFecha(p);
+      if(vel > 40){
+        if(!inicioExceso){ inicioExceso = t; latExceso = parseFloat(p.lat ?? p.latitude ?? 0); lngExceso = parseFloat(p.lng ?? p.longitude ?? 0); }
+        ultimoExceso = t;
+        if(vel > maxVel) maxVel = vel;
+      } else {
+        if(inicioExceso){
+          const mins = (ultimoExceso - inicioExceso) / 60000;
+          obs.push({ tipo:'exceso', repartidor:nombre, id, inicio:inicioExceso, fin:ultimoExceso, mins:Math.max(1, Math.round(mins)), maxVel:Math.round(maxVel), lat:latExceso, lng:lngExceso, texto:`Exceso de velocidad: ${Math.round(maxVel)} km/h por ${Math.max(1, Math.round(mins))} min` });
+        }
+        inicioExceso = null; ultimoExceso = null; maxVel = 0;
+      }
+    });
+    if(inicioExceso) obs.push({ tipo:'exceso', repartidor:nombre, id, inicio:inicioExceso, fin:ultimoExceso, mins:Math.max(1, Math.round((ultimoExceso - inicioExceso)/60000)), maxVel:Math.round(maxVel), lat:latExceso, lng:lngExceso, texto:`Exceso de velocidad: ${Math.round(maxVel)} km/h` });
+  });
+
+  return obs.sort((a,b) => a.inicio - b.inicio);
+}
+
+function formatoHoraGps(t){
+  const d = new Date(t);
+  return d.toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit' }) + ' - ' + d.toLocaleDateString('es-UY');
+}
+
 function activarModoPunto() {
   modoPunto = true;
   if (gpsMapa) gpsMapa.getContainer().style.cursor = 'crosshair';
@@ -889,6 +969,7 @@ async function cargarGpsVivo(){
 
     
 function cambiarRepartidorGps(){ cargarGpsVivo(); }
+   
 async function cargarGpsHistorico(){
   const rep=document.getElementById('gpsRepartidor')?.value||'todos'; const fecha=document.getElementById('gpsHistFecha')?.value||hoyUY();
   try{
@@ -896,6 +977,19 @@ async function cargarGpsHistorico(){
       const f=(p.fecha_local||p.hoy||(p.created_at||'').slice(0,10)||''); if(f!==fecha) return false; if(rep!=='todos' && String(p.repartidor_id ?? p.device_id ?? p.repartidor ?? '')!==String(rep)) return false; return true;
     }).sort((a,b)=>gpsFecha(a)-gpsFecha(b));
     gpsHistPuntos=todos;
+
+    // 👇 OBSERVACIONES - acá sí existe todos
+    const obsHist = generarObservacionesGps(todos);
+    const divHist = document.getElementById('gpsObsHist');
+    if(divHist){
+      if(!obsHist.length) divHist.innerHTML = '✅ Sin observaciones: sin detenciones en 0 ni excesos de velocidad.';
+      else divHist.innerHTML = obsHist.map(o => {
+        const icono = o.tipo === 'parada' ? '🛑' : '⚠️';
+        const color = o.tipo === 'parada' ? '#f59e0b' : '#ef4444';
+        return `<div style="border-left:4px solid ${color};background:#1e293b;padding:6px 10px;margin-bottom:6px;border-radius:8px;">${icono} <b>${o.repartidor}</b> - ${o.texto}<br><small>${formatoHoraGps(o.inicio)} a ${formatoHoraGps(o.fin)} | 📍 ${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}</small></div>`;
+      }).join('');
+    }
+
     asegurarLeaflet(()=>{
       if(!gpsMapaHist) gpsMapaHist=crearMapa('gpsMapHist', -34.4833, -54.3333);
       if(gpsRecorridoLine){ try{gpsMapaHist.removeLayer(gpsRecorridoLine)}catch(e){} }
@@ -903,7 +997,6 @@ async function cargarGpsHistorico(){
       const coords=todos.map(p=>[gpsLat(p), gpsLng(p)]).filter(c=>c[0]&&c[1]);
       gpsRecorridoLine=L.polyline(coords,{color:'#0ea5e9',weight:4}).addTo(gpsMapaHist);
       gpsMapaHist.fitBounds(gpsRecorridoLine.getBounds());
-      // CORREGIDO: distancia con gpsLat/gpsLng, no solo lat/lng
       let km=0, vmax=0; for(let i=1;i<todos.length;i++){ const a=todos[i-1], b=todos[i]; const d=Math.sqrt(Math.pow((gpsLat(b)-gpsLat(a))*111,2)+Math.pow((gpsLng(b)-gpsLng(a))*111*Math.cos(gpsLat(a)*Math.PI/180),2)); km+=d; vmax=Math.max(vmax, gpsVel(b)); }
       document.getElementById('gpsHistResumen').innerHTML=`<b>Recorrido ${fecha}</b><br>📍 Puntos: ${todos.length} &nbsp; 🛣 Distancia aprox: ${km.toFixed(1)} km &nbsp; 🚀 Vel. máx: ${vmax.toFixed(0)} km/h<br>🕒 Primero: ${gpsFecha(todos[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(todos[todos.length-1]).toLocaleTimeString('es-UY')}`;
       setTimeout(()=>gpsMapaHist.invalidateSize(),100);
@@ -929,14 +1022,32 @@ async function cargarInformeDiaGps(){
     if(!todos.length){ html+='Sin registros ese día. Revisá que GasTrack haya mandado.'; }
     for(const [id, arr] of Object.entries(porRep)){
       arr.sort((a,b)=>gpsFecha(a)-gpsFecha(b));
-      // CORREGIDO: distancia con gpsLat/gpsLng
-      let km=0, vmax=0, tiempoMov=0, paradas=0; for(let i=1;i<arr.length;i++){ const a=arr[i-1], b=arr[i]; const d=Math.sqrt(Math.pow((gpsLat(b)-gpsLat(a))*111,2)+Math.pow((gpsLng(b)-gpsLng(a))*111*Math.cos(gpsLat(a)*Math.PI/180),2)); km+=d; const v=gpsVel(b); vmax=Math.max(vmax,v); if(v>3) tiempoMov+=5; if(v<=3) paradas++; }
+      let km=0, vmax=0, tiempoMov=0, paradas=0; for(let i=1;i<arr.length;i++){ const a=arr[i-1], b=arr[i]; const d=Math.sqrt(Math.pow((gpsLat(b)-gpsLat(a))*111,2)+Math.pow((gpsLng(b)-gpsLng(a))*111*Math.cos(gpsLat(a)*Math.PI/180),2)); km+=d; const v=gpsVel(b); vmax=Math.max(vmax,v); if(v>0) tiempoMov+=5; if(v===0) paradas++; }
       const rep=gpsRepartidoresCache.find(x=>String(x.id)===String(id)); const nombre=rep?.nombre||id;
-      html+=`<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin:8px 0"><b>${nombre}</b><br>🛣 Km: <b>${km.toFixed(1)} km</b> &nbsp; 🚀 Vel. máx: <b>${vmax.toFixed(0)} km/h</b><br>🕒 Primero: ${gpsFecha(arr[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(arr[arr.length-1]).toLocaleTimeString('es-UY')}<br>📍 Puntos: ${arr.length} &nbsp; ⏱ Tiempo en movimiento aprox: ${tiempoMov} min &nbsp; 🛑 Paradas aprox: ${paradas}<br>🔋 Última batería: ${arr[arr.length-1].bateria ?? arr[arr.length-1].battery ?? '—'}%</div>`;
+      html+=`<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin:8px 0"><b>${nombre}</b><br>🛣 Km: <b>${km.toFixed(1)} km</b> &nbsp; 🚀 Vel. máx: <b>${vmax.toFixed(0)} km/h</b><br>🕒 Primero: ${gpsFecha(arr[0]).toLocaleTimeString('es-UY')} - Último: ${gpsFecha(arr[arr.length-1]).toLocaleTimeString('es-UY')}<br>📍 Puntos: ${arr.length} &nbsp; ⏱ Tiempo en movimiento aprox: ${tiempoMov} min &nbsp; 🛑 Puntos en 0 km/h: ${paradas}<br>🔋 Última batería: ${arr[arr.length-1].bateria ?? arr[arr.length-1].battery ?? '—'}%</div>`;
     }
+
+    // 👇 OBSERVACIONES ADENTRO DEL TRY, porque acá sí existe todos
+    const obs = generarObservacionesGps(todos);
+    html += `<h3 style="margin-top:16px;">🔍 Observaciones del día</h3>`;
+    if(!obs.length) html += `<div>✅ Sin observaciones: sin detenciones en 0 ni excesos de velocidad.</div>`;
+    else html += obs.map(o => {
+      const icono = o.tipo === 'parada' ? '🛑' : '⚠️';
+      const color = o.tipo === 'parada' ? '#f59e0b' : '#ef4444';
+      return `<div style="border-left:4px solid ${color};background:#1e293b;padding:8px 10px;margin-bottom:6px;border-radius:8px;">${icono} <b>${o.repartidor}</b> - ${o.texto}<br><small>${formatoHoraGps(o.inicio)} a ${formatoHoraGps(o.fin)} | 📍 ${o.lat.toFixed(5)}, ${o.lng.toFixed(5)}</small></div>`;
+    }).join('');
+
+    // 👇 TAMBIÉN actualiza el div separado si lo tenés en el HTML
+    const divObs = document.getElementById('gpsObservaciones');
+    if(divObs) divObs.innerHTML = obs.length ? obs.map(o=>`${o.tipo==='parada'?'🛑':'⚠️'} <b>${o.repartidor}</b> - ${o.texto}`).join('<br>') : '✅ Sin observaciones';
+
     if(div) div.innerHTML=html;
   }catch(e){ if(div) div.innerHTML='Error generando informe: '+e.message; }
 }
+
+
+
+   
 function imprimirInformeGps() {
   const fecha = document.getElementById('gpsInformeFecha')?.value || hoyUY();
   const contenido = document.getElementById('gpsInformeContenido')?.innerHTML || '';
