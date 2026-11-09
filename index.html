@@ -797,7 +797,7 @@ const icono = L.divIcon({
 const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
 
      gpsMarkers[id]=mk;
-        panel+=`<div style="flex:1; min-width:280px; border-left:4px solid ${colorRepartidor(id)}; padding:10px; background:#1e293b; border-radius:10px; margin-bottom:0">
+        panel+=`<div style="flex:1; min-width:280px; border-left:4px solid ${colorRepartidor(id)}; padding:10px; background:#1e293b; border-radius:10px; margin-bottom:0"><b>${nombre}</b> ${estado}<br>🚀 <b style="font-size:20px">${vel.toFixed(0)} km/h</b><br>🔋 Batería: ${bat}%<br>🕒 Hace ${haceMin} min - ${fecha.toLocaleTimeString('es-UY')}<br>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`;
         if(document.getElementById('gpsSeguir')?.value==='1' && String(sel)===String(id)) gpsMapa.setView([lat,lng],15);
       });
       const panelDiv=document.getElementById('gpsPanelVivo'); if(panelDiv) panelDiv.innerHTML=panel||'Sin señal de ningún repartidor.<br><br>Revisá que GasTrack esté mandando a <b>/api/postgres?table=gps_locations</b>.';
@@ -805,9 +805,7 @@ const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${n
       setTimeout(()=>gpsMapa.invalidateSize(),100);
     });
   }catch(e){ console.log('GPS vivo error',e); if(est) est.textContent='● Error al cargar'; }
-}
-
-    
+}   
    
     
 function cambiarRepartidorGps(){ cargarGpsVivo(); }
@@ -859,7 +857,6 @@ async function cargarInformeDiaGps(){
     if(div) div.innerHTML=html;
   }catch(e){ if(div) div.innerHTML='Error generando informe: '+e.message; }
 }
-
 function imprimirInformeGps() {
   const fecha = document.getElementById('gpsInformeFecha')?.value || hoyUY();
   const contenido = document.getElementById('gpsInformeContenido')?.innerHTML || '';
@@ -868,31 +865,22 @@ function imprimirInformeGps() {
     return;
   }
   const ventana = window.open('', '_blank');
-  ventana.document.write(`
-    <html><head><title>Informe GPS - ${fecha}</title>
-    <style>
-      body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
-      h3 { margin: 0 0 10px 0; }
-      .header { display: flex; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 15px; }
-      .header b { font-size: 22px; }
-      @media print { button { display: none; } }
-    </style>
-    </head><body>
-      <div class="header">
-        <div><b>🔥 Megal ERP - Informe GPS</b><br>Flota Rocha</div>
-        <div style="text-align:right">Fecha: <b>${fecha}</b><br>Generado: ${new Date().toLocaleString('es-UY')}</div>
-      </div>
-      ${contenido}
-      <br><br>
-      <div style="display:flex; justify-content:space-between; margin-top:40px; border-top:1px solid #999; padding-top:10px">
-        <div>_________________________<br>Firma Encargado</div>
-        <div>_________________________<br>Firma Repartidor</div>
-      </div>
-      <script>window.onload = () => window.print();<\/script>
-    </body></html>
-  `);
+  ventana.document.write(
+    '<html><head><title>Informe GPS - ' + fecha + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:20px;color:#111} .header{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:15px} .header b{font-size:22px}</style>' +
+    '</head><body>' +
+    '<div class="header"><div><b>Megal ERP - Informe GPS</b><br>Flota Rocha</div>' +
+    '<div style="text-align:right">Fecha: <b>' + fecha + '</b><br>Generado: ' + new Date().toLocaleString('es-UY') + '</div></div>' +
+    contenido +
+    '<br><br><div style="display:flex;justify-content:space-between;margin-top:40px;border-top:1px solid #999;padding-top:10px">' +
+    '<div>_________________________<br>Firma Encargado</div>' +
+    '<div>_________________________<br>Firma Repartidor</div></div>' +
+    '</body></html>'
+  );
   ventana.document.close();
+  ventana.onload = function() { ventana.print(); };
 }
+
 
     
 // Auto-inicio GPS
