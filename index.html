@@ -239,6 +239,7 @@ th,td{padding:6px;border:1px solid #e5e7eb;text-align:left}
       <button onclick="abrirModalImportarClientes()" style="background:#25D366;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📲 Importar WhatsApp</button>
       <button onclick="abrirModalCliente()" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px">+ Nuevo</button>
      `<button onclick="eliminarCliente('${p.id}','${(p.nombre||'').replace(/'/g,"")}')" style="background:#dc2626;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">❌</button>`
+ `    <button onclick="editarCliente('${p.id}')" style="background:#f59e0b;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">✏️</button> <button onclick="eliminarCliente('${p.id}','${(p.nombre||'').replace(/'/g,"")}')" style="background:#dc2626;color:white;border:none;border-radius:6px;padding:2px 6px;cursor:pointer;font-size:11px;">❌</button>`   
     </div>
   </div>
 
@@ -1312,6 +1313,38 @@ async function cargarClientes(){
   }
 }
 
+async function editarCliente(id){
+  // Buscamos el cliente actual para mostrar sus datos en el prompt
+  let actual = null;
+  try{
+    const r = await fetch('/api/postgres?table=clientes');
+    const j = await r.json();
+    actual = (j.data || []).find(x => String(x.id) === String(id));
+  }catch(e){}
+  if(!actual) return alert('No encontré el cliente');
+
+  const nuevoNombre = prompt('Nombre:', actual.nombre || '');
+  if(nuevoNombre === null) return;
+  const nuevoTel = prompt('Teléfono:', actual.telefono || actual.phone || '');
+  if(nuevoTel === null) return;
+  const nuevaDir = prompt('Dirección:', actual.direccion || actual.address || '');
+  if(nuevaDir === null) return;
+  const nuevoTipo = prompt('Tipo (consumidor_final, comercio, mides):', actual.tipo || 'consumidor_final') || actual.tipo || 'consumidor_final';
+
+  try{
+    await fetch('/api/postgres?table=clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: actual.id, nombre: nuevoNombre, telefono: nuevoTel, direccion: nuevaDir, tipo: nuevoTipo })
+    });
+    alert('Cliente actualizado ✅');
+    if(typeof cargarClientes === 'function') cargarClientes();
+    if(typeof filtrarClientes === 'function') filtrarClientes();
+  }catch(e){
+    alert('Error al editar: ' + e.message);
+  }
+}
+    
 function renderTablaClientes(lista){
   const tbody=document.getElementById('tablaClientes'); if(!tbody) return;
   if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:12px;color:#64748b;text-align:center">Sin clientes - Importá de WhatsApp</td></tr>'; return; }
