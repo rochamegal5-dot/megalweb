@@ -82,7 +82,6 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
     <span id="gpsEstadoConexion" style="font-weight:900;color:#f59e0b">● Conectando...</span>
     <button onclick="cargarGpsVivo()" style="padding:8px 12px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-weight:900">🔄 Actualizar</button>
   <button onclick="activarModoPunto()" style="background:#F59E0B; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold">📍 Agregar punto</button>
-<div id="listaPuntos" style="margin-top:10px"></div>
   </div>
 
 
@@ -120,10 +119,12 @@ th,td{padding:6px;border:1px solid #1f2937;text-align:left}
       <label style="font-weight:900">Fecha informe:</label>
       <input type="date" id="gpsInformeFecha" style="padding:8px;border-radius:8px">
       <button onclick="cargarInformeDiaGps()" style="padding:8px 12px;background:#16a34a;color:white;border:none;border-radius:8px;font-weight:900">Generar informe</button>
+      <button onclick="imprimirInformeGps()" style="padding:8px 12px;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:900">🖨️ Imprimir / PDF</button>
     </div>
     <div class="card" id="gpsInformeContenido" style="padding:10px;font-size:14px;line-height:1.7">Elegí una fecha y generá el informe.</div>
   </div>
 </div>
+ 
 <!-- REPARTIDOR -->
   <div id="view-repartidores" class="view-section hidden">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -858,7 +859,42 @@ async function cargarInformeDiaGps(){
     if(div) div.innerHTML=html;
   }catch(e){ if(div) div.innerHTML='Error generando informe: '+e.message; }
 }
-  
+
+function imprimirInformeGps() {
+  const fecha = document.getElementById('gpsInformeFecha')?.value || hoyUY();
+  const contenido = document.getElementById('gpsInformeContenido')?.innerHTML || '';
+  if (!contenido || contenido.includes('Elegí una fecha')) {
+    alert('Primero apretá Generar informe');
+    return;
+  }
+  const ventana = window.open('', '_blank');
+  ventana.document.write(`
+    <html><head><title>Informe GPS - ${fecha}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+      h3 { margin: 0 0 10px 0; }
+      .header { display: flex; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 15px; }
+      .header b { font-size: 22px; }
+      @media print { button { display: none; } }
+    </style>
+    </head><body>
+      <div class="header">
+        <div><b>🔥 Megal ERP - Informe GPS</b><br>Flota Rocha</div>
+        <div style="text-align:right">Fecha: <b>${fecha}</b><br>Generado: ${new Date().toLocaleString('es-UY')}</div>
+      </div>
+      ${contenido}
+      <br><br>
+      <div style="display:flex; justify-content:space-between; margin-top:40px; border-top:1px solid #999; padding-top:10px">
+        <div>_________________________<br>Firma Encargado</div>
+        <div>_________________________<br>Firma Repartidor</div>
+      </div>
+      <script>window.onload = () => window.print();<\/script>
+    </body></html>
+  `);
+  ventana.document.close();
+}
+
+    
 // Auto-inicio GPS
 function initGpsHook(){
   const origMostrar = window.mostrarSeccion;
