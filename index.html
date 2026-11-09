@@ -729,14 +729,13 @@ function activarModoPunto() {
 }
 async function cargarPuntosRefGps(){
   try{
-    const r=await fetch('/api/postgres?table=puntos_referencia'); // 👈 ANTES decía puntos_ref
+    const r=await fetch('/api/postgres?table=puntos_ref');
     const j=await r.json(); const pts=j.data||[];
     const div=document.getElementById('gpsPuntosRef');
-    if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.categoria||''} - ${p.notas||''}`).join('<br>'):'Sin puntos cargados. Apretá 📍 Agregar punto y hacé clic en el mapa.';
+    if(div) div.innerHTML=pts.length?pts.map(p=>`📍 <b>${p.nombre||p.id}</b> ${p.direccion||''}`).join('<br>'):'Sin puntos cargados. Apretá 📍 Agregar punto y hacé clic en el mapa.';
     return pts;
   }catch(e){ return []; }
 }
-
 function pintarPuntosEnMapa(mapa, pts){
   gpsPuntosMarkers.forEach(m=>{ try{mapa.removeLayer(m)}catch(e){} }); gpsPuntosMarkers=[];
   (pts||[]).forEach(p=>{ const lat=gpsLat(p), lng=gpsLng(p); if(!lat||!lng) return; const mk=L.marker([lat,lng]).addTo(mapa).bindPopup(`<b>📍 ${p.nombre||p.id}</b><br>${p.direccion||''}`); gpsPuntosMarkers.push(mk); });
@@ -760,17 +759,26 @@ async function cargarGpsVivo(){
           if (!nombre) return;
           const categoria = prompt('Categoría: Cliente, Depósito, Casa, Taller', 'Cliente') || 'General';
           const notas = prompt('Notas (opcional):', '') || '';
-          const nuevo = { nombre, lat: e.latlng.lat, lng: e.latlng.lng, categoria, notas };
-          const r = await fetch('/api/postgres?table=puntos_referencia', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(nuevo)
-          });
-          const jj = await r.json();
-          if (jj.ok) { alert('Punto guardado ✅'); cargarGpsVivo(); }
-          else alert('Error: ' + (jj.error || 'no se pudo guardar'));
-        });
-      }
+          // 👇 ACÁ SÍ VA EL NUEVO, porque acá sí existen e, nombre, categoria, notas
+  const nuevo = { 
+    id: 'p_' + Date.now(),
+    nombre, 
+    direccion: categoria + ' - ' + notas,
+    lat: e.latlng.lat, 
+    lng: e.latlng.lng,
+    latitud: e.latlng.lat,
+    longitud: e.latlng.lng
+  };
+  const r = await fetch('/api/postgres?table=puntos_ref', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(nuevo)
+  });
+  const j = await r.json();
+  if (j.ok) { alert('Punto guardado ✅'); cargarGpsVivo(); }
+  else alert('Error: ' + (j.error || 'no se pudo guardar'));
+});
+}         
       pintarPuntosEnMapa(gpsMapa, pts);
       Object.values(gpsMarkers).forEach(m=>{ try{gpsMapa.removeLayer(m)}catch(e){} }); gpsMarkers={};
       const sel=document.getElementById('gpsRepartidor')?.value||'todos';
