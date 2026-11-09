@@ -790,6 +790,31 @@ async function eliminarPunto(id, nombre){
   alert('Punto borrado ✅');
   cargarGpsVivo();
 }   
+
+   async function editarPunto(id){
+  const pts = await cargarPuntosRefGps();
+  const p = pts.find(x => String(x.id) === String(id));
+  if(!p) return alert('No encontré el punto');
+  const nuevoNombre = prompt('Nuevo nombre:', p.nombre || '');
+  if(nuevoNombre === null) return;
+  const nuevaDir = prompt('Nueva descripción:', p.direccion || '');
+  if(nuevaDir === null) return;
+  await fetch('/api/postgres?table=puntos_ref', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: p.id,
+      nombre: nuevoNombre,
+      direccion: nuevaDir,
+      lat: p.lat ?? p.latitud,
+      lng: p.lng ?? p.longitud,
+      latitud: p.lat ?? p.latitud,
+      longitud: p.lng ?? p.longitud
+    })
+  });
+  alert('Punto actualizado ✅');
+  cargarGpsVivo();
+}
    
 async function cargarGpsVivo(){
   const est=document.getElementById('gpsEstadoConexion'); if(est) est.textContent='● Actualizando...';
