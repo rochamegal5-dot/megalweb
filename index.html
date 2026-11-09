@@ -23,6 +23,17 @@ input,select{padding:10px;background:#1e293b;border:1px solid #334155;color:whit
 #gpsMap,#gpsMapHist{height:500px;width:100%;border-radius:12px}
 table{width:100%;font-size:12px;border-collapse:collapse}
 th,td{padding:6px;border:1px solid #1f2937;text-align:left}
+ .etiqueta-punto{
+  background: white;
+  color: #111;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.etiqueta-punto::before{ display:none; } 
 </style>
 </head>
 <body>
@@ -736,10 +747,42 @@ async function cargarPuntosRefGps(){
     return pts;
   }catch(e){ return []; }
 }
-function pintarPuntosEnMapa(mapa, pts){
-  gpsPuntosMarkers.forEach(m=>{ try{mapa.removeLayer(m)}catch(e){} }); gpsPuntosMarkers=[];
-  (pts||[]).forEach(p=>{ const lat=gpsLat(p), lng=gpsLng(p); if(!lat||!lng) return; const mk=L.marker([lat,lng]).addTo(mapa).bindPopup(`<b>📍 ${p.nombre||p.id}</b><br>${p.direccion||''}`); gpsPuntosMarkers.push(mk); });
+
+    function pintarPuntosEnMapa(mapa, pts){
+  if(!mapa || !pts) return;
+  if(!window.gpsPuntosMarkers) window.gpsPuntosMarkers = [];
+  window.gpsPuntosMarkers.forEach(m=>{ try{ mapa.removeLayer(m); }catch(e){} });
+  window.gpsPuntosMarkers = [];
+
+  pts.forEach(p=>{
+    const lat = parseFloat(p.lat ?? p.latitud);
+    const lng = parseFloat(p.lng ?? p.longitud);
+    if(isNaN(lat) || isNaN(lng)) return;
+
+    // Color por categoría que viene en direccion "Cliente - nota"
+    let color = '#F59E0B';
+    const dir = (p.direccion || '').toLowerCase();
+    if(dir.includes('cliente')) color = '#22C55E';
+    else if(dir.includes('depósito') || dir.includes('deposito')) color = '#F59E0B';
+    else if(dir.includes('casa')) color = '#3B82F6';
+    else if(dir.includes('taller')) color = '#A855F7';
+
+    const icono = L.divIcon({
+      className: '',
+      html: `<div style="width:16px;height:16px;background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 14]
+    });
+
+    const m = L.marker([lat, lng], { icon: icono })
+      .addTo(mapa)
+      .bindPopup(`<b>📍 ${p.nombre || p.id}</b><br>${p.direccion || ''}<br><small>${lat.toFixed(5)}, ${lng.toFixed(5)}</small>`)
+      .bindTooltip(p.nombre || '', { permanent: true, direction: 'top', offset: [0, -14], className: 'etiqueta-punto' });
+    window.gpsPuntosMarkers.push(m);
+  });
 }
+
+   
 async function cargarGpsVivo(){
   const est=document.getElementById('gpsEstadoConexion'); if(est) est.textContent='● Actualizando...';
   try{
