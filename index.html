@@ -1445,29 +1445,73 @@ function detectarTipoPorNombre(nombre){
   return 'consumidor_final';
 }
 
+// Parser que banca comillas y saltos de línea adentro de un campo
 function parsearCSVGoogle(texto){
-  // Detecta si es con ; o con ,
-  const primera = texto.split('\n')[0] || '';
-  const delim = (primera.split(';').length > primera.split(',').length) ? ';' : ',';
-  const filas = [];
-  let fila = [], campo = '', dentroComillas = false;
+  // Detectar delimitador: ; o ,
+  let primeraLinea = texto.split(/\r?\n/)[0] || "";
+  let delim = (primeraLinea.split(";").length > primeraLinea.split(",").length) ? ";" : ",";
+  let filas = [];
+  let fila = [], campo = "", entreComillas = false;
   for(let i=0;i<texto.length;i++){
-    const c = texto[i];
+    let c = texto[i];
     if(c === '"'){
-      if(dentroComillas && texto[i+1] === '"'){ campo += '"'; i++; }
-      else dentroComillas = !dentroComillas;
-    } else if(c === delim && !dentroComillas){ fila.push(campo); campo=''; }
-    else if((c === '\n' || c === '\r') && !dentroComillas){
-      if(c === '\r' && texto[i+1] === '\n') i++;
-      fila.push(campo); campo='';
-      if(fila.some(x=>x.trim()!=='')) filas.push(fila);
-      fila=[];
-    } else { campo += c; }
+      if(entreComillas && texto[i+1] === '"'){ campo += '"'; i++; }
+      else entreComillas = !entreComillas;
+    } else if(c === delim && !entreComillas){
+      fila.push(campo); campo = "";
+    } else if((c === "\n" || c === "\r") && !entreComillas){
+      if(c === "\r" && texto[i+1] === "\n") i++;
+      fila.push(campo); campo = "";
+      if(fila.some(v=>v.trim()!=="")) filas.push(fila);
+      fila = [];
+    } else {
+      campo += c;
+    }
   }
-  if(campo!=='' || fila.length) { fila.push(campo); filas.push(fila); }
-  return filas;
-}
+  if(campo!=="" || fila.length){ fila.push(campo); filas.push(fila); }
+  if(!filas.length) return [];
 
+  let header = filas[0].map(h=>h.trim().toLowerCase());
+  let idx = (nombres)=>{
+    for(let n of nombres){
+      let j = header.findIndex(h=>h.includes(n));
+      if(j!==-1) return j;
+    }
+    return -1;
+  };
+  let iNombre = idx(["first name","given name","nombre"]);
+  let iApellido = idx(["last name","family name","apellido"]);
+  let iTel = idx(["phone 1 - value","phone","teléfono","telefono"]);
+  let iEmail = idx(["e-mail 1 - value","email"]);
+  let iOrg = idx(["organization 1 - name","organization"]);
+
+  console.log("CSV total filas:", filas.length, "header:", header);
+  console.log("indices nombre/tel:", iNombre, iTel);
+
+  let out = [];
+  for(let k=1;k<filas.length;k++){
+    let f = filas[k];
+    let nombre = (iNombre>=0 ? (f[iNombre]||"") : "").trim();
+    let apellido = (iApellido>=0 ? (f[iApellido]||"") : "").trim();
+    let tel = (iTel>=0 ? (f[iTel]||"") : "").trim();
+    // Si no hay columna telefono, buscar cualquier campo que parezca telefono
+    if(!tel){
+      for(let v of f){
+        let vv = (v||"").trim().replace(/[\s\-\(\)]/g,"");
+        if(/^\+?\d{7,15}$/.test(vv)){ tel = vv; break; }
+      }
+    }
+    let nombreFull = (nombre+" "+apellido).trim();
+    // Si el nombre es solo un numero, es telefono sin nombre
+    if(!nombreFull && tel) nombreFull = tel;
+    if(!nombreFull && !tel) continue;
+    // Limpiar telefono: solo digitos y +
+    tel = tel.replace(/[^\d+]/g,"");
+    out.push({ nombre: nombreFull || "Sin nombre", telefono: tel, email: iEmail>=0 ? (f[iEmail]||"") : "", tipo: "consumidor_final" });
+  }
+  console.log("Contactos parseados:", out.length, out.slice(0,3));
+  return out;
+}
 async function confirmarImportacionClientes(){
   const file = document.getElementById('fileClientes').files[0];
   if(!file) return alert('Subí primero el archivo CSV');
