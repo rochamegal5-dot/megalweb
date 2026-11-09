@@ -1388,55 +1388,7 @@ function filtrarClientes(){
 function abrirModalImportarClientes(){ document.getElementById('modalImportarClientes').classList.remove('hidden'); document.getElementById('modalImportarClientes').style.display='flex'; }
 function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); m.classList.add('hidden'); m.style.display='none'; document.getElementById('fileClientes').value=''; document.getElementById('previewImport').innerHTML=''; clientesImportTemp=[]; }
 
-// Detectar archivo
-document.addEventListener('change', async (e)=>{
-  if(e.target.id!=='fileClientes') return;
-  const file=e.target.files[0]; if(!file) return;
-  const text=await file.text();
-  let contactos=[];
-  if(file.name.endsWith('.vcf') || text.includes('BEGIN:VCARD')){
-    // Parse VCF
-    const cards=text.split('BEGIN:VCARD');
-    cards.forEach(card=>{
-      const nombre=(card.match(/FN:(.*)/)||[])[1]||'';
-      const tel=(card.match(/TEL[^:]*:(.*)/)||[])[1]||'';
-      if(nombre||tel) contactos.push({nombre:nombre.trim(), telefono:tel.replace(/\s/g,'').trim(), direccion:'', tipo: detectarTipoPorNombre(nombre)});
-    });
-  } else {
-    // Parse CSV Google / WhatsApp
-    const lines=text.split('\n');
-    const header=lines[0].toLowerCase();
-    const idxNombre = header.includes('first name') ? header.split(',').findIndex(h=>h.includes('first')) : 0;
-    const idxTel = header.includes('phone') ? header.split(',').findIndex(h=>h.includes('phone')) : 1;
-    // Si es CSV simple sin header, intenta
-    lines.slice(1).forEach(line=>{
-      if(!line.trim()) return;
-      const cols=line.split(',').map(c=>c.replace(/"/g,'').trim());
-      let nombre=cols[0]||cols[idxNombre]||'';
-      let telefono=cols[1]||cols[idxTel]||cols[3]||'';
-      // Google CSV tiene formato raro
-      if(cols.length>10){ nombre=(cols[0]+' '+cols[2]).trim(); telefono=cols[15]||cols[16]||''; }
-      if(nombre||telefono){
-        // Limpiar telefono
-        telefono=telefono.replace(/[^\d+]/g,'');
-        if(telefono.length>=8) contactos.push({nombre:nombre||telefono, telefono, direccion:'', tipo: detectarTipoPorNombre(nombre)});
-      }
-    });
-    // Fallback si no parseo: cada linea es un numero
-    if(!contactos.length){
-      lines.forEach(line=>{
-        const tel=line.replace(/\D/g,'');
-        if(tel.length>=8) contactos.push({nombre:tel, telefono:tel, direccion:'', tipo:'consumidor_final'});
-      });
-    }
-  }
-  // Quitar duplicados por telefono
-  const unicos={}; contactos.forEach(c=>{ const key=c.telefono.replace(/\D/g,''); if(key && !unicos[key]){ unicos[key]=c; } });
-  contactos=Object.values(unicos);
-  clientesImportTemp=contactos;
-  document.getElementById('countPreview').textContent=contactos.length;
-  document.getElementById('previewImport').innerHTML=contactos.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #1f2937"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span style="font-size:10px;color:#94a3b8">${c.tipo}</span></div>`).join('') + (contactos.length>20?`<div style="color:#64748b;padding:4px">+${contactos.length-20} más...</div>`:'');
-});
+
 
 function detectarTipoPorNombre(nombre){
   const n=(nombre||'').toLowerCase();
@@ -1513,50 +1465,35 @@ function parsearCSVGoogle(texto){
   return out;
 }
 async function confirmarImportacionClientes(){
-  const file = document.getElementById('fileClientes').files[0];
+  let file = document.getElementById('fileClientes').files[0];
   if(!file) return alert('Subí primero el archivo CSV');
-  const texto = await file.text();
-  const filas = parsearCSVGoogle(texto);
-  if(!filas.length) return alert('CSV vacío');
-  const header = filas[0].map(h=>h.trim().toLowerCase());
-  const idxNombre = header.findIndex(h=>h.includes('first name') || h==='name' || h.includes('given name') || h.includes('nombre'));
-  const idxMiddle = header.findIndex(h=>h.includes('middle name'));
-  const idxApellido = header.findIndex(h=>h.includes('last name') || h.includes('family name') || h.includes('apellido'));
-  let idxTel = header.findIndex(h=>h.includes('phone') && h.includes('value'));
-  if(idxTel === -1) idxTel = header.findIndex(h=>h.includes('phone') || h.includes('tel') || h.includes('movil') || h.includes('móvil') || h.includes('celular') || h.includes('mobile') || h.includes('cell'));
-  const idxDir = header.findIndex(h=>h.includes('address') && h.includes('value'));
-  const idxDir2 = idxDir === -1 ? header.findIndex(h=>h.includes('address') || h.includes('direc')) : idxDir;
+  let texto = await file.text();
+  // parsearCSVGoogle YA devuelve [{nombre, telefono, tipo}]
+  let lista = parsearCSVGoogle(texto);
+  if(!lista.length) return alert('CSV vacío');
 
-  const lista = [];
-  for(let i=1;i<filas.length;i++){
-    const f = filas[i];
-    let first = (idxNombre>=0 ? (f[idxNombre]||'').trim() : '');
-    let middle = (idxMiddle>=0 ? (f[idxMiddle]||'').trim() : '');
-    let last = (idxApellido>=0 ? (f[idxApellido]||'').trim() : '');
-    let middleEsNumero = /^\d+$/.test(middle);
-    let nombre = [first, middleEsNumero ? '' : middle, last].filter(Boolean).join(' ').trim();
-    let telefono = idxTel>=0 ? (f[idxTel]||'').trim().replace(/[^0-9+]/g,'') : '';
-    const direccion = idxDir2>=0 ? (f||'') : '';
-    const m = nombre.match(/^(\+?\d{6,})\s+(.+)$/);
-    if(m){ if(!telefono) telefono = m[1]; nombre = m[2]; }
-    if(!telefono && middleEsNumero && middle.length >= 3) telefono = middle;
-    if(!nombre && !telefono && !direccion) continue;
-    lista.push({ nombre: nombre || telefono || 'Sin nombre', telefono: telefono || '', direccion, tipo: 'consumidor_final' });
-  }
+  // Sacar duplicados por teléfono
+  let vistos = new Set();
+  lista = lista.filter(c=>{
+    let k = (c.telefono||'').replace(/\D/g,'');
+    if(!k) return true; // deja los sin teléfono
+    if(vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
 
-  const divPrev = document.getElementById('previewImport');
-  // De a 20 en paralelo
-  for(let i=0;i<lista.length;i+=20){
-    const tanda = lista.slice(i, i+20);
-    await Promise.all(tanda.map(c => fetch('/api/postgres?table=clientes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(c) }).catch(()=>{})));
-    if(divPrev) divPrev.innerHTML = `Importando... ${Math.min(i+20, lista.length)} de ${lista.length}`;
+  let divPrev = document.getElementById('previewImport');
+  for(let i=0;i<lista.length;i+=50){
+    let tanda = lista.slice(i, i+50);
+    await Promise.all(tanda.map(c => fetch('/api/postgres?table=clientes', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nombre:c.nombre, telefono:c.telefono, direccion:c.direccion||'', tipo: detectarTipoPorNombre(c.nombre)})
+    }).catch(()=>{})));
+    if(divPrev) divPrev.innerHTML = `Importando... ${Math.min(i+50, lista.length)} de ${lista.length}`;
   }
-  alert('Listo ✅ Se importó toda la lista');
+  alert('Listo ✅ Se importaron ' + lista.length + ' contactos');
   cerrarModalImportarClientes();
   if(typeof cargarClientes === 'function') cargarClientes();
-  if(typeof filtrarClientes === 'function') filtrarClientes();
 }
-
   
    
 function exportarClientesCSV(){
@@ -2480,9 +2417,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     inputClientes.addEventListener('change', async (e)=>{
       const file = e.target.files[0]; if(!file) return;
       const texto = await file.text();
-      const filas = parsearCSVGoogle(texto);
-      document.getElementById('countPreview').textContent = Math.max(0, filas.length - 1);
-      document.getElementById('previewImport').innerHTML = `Se detectaron <b>${Math.max(0, filas.length - 1)}</b> filas en el CSV. Apretá Importar.`;
+      // parsearCSVGoogle YA devuelve [{nombre, telefono, tipo}] - son 1263, no hay que restar 1
+      const lista = parsearCSVGoogle(texto);
+      clientesImportTemp = lista;
+
+      const countEl = document.getElementById('countPreview');
+      if(countEl) countEl.textContent = lista.length;
+
+      const prev = document.getElementById('previewImport');
+      if(prev){
+        prev.innerHTML = lista.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;font-size:12px"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span>${c.tipo}</span></div>`).join('') + (lista.length>20?`<div style="font-size:12px;color:#666;padding:4px">+${lista.length-20} más... total ${lista.length}</div>`:`<div style="font-size:12px;padding:4px">Total: ${lista.length} contactos</div>`);
+      }
+
+      const btn = document.getElementById('btnImportarClientes');
+      if(btn) btn.textContent = 'Importar ' + lista.length + ' contactos';
     });
   }
 });
