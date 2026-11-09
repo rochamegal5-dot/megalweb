@@ -1301,201 +1301,134 @@ document.addEventListener('change', (e)=>{
     if(precioInput && precio>0){ precioInput.value=precio; calcularTotalMostrador(); }
   }
 });
-
-
 // --- CLIENTES ---
 let clientesImportTemp = [];
+let clientesCache = [];
 let clientesCacheFiltrado = [];
 
-async function cargarClientes(){ 
-  try{ 
-    const r=await fetch(API+'?table=clientes',{cache:'no-store'}); 
-    const j=await r.json(); 
-    clientesCache=j.data||[]; 
+async function cargarClientes(){
+  try{
+    const r = await fetch(API+'?table=clientes',{cache:'no-store'});
+    const j = await r.json();
+    clientesCache = j.data||[];
     clientesCacheFiltrado = [...clientesCache];
     renderTablaClientes(clientesCache);
-    const dl=document.getElementById('listaClientesDatalist'); 
-    if(dl){ dl.innerHTML=clientesCache.map(c=>`<option value="${c.nombre}" data-tipo="${c.tipo||'consumidor_final'}">${c.nombre}</option>`).join(''); } 
-    const cont=document.getElementById('contadorClientes'); if(cont) cont.textContent=`${clientesCache.length} clientes`;
-  }catch(e){ console.error(e); } 
-}
-    async function eliminarCliente(id, nombre){
-  if(!confirm('¿Borrar el cliente "' + (nombre || id) + '"?')) return;
-  try{
-    await fetch('/api/postgres?table=clientes&id=' + encodeURIComponent(id), { method: 'DELETE' });
-    alert('Cliente borrado ✅');
-    if(typeof cargarClientes === 'function') cargarClientes();
-    if(typeof filtrarClientes === 'function') filtrarClientes();
-  }catch(e){
-    alert('Error al borrar: ' + e.message);
-  }
+    const cont = document.getElementById('contadorClientes');
+    if(cont) cont.textContent = clientesCache.length + ' clientes';
+  }catch(e){ console.error(e); }
 }
 
-async function editarCliente(id){
-  // Buscamos el cliente actual para mostrar sus datos en el prompt
-  let actual = null;
-  try{
-    const r = await fetch('/api/postgres?table=clientes');
-    const j = await r.json();
-    actual = (j.data || []).find(x => String(x.id) === String(id));
-  }catch(e){}
-  if(!actual) return alert('No encontré el cliente');
-
-  const nuevoNombre = prompt('Nombre:', actual.nombre || '');
-  if(nuevoNombre === null) return;
-  const nuevoTel = prompt('Teléfono:', actual.telefono || actual.phone || '');
-  if(nuevoTel === null) return;
-  const nuevaDir = prompt('Dirección:', actual.direccion || actual.address || '');
-  if(nuevaDir === null) return;
-  const nuevoTipo = prompt('Tipo (consumidor_final, comercio, mides):', actual.tipo || 'consumidor_final') || actual.tipo || 'consumidor_final';
-
-  try{
-    await fetch('/api/postgres?table=clientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: actual.id, nombre: nuevoNombre, telefono: nuevoTel, direccion: nuevaDir, tipo: nuevoTipo })
-    });
-    alert('Cliente actualizado ✅');
-    if(typeof cargarClientes === 'function') cargarClientes();
-    if(typeof filtrarClientes === 'function') filtrarClientes();
-  }catch(e){
-    alert('Error al editar: ' + e.message);
-  }
-}
-    
 function renderTablaClientes(lista){
-  const tbody=document.getElementById('tablaClientes'); if(!tbody) return;
-  if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:12px;color:#64748b;text-align:center">Sin clientes - Importá de WhatsApp</td></tr>'; return; }
-  tbody.innerHTML=lista.map(c=>`<tr>
-    <td style="padding:8px;border:1px solid #1f2937"><b>${c.nombre}</b></td>
-    <td style="padding:8px;border:1px solid #1f2937"><a href="https://wa.me/${(c.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:#25D366;text-decoration:none">📲 ${c.telefono||'-'}</a></td>
-    <td style="padding:8px;border:1px solid #1f2937">${c.direccion||'-'}</td>
-    <td style="padding:8px;border:1px solid #1f2937"><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${c.tipo||'consumidor_final'}</span></td>
-    <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarCliente('${c.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarCliente('${c.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button></td>
+  const tbody = document.getElementById('tablaClientes'); if(!tbody) return;
+  if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:12px;text-align:center">Sin clientes</td></tr>'; return; }
+  tbody.innerHTML = lista.map(c=>`<tr>
+    <td style="padding:8px;border:1px solid #d1d5db"><b>${(c.nombre||'').replace(/</g,'')}</b></td>
+    <td style="padding:8px;border:1px solid #d1d5db"><a href="https://wa.me/${(c.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:#25D366;text-decoration:none">${c.telefono||'-'}</a></td>
+    <td style="padding:8px;border:1px solid #d1d5db">${c.direccion||'-'}</td>
+    <td style="padding:8px;border:1px solid #d1d5db">${c.tipo||'consumidor_final'}</td>
+    <td style="padding:8px;border:1px solid #d1d5db"><button onclick="editarCliente('${c.id}')" style="background:#0ea5e9;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarCliente('${c.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button></td>
   </tr>`).join('');
 }
 
 function filtrarClientes(){
-  const q=(document.getElementById('buscarCliente').value||'').toLowerCase();
-  const tipo=document.getElementById('filtroTipoCliente').value;
-  let f=clientesCache;
-  if(q) f=f.filter(c=> (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').includes(q) || (c.direccion||'').toLowerCase().includes(q));
-  if(tipo) f=f.filter(c=> (c.tipo||'consumidor_final')===tipo);
-  clientesCacheFiltrado=f;
+  const q = (document.getElementById('buscarCliente').value||'').toLowerCase();
+  const tipo = document.getElementById('filtroTipoCliente').value;
+  let f = clientesCache;
+  if(q) f = f.filter(c=> (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').includes(q) || (c.direccion||'').toLowerCase().includes(q));
+  if(tipo) f = f.filter(c=> (c.tipo||'consumidor_final')===tipo);
+  clientesCacheFiltrado = f;
   renderTablaClientes(f);
 }
 
-function abrirModalImportarClientes(){ document.getElementById('modalImportarClientes').classList.remove('hidden'); document.getElementById('modalImportarClientes').style.display='flex'; }
-function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); m.classList.add('hidden'); m.style.display='none'; document.getElementById('fileClientes').value=''; document.getElementById('previewImport').innerHTML=''; clientesImportTemp=[]; }
-
-
+function abrirModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.remove('hidden'); m.style.display='flex'; } }
+function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } const inp=document.getElementById('fileClientes'); if(inp) inp.value=''; const pv=document.getElementById('previewImport'); if(pv) pv.innerHTML=''; clientesImportTemp=[]; }
 
 function detectarTipoPorNombre(nombre){
   const n=(nombre||'').toLowerCase();
-  if(n.includes('almacen')||n.includes('kiosco')||n.includes('super')||n.includes('bar')||n.includes('rest')||n.includes('panaderia')||n.includes('comercio')||n.includes('ferreteria')) return 'comercio';
+  if(n.includes('almacen')||n.includes('kiosco')||n.includes('super')||n.includes('bar')||n.includes('panaderia')||n.includes('comercio')||n.includes('ferreteria')) return 'comercio';
   if(n.includes('mides')) return 'mides';
   return 'consumidor_final';
 }
 
-// Parser que banca comillas y saltos de línea adentro de un campo
 function parsearCSVGoogle(texto){
-  // Detectar delimitador: ; o ,
   let primeraLinea = texto.split(/\r?\n/)[0] || "";
   let delim = (primeraLinea.split(";").length > primeraLinea.split(",").length) ? ";" : ",";
-  let filas = [];
-  let fila = [], campo = "", entreComillas = false;
+  let filas=[], fila=[], campo="", entreComillas=false;
   for(let i=0;i<texto.length;i++){
-    let c = texto[i];
-    if(c === '"'){
-      if(entreComillas && texto[i+1] === '"'){ campo += '"'; i++; }
-      else entreComillas = !entreComillas;
-    } else if(c === delim && !entreComillas){
-      fila.push(campo); campo = "";
-    } else if((c === "\n" || c === "\r") && !entreComillas){
-      if(c === "\r" && texto[i+1] === "\n") i++;
-      fila.push(campo); campo = "";
-      if(fila.some(v=>v.trim()!=="")) filas.push(fila);
-      fila = [];
-    } else {
-      campo += c;
-    }
+    let c=texto[i];
+    if(c==='"'){ if(entreComillas && texto[i+1]==='"'){ campo+='"'; i++; } else entreComillas=!entreComillas; }
+    else if(c===delim && !entreComillas){ fila.push(campo); campo=""; }
+    else if((c==="\n"||c==="\r") && !entreComillas){ if(c==="\r" && texto[i+1]==="\n") i++; fila.push(campo); campo=""; if(fila.some(v=>v.trim()!=="")) filas.push(fila); fila=[]; }
+    else campo+=c;
   }
-  if(campo!=="" || fila.length){ fila.push(campo); filas.push(fila); }
+  if(campo!==""||fila.length){ fila.push(campo); filas.push(fila); }
   if(!filas.length) return [];
-
   let header = filas[0].map(h=>h.trim().toLowerCase());
-  let idx = (nombres)=>{
-    for(let n of nombres){
-      let j = header.findIndex(h=>h.includes(n));
-      if(j!==-1) return j;
-    }
-    return -1;
-  };
-  let iNombre = idx(["first name","given name","nombre"]);
-  let iApellido = idx(["last name","family name","apellido"]);
-  let iTel = idx(["phone 1 - value","phone","teléfono","telefono"]);
-  let iEmail = idx(["e-mail 1 - value","email"]);
-  let iOrg = idx(["organization 1 - name","organization"]);
-
-  console.log("CSV total filas:", filas.length, "header:", header);
-  console.log("indices nombre/tel:", iNombre, iTel);
-
-  let out = [];
+  let idx = (nombres)=>{ for(let n of nombres){ let j=header.findIndex(h=>h.includes(n)); if(j!==-1) return j; } return -1; };
+  let iNombre = idx(["first name","given name"]);
+  let iApellido = idx(["last name","family name"]);
+  let iFileAs = idx(["file as","full name","name"]);
+  let iTel = idx(["phone 1 - value","phone"]);
+  let out=[];
   for(let k=1;k<filas.length;k++){
-    let f = filas[k];
-    let nombre = (iNombre>=0 ? (f[iNombre]||"") : "").trim();
-    let apellido = (iApellido>=0 ? (f[iApellido]||"") : "").trim();
-    let tel = (iTel>=0 ? (f[iTel]||"") : "").trim();
-    // Si no hay columna telefono, buscar cualquier campo que parezca telefono
+    let f=filas[k];
+    let nombre = (iNombre>=0?(f[iNombre]||""):"").trim();
+    let apellido = (iApellido>=0?(f[iApellido]||""):"").trim();
+    let fileAs = (iFileAs>=0?(f[iFileAs]||""):"").trim();
+    let tel = (iTel>=0?(f[iTel]||""):"").trim();
     if(!tel){
-      for(let v of f){
-        let vv = (v||"").trim().replace(/[\s\-\(\)]/g,"");
-        if(/^\+?\d{7,15}$/.test(vv)){ tel = vv; break; }
-      }
+      for(let v of f){ let vv=(v||"").trim().replace(/[\s\-\(\)]/g,""); if(/^\+?\d{7,15}$/.test(vv)){ tel=vv; break; } }
     }
     let nombreFull = (nombre+" "+apellido).trim();
-    // Si el nombre es solo un numero, es telefono sin nombre
+    if(!nombreFull) nombreFull = fileAs;
     if(!nombreFull && tel) nombreFull = tel;
     if(!nombreFull && !tel) continue;
-    // Limpiar telefono: solo digitos y +
     tel = tel.replace(/[^\d+]/g,"");
-    out.push({ nombre: nombreFull || "Sin nombre", telefono: tel, email: iEmail>=0 ? (f[iEmail]||"") : "", tipo: "consumidor_final" });
+    out.push({nombre: nombreFull, telefono: tel, direccion:"", tipo: detectarTipoPorNombre(nombreFull)});
   }
-  console.log("Contactos parseados:", out.length, out.slice(0,3));
   return out;
 }
-async function confirmarImportacionClientes(){
-  let file = document.getElementById('fileClientes').files[0];
-  if(!file) return alert('Subí primero el archivo CSV');
-  let texto = await file.text();
-  // parsearCSVGoogle YA devuelve [{nombre, telefono, tipo}]
-  let lista = parsearCSVGoogle(texto);
-  if(!lista.length) return alert('CSV vacío');
 
-  // Sacar duplicados por teléfono
+async function confirmarImportacionClientes(){
+  let lista = clientesImportTemp;
+  if(!lista || !lista.length){
+    let file = document.getElementById('fileClientes').files[0];
+    if(!file) return alert('Subí primero el archivo CSV');
+    lista = parsearCSVGoogle(await file.text());
+  }
+  if(!lista.length) return alert('CSV vacío');
   let vistos = new Set();
   lista = lista.filter(c=>{
-    let k = (c.telefono||'').replace(/\D/g,'');
-    if(!k) return true; // deja los sin teléfono
+    let k=(c.telefono||'').replace(/\D/g,'');
+    if(!k) return true;
     if(vistos.has(k)) return false;
-    vistos.add(k);
-    return true;
+    vistos.add(k); return true;
   });
-
   let divPrev = document.getElementById('previewImport');
   for(let i=0;i<lista.length;i+=50){
-    let tanda = lista.slice(i, i+50);
-    await Promise.all(tanda.map(c => fetch('/api/postgres?table=clientes', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nombre:c.nombre, telefono:c.telefono, direccion:c.direccion||'', tipo: detectarTipoPorNombre(c.nombre)})
-    }).catch(()=>{})));
-    if(divPrev) divPrev.innerHTML = `Importando... ${Math.min(i+50, lista.length)} de ${lista.length}`;
+    let tanda = lista.slice(i,i+50);
+    await Promise.all(tanda.map(c=>fetch('/api/postgres?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)}).catch(()=>{})));
+    if(divPrev) divPrev.innerHTML = 'Importando... ' + Math.min(i+50,lista.length) + ' de ' + lista.length;
   }
   alert('Listo ✅ Se importaron ' + lista.length + ' contactos');
   cerrarModalImportarClientes();
-  if(typeof cargarClientes === 'function') cargarClientes();
+  cargarClientes();
 }
-  
-   
+
+async function eliminarCliente(id){
+  if(!confirm('¿Borrar este cliente?')) return;
+  await fetch('/api/postgres?table=clientes&id='+encodeURIComponent(id),{method:'DELETE'});
+  cargarClientes();
+}
+async function editarCliente(id){
+  let actual = clientesCache.find(x=>String(x.id)===String(id));
+  if(!actual) return alert('No encontré el cliente');
+  let nn = prompt('Nombre:', actual.nombre||''); if(nn===null) return;
+  let tt = prompt('Teléfono:', actual.telefono||''); if(tt===null) return;
+  let dd = prompt('Dirección:', actual.direccion||''); if(dd===null) return;
+  await fetch('/api/postgres?table=clientes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:actual.id,nombre:nn,telefono:tt,direccion:dd,tipo:actual.tipo||'consumidor_final'})});
+  cargarClientes();
+}
 function exportarClientesCSV(){
   let csv='Nombre,Telefono,Direccion,Tipo\n';
   clientesCache.forEach(c=>{ csv+=`"${c.nombre}","${c.telefono}","${c.direccion||''}","${c.tipo||''}"\n`; });
@@ -1503,9 +1436,25 @@ function exportarClientesCSV(){
   const a=document.createElement('a'); a.href=url; a.download='clientes_megal.csv'; a.click();
 }
 
+document.addEventListener('DOMContentLoaded',()=>{
+  const hoy=new Date().toISOString().split('T')[0];
+  const f=document.getElementById('finFecha'); if(f) f.value=hoy;
+  try{ cargarResumen(); }catch(e){}
+  const inputClientes = document.getElementById('fileClientes');
+  if(inputClientes){
+    inputClientes.addEventListener('change', async (e)=>{
+      const file=e.target.files[0]; if(!file) return;
+      const texto=await file.text();
+      const lista=parsearCSVGoogle(texto);
+      clientesImportTemp=lista;
+      const countEl=document.getElementById('countPreview'); if(countEl) countEl.textContent=lista.length;
+      const prev=document.getElementById('previewImport');
+      if(prev) prev.innerHTML=lista.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;font-size:12px"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span>${c.tipo}</span></div>`).join('')+(lista.length>20?`<div style="font-size:12px;padding:4px">+${lista.length-20} más... total ${lista.length}</div>`:'');
+      const btn=document.getElementById('btnImportarClientes'); if(btn) btn.textContent='Importar '+lista.length+' contactos';
+    });
+  }
+});
 
-
-    
 
 // --- PROVEEDORES ---
 async function cargarProveedores(){
