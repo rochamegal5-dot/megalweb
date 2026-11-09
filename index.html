@@ -736,8 +736,17 @@ async function cargarGpsVivo(){
         const vel=gpsVel(p); const bat=p.bateria ?? p.battery ?? '—';
         const fecha=gpsFecha(p); const haceMin=Math.round((Date.now()-fecha.getTime())/60000);
         const estado= haceMin>10?'🔴 Sin señal': vel>3?'🟢 En movimiento':'🟡 Detenido';
-        const mk=L.marker([lat,lng]).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
-        gpsMarkers[id]=mk;
+       
+const color = colorRepartidor(id);
+const icono = L.divIcon({
+  className: '',
+  html: `<div style="background:${color}; width:22px; height:22px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>`,
+  iconSize: [22, 22],
+  iconAnchor: [11, 11]
+});
+const mk = L.marker([lat,lng], { icon: icono }).addTo(gpsMapa).bindPopup(`<b>${nombre}</b><br>🚀 ${vel.toFixed(0)} km/h<br>${estado}<br>🔋 ${bat}%<br>Hace ${haceMin} min`);
+
+     gpsMarkers[id]=mk;
         panel+=`<div style="border-left:4px solid ${colorRepartidor(id)};padding-left:8px;margin-bottom:10px"><b>${nombre}</b> ${estado}<br>🚀 <b style="font-size:20px">${vel.toFixed(0)} km/h</b><br>🔋 Batería: ${bat}%<br>🕒 Hace ${haceMin} min - ${fecha.toLocaleTimeString('es-UY')}<br>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`;
         if(document.getElementById('gpsSeguir')?.value==='1' && String(sel)===String(id)) gpsMapa.setView([lat,lng],15);
       });
