@@ -1301,9 +1301,11 @@ document.addEventListener('change', (e)=>{
     if(precioInput && precio>0){ precioInput.value=precio; calcularTotalMostrador(); }
   }
 });
+    
 // --- CLIENTES ---
-let clientesImportTemp = [];
-let clientesCacheFiltrado = [];
+window.clientesImportTemp = window.clientesImportTemp || [];
+window.clientesCacheFiltrado = window.clientesCacheFiltrado || [];
+// clientesCache ya existe arriba, no lo declares de nuevo
 
 async function cargarClientes(){
   try{
@@ -1321,7 +1323,7 @@ function renderTablaClientes(lista){
   const tbody = document.getElementById('tablaClientes'); if(!tbody) return;
   if(!lista.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:12px;text-align:center">Sin clientes</td></tr>'; return; }
   tbody.innerHTML = lista.map(c=>`<tr>
-    <td style="padding:8px;border:1px solid #d1d5db"><b>${(c.nombre||'').replace(/</g,'')}</b></td>
+    <td style="padding:8px;border:1px solid #d1d5db"><b>${(c.nombre||'')}</b></td>
     <td style="padding:8px;border:1px solid #d1d5db"><a href="https://wa.me/${(c.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:#25D366;text-decoration:none">${c.telefono||'-'}</a></td>
     <td style="padding:8px;border:1px solid #d1d5db">${c.direccion||'-'}</td>
     <td style="padding:8px;border:1px solid #d1d5db">${c.tipo||'consumidor_final'}</td>
@@ -1340,7 +1342,7 @@ function filtrarClientes(){
 }
 
 function abrirModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.remove('hidden'); m.style.display='flex'; } }
-function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } const inp=document.getElementById('fileClientes'); if(inp) inp.value=''; const pv=document.getElementById('previewImport'); if(pv) pv.innerHTML=''; clientesImportTemp=[]; }
+function cerrarModalImportarClientes(){ const m=document.getElementById('modalImportarClientes'); if(m){ m.classList.add('hidden'); m.style.display='none'; } const inp=document.getElementById('fileClientes'); if(inp) inp.value=''; const pv=document.getElementById('previewImport'); if(pv) pv.innerHTML=''; window.clientesImportTemp=[]; }
 
 function detectarTipoPorNombre(nombre){
   const n=(nombre||'').toLowerCase();
@@ -1366,7 +1368,8 @@ function parsearCSVGoogle(texto){
   let idx = (nombres)=>{ for(let n of nombres){ let j=header.findIndex(h=>h.includes(n)); if(j!==-1) return j; } return -1; };
   let iNombre = idx(["first name","given name"]);
   let iApellido = idx(["last name","family name"]);
-  let iFileAs = idx(["file as","full name","name"]);
+  let iFileAs = header.findIndex(h=>h.trim()==="file as");
+  if(iFileAs===-1) iFileAs = header.findIndex(h=>h.includes("file as"));
   let iTel = idx(["phone 1 - value","phone"]);
   let out=[];
   for(let k=1;k<filas.length;k++){
@@ -1389,7 +1392,7 @@ function parsearCSVGoogle(texto){
 }
 
 async function confirmarImportacionClientes(){
-  let lista = clientesImportTemp;
+  let lista = window.clientesImportTemp;
   if(!lista || !lista.length){
     let file = document.getElementById('fileClientes').files[0];
     if(!file) return alert('Subí primero el archivo CSV');
@@ -1435,24 +1438,30 @@ function exportarClientesCSV(){
   const a=document.createElement('a'); a.href=url; a.download='clientes_megal.csv'; a.click();
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const hoy=new Date().toISOString().split('T')[0];
-  const f=document.getElementById('finFecha'); if(f) f.value=hoy;
-  try{ cargarResumen(); }catch(e){}
-  const inputClientes = document.getElementById('fileClientes');
-  if(inputClientes){
-    inputClientes.addEventListener('change', async (e)=>{
-      const file=e.target.files[0]; if(!file) return;
-      const texto=await file.text();
-      const lista=parsearCSVGoogle(texto);
-      clientesImportTemp=lista;
-      const countEl=document.getElementById('countPreview'); if(countEl) countEl.textContent=lista.length;
-      const prev=document.getElementById('previewImport');
-      if(prev) prev.innerHTML=lista.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;font-size:12px"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span>${c.tipo}</span></div>`).join('')+(lista.length>20?`<div style="font-size:12px;padding:4px">+${lista.length-20} más... total ${lista.length}</div>`:'');
-      const btn=document.getElementById('btnImportarClientes'); if(btn) btn.textContent='Importar '+lista.length+' contactos';
-    });
-  }
-});
+// Listener del input - sin DOMContentLoaded duplicado, con guarda para no duplicar
+if(!window._clientesInputInit){
+  window._clientesInputInit = true;
+  document.addEventListener('DOMContentLoaded',()=>{
+    const hoy=new Date().toISOString().split('T')[0];
+    const f=document.getElementById('finFecha'); if(f) f.value=hoy;
+    try{ cargarResumen(); }catch(e){}
+    const inputClientes = document.getElementById('fileClientes');
+    if(inputClientes){
+      inputClientes.addEventListener('change', async (e)=>{
+        const file=e.target.files[0]; if(!file) return;
+        const texto=await file.text();
+        const lista=parsearCSVGoogle(texto);
+        window.clientesImportTemp=lista;
+        const countEl=document.getElementById('countPreview'); if(countEl) countEl.textContent=lista.length;
+        const prev=document.getElementById('previewImport');
+        if(prev) prev.innerHTML=lista.slice(0,20).map(c=>`<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;font-size:12px"><span>${c.nombre}</span><span style="color:#25D366">${c.telefono}</span><span>${c.tipo}</span></div>`).join('')+(lista.length>20?`<div style="font-size:12px;padding:4px">+${lista.length-20} más... total ${lista.length}</div>`:'');
+        const btn=document.getElementById('btnImportarClientes'); if(btn) btn.textContent='Importar '+lista.length+' contactos';
+      });
+    }
+  });
+}
+
+// --- PROVEEDORES ---
 
 
 // --- PROVEEDORES ---
