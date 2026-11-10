@@ -1932,10 +1932,10 @@ window.cambiarTabVentas = function(t){
   } else { 
     if(c) c.classList.remove('hidden'); 
     if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } 
-    if(typeof cargarCamionetaApp === 'function') cargarCamionetaApp();
+    // POR AHORA SIN LLAMAR A NADA - SOLO PARA PROBAR
   }
 };
-
+    
 window.guardarVentaMostrador = async function(){
   try{
     const prodId = document.getElementById('vmProducto')?.value;
