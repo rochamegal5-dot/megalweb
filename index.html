@@ -864,14 +864,18 @@ async function cargarPuntosRefGps(){
     const lng = parseFloat(p.lng ?? p.longitud);
     if(isNaN(lat) || isNaN(lng)) return;
 
-    // Color por categoría que viene en direccion "Cliente - nota"
+   
+        // Color por categoría que viene en direccion "Comercio - nota"
     let color = '#F59E0B';
     const dir = (p.direccion || '').toLowerCase();
-    if(dir.includes('cliente')) color = '#22C55E';
-    else if(dir.includes('depósito') || dir.includes('deposito')) color = '#F59E0B';
+    if(dir.includes('comercio')) color = '#F59E0B'; // amarillo
+    else if(dir.includes('local')) color = '#22C55E'; // verde
+    else if(dir.includes('encontrado')) color = '#A855F7'; // violeta
+    else if(dir.includes('cliente')) color = '#3B82F6'; // azul
+    else if(dir.includes('depósito') || dir.includes('deposito')) color = '#F97316'; // naranja
     else if(dir.includes('casa')) color = '#3B82F6';
-    else if(dir.includes('taller')) color = '#A855F7';
-
+    else if(dir.includes('taller')) color = '#EC4899';
+ 
     const icono = L.divIcon({
       className: '',
       html: `<div style="width:16px;height:16px;background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
@@ -936,7 +940,7 @@ async function cargarGpsVivo(){
           gpsMapa.getContainer().style.cursor = '';
           const nombre = prompt('Nombre del punto (ej: Casa María):');
           if (!nombre) return;
-          const categoria = prompt('Categoría: Cliente, Depósito, Casa, Taller', 'Cliente') || 'General';
+          const categoria = prompt('Categoría: Comercio, Local, Encontrado', 'Comercio') || 'General';
           const notas = prompt('Notas (opcional):', '') || '';
           // 👇 ACÁ SÍ VA EL NUEVO, porque acá sí existen e, nombre, categoria, notas
   const nuevo = { 
