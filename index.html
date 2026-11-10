@@ -1919,7 +1919,7 @@ window.cargarVentasHoy = async function(){
 };
 
     
-  window.cambiarTabVentas = function(t){
+window.cambiarTabVentas = function(t){
   const m=document.getElementById('ventaMostrador'); const c=document.getElementById('ventaCamioneta');
   const bm=document.getElementById('tabVentaMostrador'); const bc=document.getElementById('tabVentaCamioneta');
   if(m) m.classList.add('hidden'); if(c) c.classList.add('hidden');
@@ -1932,10 +1932,7 @@ window.cargarVentasHoy = async function(){
   } else { 
     if(c) c.classList.remove('hidden'); 
     if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } 
-    // La nueva pestaña con varios repartidores
     if(typeof cargarCamionetaApp === 'function') cargarCamionetaApp();
-    // La vieja la dejamos por si la usás en otro lado, pero ya no pisa nada
-    if(typeof cargarInformeCamioneta === 'function') cargarInformeCamioneta();
   }
 };
 
