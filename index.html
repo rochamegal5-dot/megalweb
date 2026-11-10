@@ -1918,6 +1918,74 @@ window.cargarVentasHoy = async function(){
   }catch(e){ console.error('cargarVentasHoy',e); }
 };
 
+  let camFiltroRep = 'todos';
+
+async function cargarCamionetaApp(){
+  try{
+    const hoy = new Date().toISOString().slice(0,10);
+    const get = async (t) => { try{ const r = await fetch('/api/postgres?table='+t); const j = await r.json(); return j.data || j.rows || (Array.isArray(j) ? j : []); }catch(e){ return []; } };
+    const ventas = await get('ventas');
+    const hoyVentas = ventas.filter(v => String(v.fecha||v.created_at||'').slice(0,10) === hoy && v.origen === 'app');
+    const reps = await get('repartidores');
+    const stock = await get('stock_camioneta');
+    const prods = await get('productos');
+    const clientes = await get('clientes');
+
+    let total=0, llenas=0, fiado=0;
+    hoyVentas.forEach(v=>{ total+=parseFloat(v.total)||0; llenas+=parseInt(v.cantidad_llenas)||0; if(v.estado==='Pendiente') fiado+=parseFloat(v.total)||0; });
+    const elTotal = document.getElementById('camTotalHoy'); if(elTotal) elTotal.textContent = "$"+total.toLocaleString('es-UY');
+    const elLlenas = document.getElementById('camLlenasHoy'); if(elLlenas) elLlenas.textContent = llenas;
+    const elFiado = document.getElementById('camFiadoHoy'); if(elFiado) elFiado.textContent = "$"+fiado.toLocaleString('es-UY');
+
+    const todosReps = reps.length ? reps : [...new Set(hoyVentas.map(v=>String(v.repartidor_id)))].map(id=>({id, nombre:id}));
+    const elFiltros = document.getElementById('camFiltrosRep');
+    if(elFiltros){
+      elFiltros.innerHTML =
+        `<button onclick="camFiltroRep='todos';cargarCamionetaApp()" style="background:${camFiltroRep==='todos'?'#0ea5e9':'#1f2937'};color:white;padding:6px 12px;border:none;border-radius:999px;font-weight:bold">Todos</button>` +
+        todosReps.map(r=>`<button onclick="camFiltroRep='${r.id}';cargarCamionetaApp()" style="background:${camFiltroRep===String(r.id)?'#0ea5e9':'#1f2937'};color:white;padding:6px 12px;border:none;border-radius:999px">${r.nombre}</button>`).join('');
+    }
+
+    const porRep = {};
+    hoyVentas.forEach(v=>{ const k=String(v.repartidor_id); if(!porRep[k]) porRep[k]=[]; porRep[k].push(v); });
+    const keys = camFiltroRep==='todos' ? Object.keys(porRep) : [camFiltroRep].filter(k=>porRep[k]);
+
+    const elPorRep = document.getElementById('camPorRepartidor');
+    if(elPorRep){
+      if(keys.length===0){ elPorRep.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px">Sin ventas APP hoy</div>'; }
+      else {
+        elPorRep.innerHTML = keys.map(k=>{
+          const lista = porRep[k];
+          const rep = todosReps.find(r=>String(r.id)===k);
+          const nombreRep = rep ? rep.nombre : k;
+          let t=0, ll=0, fi=0;
+          lista.forEach(v=>{ t+=parseFloat(v.total)||0; ll+=parseInt(v.cantidad_llenas)||0; if(v.estado==='Pendiente') fi+=parseFloat(v.total)||0; });
+          const stockRep = stock.filter(x=>String(x.repartidor_id)===k);
+          const stockHtml = prods.filter(p=>['garrafa_11','garrafa_13','garrafa_45'].includes(p.tipo)).map(p=>{
+            const s = stockRep.find(x=>String(x.producto_id)===String(p.id));
+            return `<div style="background:#1e293b;padding:8px;border-radius:8px;text-align:center"><div style="font-size:11px;color:#94a3b8">${p.nombre}</div><b>${s?s.llenas:0} llenas</b><div style="font-size:11px">Vac: ${s?s.vacias:0}</div></div>`;
+          }).join('');
+          const ventasHtml = lista.slice().reverse().map(v=>{
+            const c = clientes.find(x=>String(x.id)===String(v.cliente_id));
+            const pr = prods.find(x=>String(x.id)===String(v.producto_id));
+            const nombre = c ? ((c.nombre||'')+' '+((c.apellido||c.apellido1||''))) : (v.tipo_cliente||'Particular');
+            return `<div style="display:flex;justify-content:space-between;background:#1e293b;padding:8px;border-radius:8px;margin-bottom:4px"><div><b>${nombre} - ${pr?pr.nombre:''} x${v.cantidad_llenas}</b><div style="font-size:11px;color:#94a3b8">${v.tipo_venta} - ${v.metodo_pago} - ${v.estado}</div></div><b style="color:#22c55e">$${(parseFloat(v.total)||0).toLocaleString('es-UY')}</b></div>`;
+          }).join('');
+          return `<div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between"><b style="font-size:16px">👤 ${nombreRep}</b><span style="background:#22c55e;color:white;padding:2px 8px;border-radius:999px;font-size:12px">${lista.length} ventas</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0;text-align:center">
+              <div style="background:#1e293b;padding:8px;border-radius:8px"><div style="font-size:10px;color:#94a3b8">VENDIDO</div><b style="color:#22c55e">$${t.toLocaleString('es-UY')}</b></div>
+              <div style="background:#1e293b;padding:8px;border-radius:8px"><div style="font-size:10px;color:#94a3b8">LLENAS</div><b>${ll}</b></div>
+              <div style="background:#1e293b;padding:8px;border-radius:8px"><div style="font-size:10px;color:#94a3b8">FIADO</div><b style="color:#f87171">$${fi.toLocaleString('es-UY')}</b></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">${stockHtml}</div>
+            <div>${ventasHtml}</div>
+          </div>`;
+        }).join('');
+      }
+    }
+  }catch(e){ console.error('Camioneta APP:', e); }
+}
+window.cargarCamionetaApp = cargarCamionetaApp;
     
 window.cambiarTabVentas = function(t){
   const m=document.getElementById('ventaMostrador'); const c=document.getElementById('ventaCamioneta');
