@@ -505,8 +505,30 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
 </div>
     <div id="ventasHoyTabla" style="margin-top:16px"></div>
   </div>
-  <div id="ventaCamioneta" class="hidden"><div id="informeCamionetaList" class="card" style="color:#64748b">Sin ventas APP hoy</div></div>
+<div id="ventaCamioneta" class="hidden">
+  <!-- TOTALES -->
+  <div class="card" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="text-align:center"><div style="font-size:11px;color:#94a3b8">VENDIDO HOY</div><div id="camTotalHoy" style="font-size:24px;font-weight:900;color:#22c55e">$0</div></div>
+    <div style="text-align:center"><div style="font-size:11px;color:#94a3b8">LLENAS</div><div id="camLlenasHoy" style="font-size:24px;font-weight:900;color:#38bdf8">0</div></div>
+    <div style="text-align:center"><div style="font-size:11px;color:#94a3b8">FIADO</div><div id="camFiadoHoy" style="font-size:24px;font-weight:900;color:#f87171">$0</div></div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button onclick="cargarCamionetaApp()" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🔄 Actualizar</button>
+    <div id="camFiltrosRep" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+
+  <!-- Acá van las tarjetas por repartidor -->
+  <div id="camPorRepartidor" class="space-y-4"></div>
+  <div id="camStock" style="display:none"></div>
+  <div id="camListaVentas" style="display:none"></div>
+  <div id="camCierres" style="margin-top:12px;font-size:13px;color:#94a3b8"></div>
+  <div id="informeCamionetaList" style="display:none"></div>
 </div>
+
+
+
+
 
 
   
