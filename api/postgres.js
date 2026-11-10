@@ -46,7 +46,24 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'solo_gas'`;
     await sql`CREATE TABLE IF NOT EXISTS gps_locations (id SERIAL PRIMARY KEY, repartidor_id TEXT, device_id TEXT, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, velocidad DOUBLE PRECISION, speed DOUBLE PRECISION, bateria DOUBLE PRECISION, battery DOUBLE PRECISION, fecha_local TEXT, hoy TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS puntos_ref (id TEXT PRIMARY KEY, nombre TEXT, direccion TEXT, lat DOUBLE PRECISION, lng DOUBLE PRECISION, latitud DOUBLE PRECISION, longitud DOUBLE PRECISION)`;
-
+    await sql`CREATE TABLE IF NOT EXISTS cierres (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', tipo TEXT DEFAULT 'parcial', monto DOUBLE PRECISION DEFAULT 0, detalle TEXT DEFAULT '', total_vendido DOUBLE PRECISION DEFAULT 0, fecha TIMESTAMP DEFAULT NOW())`;
+await sql`CREATE TABLE IF NOT EXISTS jornadas (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', fecha TEXT DEFAULT '', hora_salida TEXT DEFAULT '', hora_cierre TEXT DEFAULT '', km_inicio INTEGER DEFAULT 0, stock_11_inicial INTEGER DEFAULT 0, stock_13_inicial INTEGER DEFAULT 0, stock_45_inicial INTEGER DEFAULT 0, cambio_inicial DOUBLE PRECISION DEFAULT 0, estado TEXT DEFAULT 'abierta')`;
+await sql`CREATE TABLE IF NOT EXISTS stock_camioneta (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
+await sql`CREATE TABLE IF NOT EXISTS stock_deposito (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
+await sql`CREATE TABLE IF NOT EXISTS movimientos_stock (id TEXT PRIMARY KEY, tipo_mov TEXT DEFAULT '', producto_id TEXT DEFAULT '', repartidor_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0, observaciones TEXT DEFAULT '', referencia_id TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
+await sql`CREATE TABLE IF NOT EXISTS puntos_ruta (id TEXT PRIMARY KEY, nombre TEXT DEFAULT '', telefono TEXT DEFAULT '', latitud DOUBLE PRECISION DEFAULT 0, longitud DOUBLE PRECISION DEFAULT 0, tipo TEXT DEFAULT '', categoria TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
+await sql`CREATE TABLE IF NOT EXISTS configuraciones (id TEXT PRIMARY KEY, clave TEXT DEFAULT '', valor TEXT DEFAULT '')`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS origen TEXT DEFAULT 'mostrador'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id TEXT DEFAULT ''`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad_llenas INTEGER DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad_vacias INTEGER DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad_defectuosas INTEGER DEFAULT 0`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS metodo_pago TEXT DEFAULT 'efectivo'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'Cobrado'`;
+await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS flete DOUBLE PRECISION DEFAULT 0`;
+await sql`ALTER TABLE puntos_ref ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT ''`;
+await sql`ALTER TABLE puntos_ref ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT ''`;
+    
     const c = await sql`SELECT COUNT(*) as c FROM deposito`;
     if (parseInt(c.rows[0].c) === 0) {
       await sql`INSERT INTO deposito (producto_id, llenas, vacias, kilos_en_uso, kilos_restantes) VALUES ('11',5,3,0,0),('13',8,5,0,0),('45',2,1,0,0),('43.5',0,0,43.5,43.5) ON CONFLICT (producto_id) DO NOTHING`;
@@ -63,6 +80,13 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
       else if (table === 'gps_locations') rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
       else if (table === 'puntos_ref') rows = (await sql`SELECT * FROM puntos_ref ORDER BY nombre`).rows;  
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
+      else if (table === 'cierres') rows = (await sql`SELECT * FROM cierres ORDER BY fecha DESC LIMIT 200`).rows;
+else if (table === 'jornadas') rows = (await sql`SELECT * FROM jornadas ORDER BY fecha DESC LIMIT 200`).rows;
+else if (table === 'stock_camioneta') rows = (await sql`SELECT * FROM stock_camioneta`).rows;
+else if (table === 'stock_deposito') rows = (await sql`SELECT * FROM stock_deposito`).rows;
+else if (table === 'movimientos_stock') rows = (await sql`SELECT * FROM movimientos_stock ORDER BY fecha DESC LIMIT 500`).rows;
+else if (table === 'puntos_ruta') rows = (await sql`SELECT * FROM puntos_ruta ORDER BY nombre`).rows;
+else if (table === 'configuraciones') rows = (await sql`SELECT * FROM configuraciones`).rows;
       return res.status(200).json({ data: rows, ok: true });
     }
 
@@ -76,6 +100,11 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
         else if (table === 'repartidores') await sql`DELETE FROM repartidores WHERE id=${id}`;
         else if (table === 'finanzas') await sql`DELETE FROM finanzas WHERE id=${parseInt(id)}`;
          else if (table === 'puntos_ref') await sql`DELETE FROM puntos_ref WHERE id=${id}`;
+        else if (table === 'cierres') await sql`DELETE FROM cierres WHERE id=${id}`;
+else if (table === 'jornadas') await sql`DELETE FROM jornadas WHERE id=${id}`;
+else if (table === 'movimientos_stock') await sql`DELETE FROM movimientos_stock WHERE id=${id}`;
+else if (table === 'puntos_ruta') await sql`DELETE FROM puntos_ruta WHERE id=${id}`;
+else if (table === 'stock_camioneta') await sql`DELETE FROM stock_camioneta WHERE id=${id}`;
       } catch (e) {}
       return res.status(200).json({ ok: true });
     }
@@ -83,7 +112,7 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
 
 
     
-    if (req.method === 'POST') {
+   if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
       // === TUBO: reset / venta directa desde Stock ===
@@ -107,33 +136,30 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
         }
       }
 
-      // === VENTAS - ACÁ ESTABA EL BUG ===
+      // === VENTAS ===
       if (table === 'ventas') {
         const vid = body.id || 'v_' + Date.now();
         const pidRaw = String(body.producto_id || '');
         const pidU = pidRaw.toUpperCase();
-
-        // Detecta fraccionado de CUALQUIER forma que lo mande tu front
         const esFracc = pidU.includes('FRACC') || pidU === 'FRACCIONADO' || body.accion === 'venta_fraccionada';
-
-        // Kilos: prioridad 1) body.kilos 2) número en FRACC_1.5 3) 1 por defecto
+        const esApp = body.origen === 'app' || body.canal === 'app';
         let kilosVend = parseFloat(body.kilos);
         if (isNaN(kilosVend) || kilosVend === 0) {
           const m = pidU.match(/([\d]+(?:\.[\d]+)?)/);
-          // FRACC_1 -> 1, FRACC_1.5 -> 1.5, pero 13/11 NO son fracc, no entra acá
           kilosVend = (esFracc && m) ? parseFloat(m[0]) : 0;
-          if (esFracc && (!kilosVend || kilosVend > 10)) kilosVend = 1; // si agarró 43.5, corrige a 1
+          if (esFracc && (!kilosVend || kilosVend > 10)) kilosVend = 1;
         }
-        // Si es fraccionado y viene cantidad >1 (ej 2 x 1kg) multiplica
-        if (esFracc && body.cantidad) kilosVend = kilosVend * 1; // ya viene kilos totales desde front, no multiplicar
-
+        if (esFracc && body.cantidad) kilosVend = kilosVend * 1;
         const fechaParaGuardar = body.fecha || body.fecha_hora || new Date().toISOString();
         const fechaLocalParaGuardar = body.fecha_local || '';
         const hoyParaGuardar = body.hoy || fechaParaGuardar.split('T')[0];
-        const canalParaGuardar = body.canal || body.modo || 'mostrador';
+        const canalParaGuardar = body.canal || body.origen || body.modo || 'mostrador';
         const tipoParaGuardar = body.tipo || body.tipo_venta || 'solo_gas';
+        const cantParaGuardar = parseInt(body.cantidad_llenas ?? body.cantidad) || 1;
+        const pagoParaGuardar = body.metodo_pago || body.pago || 'contado';
+        const clienteNombreParaGuardar = body.cliente_nombre || body.cliente || 'Cliente';
 
-        await sql`INSERT INTO ventas (id, fecha, fecha_hora, fecha_local, hoy, canal, tipo, tipo_venta, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id, kilos) VALUES (${vid}, ${fechaParaGuardar}, ${fechaParaGuardar}, ${fechaLocalParaGuardar}, ${hoyParaGuardar}, ${canalParaGuardar}, ${tipoParaGuardar}, ${tipoParaGuardar}, ${pidRaw || '13'}, ${body.cliente_nombre || 'Cliente'}, ${parseInt(body.cantidad) || 1}, ${parseFloat(body.total) || 0}, ${parseFloat(body.flete) || 0}, ${body.pago || 'contado'}, ${body.tipo_cliente || 'consumidor_final'}, ${body.modo || 'mostrador'}, ${body.repartidor_id || ''}, ${kilosVend || 0}) ON CONFLICT (id) DO NOTHING`;
+        await sql`INSERT INTO ventas (id, fecha, fecha_hora, fecha_local, hoy, canal, tipo, tipo_venta, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id, kilos, origen, cliente_id, cantidad_llenas, cantidad_vacias, cantidad_defectuosas, metodo_pago, estado) VALUES (${vid}, ${fechaParaGuardar}, ${fechaParaGuardar}, ${fechaLocalParaGuardar}, ${hoyParaGuardar}, ${canalParaGuardar}, ${tipoParaGuardar}, ${tipoParaGuardar}, ${pidRaw || '13'}, ${clienteNombreParaGuardar}, ${cantParaGuardar}, ${parseFloat(body.total) || 0}, ${parseFloat(body.flete) || 0}, ${pagoParaGuardar}, ${body.tipo_cliente || 'consumidor_final'}, ${body.modo || 'mostrador'}, ${body.repartidor_id || ''}, ${kilosVend || 0}, ${body.origen || 'mostrador'}, ${body.cliente_id || ''}, ${parseInt(body.cantidad_llenas ?? body.cantidad) || 1}, ${parseInt(body.cantidad_vacias) || 0}, ${parseInt(body.cantidad_defectuosas) || 0}, ${pagoParaGuardar}, ${body.estado || 'Cobrado'}) ON CONFLICT (id) DO UPDATE SET total=${parseFloat(body.total)||0}, estado=${body.estado||'Cobrado'}, metodo_pago=${pagoParaGuardar}, pago=${pagoParaGuardar}`;
 
         let restante = null;
         if (esFracc) {
@@ -141,17 +167,17 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
           let actual = parseFloat(dep.rows[0]?.kilos_en_uso);
           if (isNaN(actual)) actual = 43.5;
           restante = Math.max(0, actual - kilosVend);
-          // UPDATE SIN try/catch mudo - si falla, que lo veas
           await sql`UPDATE deposito SET kilos_en_uso=${restante}, kilos_restantes=${restante} WHERE producto_id='43.5'`;
-        } else if (pidRaw && pidRaw !== '43.5') {
+        } else if (!esApp && pidRaw && pidRaw !== '43.5') {
+          // Solo Mostrador descuenta de deposito. La APP ya descontó de camioneta.
           const dep = await sql`SELECT * FROM deposito WHERE producto_id=${pidRaw}`;
           if (dep.rows[0]) {
-            const nl = Math.max(0, (dep.rows[0].llenas || 0) - (parseInt(body.cantidad) || 1));
-            const nv = (dep.rows[0].vacias || 0) + (parseInt(body.cantidad) || 1);
+            const nl = Math.max(0, (dep.rows[0].llenas || 0) - cantParaGuardar);
+            const nv = (dep.rows[0].vacias || 0) + cantParaGuardar;
             await sql`UPDATE deposito SET llenas=${nl}, vacias=${nv} WHERE producto_id=${pidRaw}`;
           }
         }
-        try { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE,'ingreso','Venta',${'Venta ' + pidRaw},${parseFloat(body.total) || 0},${body.pago || 'contado'})`; } catch (e) {}
+        try { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE,'ingreso','Venta',${'Venta ' + pidRaw},${parseFloat(body.total) || 0},${pagoParaGuardar})`; } catch (e) {}
         return res.status(200).json({ ok: true, id: vid, fracc: esFracc, kilos: kilosVend, restante });
       }
 
@@ -171,11 +197,13 @@ await sql`ALTER TABLE productos ADD COLUMN IF NOT EXISTS precio_compra DOUBLE PR
 }
 if (table === 'puntos_ref') { await sql`INSERT INTO puntos_ref (id, nombre, direccion, lat, lng, latitud, longitud) VALUES (${body.id}, ${body.nombre}, ${body.direccion||''}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, direccion=${body.direccion||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
+      // === APP GAS - ESTO FALTABA ===
+      if (table === 'cierres') { await sql`INSERT INTO cierres (id, repartidor_id, tipo, monto, detalle, total_vendido, fecha) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.tipo||'parcial'}, ${parseFloat(body.monto)||0}, ${body.detalle||''}, ${parseFloat(body.total_vendido)||0}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET monto=${parseFloat(body.monto)||0}, tipo=${body.tipo||'parcial'}`; return res.status(200).json({ ok: true }); }
+      if (table === 'jornadas') { await sql`INSERT INTO jornadas (id, repartidor_id, fecha, hora_salida, hora_cierre, km_inicio, stock_11_inicial, stock_13_inicial, stock_45_inicial, cambio_inicial, estado) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.fecha||''}, ${body.hora_salida||''}, ${body.hora_cierre||''}, ${parseInt(body.km_inicio)||0}, ${parseInt(body.stock_11_inicial)||0}, ${parseInt(body.stock_13_inicial)||0}, ${parseInt(body.stock_45_inicial)||0}, ${parseFloat(body.cambio_inicial)||0}, ${body.estado||'abierta'}) ON CONFLICT (id) DO UPDATE SET estado=${body.estado||'abierta'}, hora_cierre=${body.hora_cierre||''}`; return res.status(200).json({ ok: true }); }
+      if (table === 'stock_camioneta') { await sql`INSERT INTO stock_camioneta (id, repartidor_id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${body.repartidor_id||''}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
+      if (table === 'stock_deposito') { await sql`INSERT INTO stock_deposito (id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
+      if (table === 'movimientos_stock') { await sql`INSERT INTO movimientos_stock (id, tipo_mov, producto_id, repartidor_id, llenas, vacias, defectuosas, observaciones, referencia_id, fecha) VALUES (${body.id}, ${body.tipo_mov||''}, ${String(body.producto_id||'')}, ${body.repartidor_id||''}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}, ${body.observaciones||''}, ${body.referencia_id||''}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO NOTHING`; return res.status(200).json({ ok: true }); }
+      if (table === 'puntos_ruta') { await sql`INSERT INTO puntos_ruta (id, nombre, telefono, latitud, longitud, tipo, categoria, fecha) VALUES (${body.id}, ${body.nombre||''}, ${body.telefono||''}, ${parseFloat(body.latitud)||0}, ${parseFloat(body.longitud)||0}, ${body.tipo||''}, ${body.categoria||body.tipo||''}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre||''}`; return res.status(200).json({ ok: true }); }
+      if (table === 'configuraciones') { await sql`INSERT INTO configuraciones (id, clave, valor) VALUES (${body.id||body.clave}, ${body.clave||''}, ${String(body.valor||'')}) ON CONFLICT (id) DO UPDATE SET valor=${String(body.valor||'')}`; return res.status(200).json({ ok: true }); }
       return res.status(200).json({ ok: true });
     }
-    return res.status(200).json({ data: [], ok: true });
-  } catch (e) {
-    console.error('API ERROR', e);
-    return res.status(200).json({ data: [], ok: false, error: e.message });
-  }
-}
