@@ -420,8 +420,8 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
  <!-- VENTAS -->  
 <div id="view-ventas" class="view-section hidden">
   <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button id="tabVentaMostrador" onclick="cambiarTabVentas('mostrador')" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🏪 Mostrador</button>
-    <button id="tabVentaCamioneta" onclick="cambiarTabVentas('camioneta')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">🚚 Camioneta APP</button>
+    <button id="tabVentaMostrador" onclick="('mostrador')" style="background:#0ea5e9;color:white;padding:8px 16px;border:none;border-radius:8px;font-weight:bold">🏪 Mostrador</button>
+    <button id="tabVentaCamioneta" onclick="('camioneta')" style="background:#1f2937;color:#94a3b8;padding:8px 16px;border:none;border-radius:8px">🚚 Camioneta APP</button>
   </div>
 
   <div id="ventaMostrador">
@@ -1932,7 +1932,10 @@ window.cargarVentasHoy = async function(){
   } else { 
     if(c) c.classList.remove('hidden'); 
     if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } 
-    cargarInformeCamioneta();
+    // La nueva pestaña con varios repartidores
+    if(typeof cargarCamionetaApp === 'function') cargarCamionetaApp();
+    // La vieja la dejamos por si la usás en otro lado, pero ya no pisa nada
+    if(typeof cargarInformeCamioneta === 'function') cargarInformeCamioneta();
   }
 };
 
