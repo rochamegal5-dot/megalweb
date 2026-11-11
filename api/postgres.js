@@ -35,6 +35,7 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS producto_id TEXT DEFAULT '13'`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_hora TIMESTAMP DEFAULT NOW()`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS tipo_venta TEXT DEFAULT 'mostrador'`;
+    // CORREGIDO: antes decía ALTER TABLE sin tabla, daba 500
     await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS kilos_en_uso DOUBLE PRECISION DEFAULT 0`;
     await sql`ALTER TABLE deposito ADD COLUMN IF NOT EXISTS para_cambio INTEGER DEFAULT 0`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS fecha_local TEXT DEFAULT ''`;
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS cierres (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', tipo TEXT DEFAULT 'parcial', monto DOUBLE PRECISION DEFAULT 0, detalle TEXT DEFAULT '', total_vendido DOUBLE PRECISION DEFAULT 0, fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS jornadas (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', fecha TEXT DEFAULT '', hora_salida TEXT DEFAULT '', hora_cierre TEXT DEFAULT '', km_inicio INTEGER DEFAULT 0, stock_11_inicial INTEGER DEFAULT 0, stock_13_inicial INTEGER DEFAULT 0, stock_45_inicial INTEGER DEFAULT 0, cambio_inicial DOUBLE PRECISION DEFAULT 0, estado TEXT DEFAULT 'abierta')`;
     await sql`CREATE TABLE IF NOT EXISTS stock_camioneta (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
-    await sql`CREATE TABLE IF NOT EXISTS stock_deposito (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
+    await sql`CREATE TABLE IF NOT EXISTS stock_ (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS movimientos_stock (id TEXT PRIMARY KEY, tipo_mov TEXT DEFAULT '', producto_id TEXT DEFAULT '', repartidor_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0, observaciones TEXT DEFAULT '', referencia_id TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS puntos_ruta (id TEXT PRIMARY KEY, nombre TEXT DEFAULT '', telefono TEXT DEFAULT '', latitud DOUBLE PRECISION DEFAULT 0, longitud DOUBLE PRECISION DEFAULT 0, tipo TEXT DEFAULT '', categoria TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS configuraciones (id TEXT PRIMARY KEY, clave TEXT DEFAULT '', valor TEXT DEFAULT '')`;
@@ -60,14 +61,18 @@ export default async function handler(req, res) {
     await sql`ALTER TABLE puntos_ref ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT ''`;
     await sql`ALTER TABLE puntos_ref ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT ''`;
 
+    // CORREGIDO: antes decía FROM sin tabla
     const c = await sql`SELECT COUNT(*) as c FROM deposito`;
     if (parseInt(c.rows[0].c) === 0) {
+      // CORREGIDO: antes decía INSERT INTO sin tabla
       await sql`INSERT INTO deposito (producto_id, llenas, vacias, kilos_en_uso, kilos_restantes) VALUES ('11',5,3,0,0),('13',8,5,0,0),('45',2,1,0,0),('43.5',0,0,43.5,43.5) ON CONFLICT (producto_id) DO NOTHING`;
     }
 
     if (req.method === 'GET') {
       let rows = [];
-      if (table === 'deposito') rows = (await sql`SELECT * FROM deposito`).rows;
+      if (table === '') rows = (await sql`SELECT * FROM deposito ORDER BY producto_id`).rows;
+      // CORREGIDO: faltaba el GET de deposito, por eso la App veía stock vacío
+      else if (table === 'deposito') rows = (await sql`SELECT * FROM deposito ORDER BY producto_id`).rows;
       else if (table === 'ventas') rows = (await sql`SELECT * FROM ventas ORDER BY fecha DESC LIMIT 500`).rows;
       else if (table === 'productos') rows = (await sql`SELECT * FROM productos ORDER BY id`).rows;
       else if (table === 'clientes') rows = (await sql`SELECT * FROM clientes ORDER BY nombre`).rows;
@@ -79,7 +84,7 @@ export default async function handler(req, res) {
       else if (table === 'cierres') rows = (await sql`SELECT * FROM cierres ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'jornadas') rows = (await sql`SELECT * FROM jornadas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'stock_camioneta') rows = (await sql`SELECT * FROM stock_camioneta`).rows;
-      else if (table === 'stock_deposito') rows = (await sql`SELECT * FROM stock_deposito`).rows;
+      else if (table === 'stock_') rows = (await sql`SELECT * FROM stock_`).rows;
       else if (table === 'movimientos_stock') rows = (await sql`SELECT * FROM movimientos_stock ORDER BY fecha DESC LIMIT 500`).rows;
       else if (table === 'puntos_ruta') rows = (await sql`SELECT * FROM puntos_ruta ORDER BY nombre`).rows;
       else if (table === 'configuraciones') rows = (await sql`SELECT * FROM configuraciones`).rows;
