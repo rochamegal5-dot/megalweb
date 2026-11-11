@@ -1997,12 +1997,14 @@ window.cambiarTabVentas = function(t){
     if(m) m.classList.remove('hidden'); 
     if(bm){ bm.style.background='#0ea5e9'; bm.style.color='white'; } 
     cargarProductosParaVentas(); cargarVentasHoy(); actualizarReglaFlete(); calcularTotalMostrador();
-  } else { 
+ } else { 
     if(c) c.classList.remove('hidden'); 
     if(bc){ bc.style.background='#0ea5e9'; bc.style.color='white'; } 
-    // POR AHORA SIN LLAMAR A NADA - SOLO PARA PROBAR
-  }
-};
+    cargarCamionetaApp();
+}
+  
+ 
+
     
 window.guardarVentaMostrador = async function(){
   try{
