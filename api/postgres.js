@@ -8,14 +8,13 @@ export default async function handler(req, res) {
   const id = req.query.id;
   let sql;
     try {
+    process.env.POSTGRES_URL = process.env.NEON2_POSTGRES_URL_NON_POOLING || process.env.NEON2_DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+    process.env.DATABASE_URL = process.env.POSTGRES_URL;
     const m = await import('@vercel/postgres');
-    const url = process.env.NEON2_DATABASE_URL_UNPOOLED || process.env.NEON2_POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || process.env.NEON2_DATABASE_URL;
-
-    const client = m.createClient({ connectionString: url });
-    await client.connect();
-    sql = client.sql;
+    sql = m.sql;
   }
-  catch (e) { return res.status(200).json({ data: [], ok: false, error: e.message }); }
+  catch (e) { return res.status(200).json({ data: [], ok: false, error: e.message }); } 
+  
   
 
   try {
