@@ -9,7 +9,8 @@ export default async function handler(req, res) {
   let sql;
     try {
     const m = await import('@vercel/postgres');
-    const url = process.env.NEON2_POSTGRES_URL || process.env.NEON2_DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+    const url = process.env.NEON2_DATABASE_URL_UNPOOLED || process.env.NEON2_POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || process.env.NEON2_DATABASE_URL;
+
     const client = m.createClient({ connectionString: url });
     await client.connect();
     sql = client.sql;
