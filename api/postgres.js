@@ -7,8 +7,15 @@ export default async function handler(req, res) {
   const table = (req.query.table || '').toLowerCase();
   const id = req.query.id;
   let sql;
-  try { const m = await import('@vercel/postgres'); sql = m.sql; }
+    try {
+    const m = await import('@vercel/postgres');
+    const url = process.env.NEON2_POSTGRES_URL || process.env.NEON2_DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+    const client = m.createClient({ connectionString: url });
+    await client.connect();
+    sql = client.sql;
+  }
   catch (e) { return res.status(200).json({ data: [], ok: false, error: e.message }); }
+  
 
   try {
     await sql`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, kilos_en_uso DOUBLE PRECISION DEFAULT 0, kilos_restantes DOUBLE PRECISION DEFAULT 0, para_cambio INTEGER DEFAULT 0, en_uso INTEGER DEFAULT 0)`;
@@ -198,7 +205,8 @@ export default async function handler(req, res) {
       if (table === 'clientes') { await sql`INSERT INTO clientes (id, nombre, telefono, direccion, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.direccion || ''}, ${body.tipo || 'consumidor_final'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
-      if (table === 'gps_locations') {
+            if (table === 'gps_locations') {
+        await sql`DELETE FROM gps_locations WHERE created_at < NOW() - INTERVAL '48 hours'`;
         const lat = parseFloat(body.lat ?? body.latitude ?? 0) || 0;
         const lng = parseFloat(body.lng ?? body.longitude ?? 0) || 0;
         const vel = parseFloat(body.velocidad ?? body.speed ?? 0) || 0;
@@ -207,7 +215,8 @@ export default async function handler(req, res) {
         const fechaLocal = body.fecha_local || body.hoy || new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
         await sql`INSERT INTO gps_locations (repartidor_id, device_id, lat, lng, latitude, longitude, velocidad, speed, bateria, battery, fecha_local, hoy) VALUES (${repId}, ${repId}, ${lat}, ${lng}, ${lat}, ${lng}, ${vel}, ${vel}, ${bat}, ${bat}, ${fechaLocal}, ${fechaLocal})`;
         return res.status(200).json({ ok: true });
-      }
+      }    
+      
       if (table === 'puntos_ref') { await sql`INSERT INTO puntos_ref (id, nombre, direccion, lat, lng, latitud, longitud) VALUES (${body.id}, ${body.nombre}, ${body.direccion||''}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, direccion=${body.direccion||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
       if (table === 'cierres') { await sql`INSERT INTO cierres (id, repartidor_id, tipo, monto, detalle, total_vendido, fecha) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.tipo||'parcial'}, ${parseFloat(body.monto)||0}, ${body.detalle||''}, ${parseFloat(body.total_vendido)||0}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET monto=${parseFloat(body.monto)||0}, tipo=${body.tipo||'parcial'}`; return res.status(200).json({ ok: true }); }
