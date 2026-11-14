@@ -1314,14 +1314,8 @@ async function guardarProducto(){
   const url = esEdicion ? API+'?table=productos&id='+encodeURIComponent(codigo) : API+'?table=productos';
   const resp = await fetch(url,{method:metodo, headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo, precio_compra, precio_venta, precio:precio_venta, proveedor_id, stock_minimo})}); 
   if(!resp.ok){ alert('No se pudo guardar. Reintentá.'); return; }
-  try{ cerrarModalProducto(); }catch(e){ 
-    const m=document.getElementById('modalProducto');
-    if(m){ m.classList.add('hidden'); m.style.display='none'; }
-  }
-  await cargarProductosCatalogo(); 
-  if(typeof cargarStock === 'function') await cargarStock();
+  location.reload();
 }
-
 
 // Auto-cargar precio en ventas
 document.addEventListener('change', (e)=>{
