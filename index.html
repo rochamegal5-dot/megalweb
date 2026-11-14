@@ -1314,7 +1314,15 @@ async function guardarProducto(){
   const url = esEdicion ? API+'?table=productos&id='+encodeURIComponent(codigo) : API+'?table=productos';
   const resp = await fetch(url,{method:metodo, headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo, precio_compra, precio_venta, precio:precio_venta, proveedor_id, stock_minimo})}); 
   if(!resp.ok){ alert('No se pudo guardar. Reintentá.'); return; }
-  location.reload();
+
+  // 1. Cerrar modal
+  cerrarModalProducto();
+
+  // 2. Actualizar la tabla SIN F5 y SIN reload
+  await cargarProductosCatalogo();
+  // 3. Actualizar también el selector de Ventas / Mostrador
+  if(typeof cargarProductosParaVentas === 'function') await cargarProductosParaVentas();
+  if(typeof cargarStock === 'function') await cargarStock();
 }
 
 // Auto-cargar precio en ventas
@@ -2173,95 +2181,13 @@ window.guardarCierreCaja = async function(){
   }catch(e){ console.error(e); alert('Error guardando cierre: ' + e.message); }
 };
 
-    // --- EDITAR / ELIMINAR PRODUCTOS ---
-window.editarProducto = async function(id){
-  try{
-    // 1. Buscar el producto actual
-    const r = await fetch('/api/postgres?table=productos&t=' + Date.now());
-    const j = await r.json();
-    const prod = (j.data||[]).find(p => String(p.id) === String(id));
-    if(!prod) return alert('No encontré el producto ' + id);
-
-    // 2. Pedir nuevos valores con prompt simple (sin modal, para que no falle)
-    const nuevoNombre = prompt('Nombre:', prod.nombre || '');
-    if(nuevoNombre === null) return;
-    const nuevaVenta = prompt('Precio VENTA $:', prod.precio_venta || prod.precio || prod.venta || 0);
-    if(nuevaVenta === null) return;
-    const nuevaCompra = prompt('Precio COMPRA $:', prod.precio_compra || prod.compra || 0);
-    if(nuevaCompra === null) return;
-
-    const payload = {
-      id: String(id),
-      nombre: nuevoNombre,
-      precio_venta: parseFloat(nuevaVenta) || 0,
-      precio: parseFloat(nuevaVenta) || 0,
-      venta: parseFloat(nuevaVenta) || 0,
-      precio_compra: parseFloat(nuevaCompra) || 0,
-      compra: parseFloat(nuevaCompra) || 0,
-      tipo: prod.tipo || 'gas',
-      kg: prod.kg || prod.kilos || 0
-    };
-
-    // 3. Intentar actualizar: primero PUT, si no anda, POST con mismo id (upsert)
-    let ok = false;
-    try{
-      const r2 = await fetch('/api/postgres?table=productos&id=' + encodeURIComponent(id), {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-      const j2 = await r2.json().catch(()=>({}));
-      if(j2.ok || r2.ok) ok = true;
-    }catch(e){}
-    if(!ok){
-      const r3 = await fetch('/api/postgres?table=productos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-      const j3 = await r3.json().catch(()=>({}));
-      if(!r3.ok && !j3.ok) throw new Error(j3.error || 'No se pudo guardar');
-    }
-
-    alert('✅ Producto ' + id + ' actualizado');
-    if(typeof cargarProductos === 'function') cargarProductos();
-    if(typeof cargarProductosParaVentas === 'function') cargarProductosParaVentas();
-  }catch(e){ console.error(e); alert('❌ Error editando: ' + e.message); }
-};
-
-window.eliminarProducto = async function(id){
-  if(!confirm('¿Borrar el producto ' + id + '? Esto no se puede deshacer.')) return;
-  const sid = String(id);
-  console.log('Borrando producto:', sid);
-
-  // Intentar 3 formas, la que ande gana
-  const intentos = [
-    // 1. DELETE con id en la URL (la forma normal)
-    () => fetch('/api/postgres?table=productos&id=' + encodeURIComponent(sid), {method:'DELETE'}),
-    // 2. DELETE con id en el body
-    () => fetch('/api/postgres?table=productos', {method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: sid})}),
-    // 3. POST con acción borrar (algunos backends solo aceptan POST)
-    () => fetch('/api/postgres?table=productos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: sid, _action:'delete', action:'delete'})}),
-  ];
-
-  let ultimoError = '';
-  for(let i=0; i<intentos.length; i++){
-    try{
-      const r = await intentos[i]();
-      const txt = await r.text();
-      console.log('Intento borrar ' + (i+1), r.status, txt.slice(0,300));
-      let j = {};
-      try{ j = JSON.parse(txt); }catch(e){}
-      if(r.ok && (j.ok !== false)){
-        alert('✅ Producto ' + sid + ' borrado');
-        if(typeof cargarProductos === 'function') await cargarProductos();
-        if(typeof cargarProductosParaVentas === 'function') await cargarProductosParaVentas();
-        return;
-      }
-      ultimoError = j.error || txt.slice(0,200) || ('HTTP ' + r.status);
-      // Si el error es que no existe la acción, probar el siguiente
-      if(i < 2) continue;
-    }catch(e){
-      console.error('Intento borrar ' + (i+1) + ' falló', e);
-      ultimoError = e.message;
-    }
-  }
-
-  alert('❌ No se pudo borrar ' + sid + ': ' + ultimoError + '\n\nAbrí F12 > Consola y pasame lo que dice "Intento borrar"');
-};
-
+// --- EDITAR / ELIMINAR PRODUCTOS - CORREGIDO SIN F5 ---
+async function eliminarProducto(id){
+  if(!confirm('¿Borrar el producto '+id+'?')) return;
+  await fetch(API+'?table=productos&id='+encodeURIComponent(id), {method:'DELETE'});
+  await cargarProductosCatalogo();
+  if(typeof cargarProductosParaVentas === 'function') await cargarProductosParaVentas();
+}
 // --- FINANZAS EMPRESA COMPLETA ---
 
 function cambiarCategoriasFin(){
