@@ -117,8 +117,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (req.method === 'POST') {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
       // === DEPOSITO ===
       if (table === 'deposito') {
@@ -200,8 +200,19 @@ export default async function handler(req, res) {
         try { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE,'ingreso','Venta',${'Venta ' + pidRaw},${parseFloat(body.total) || 0},${pagoParaGuardar})`; } catch (e) {}
         return res.status(200).json({ ok: true, id: vid, fracc: esFracc, kilos: kilosVend, restante });
       }
-
-      if (table === 'productos') { const pv = parseFloat(body.precio_venta ?? body.precio ?? body.venta ?? 0) || 0; const pc = parseFloat(body.precio_compra ?? body.compra ?? 0) || 0; await sql`INSERT INTO productos (id, nombre, tipo, precio, precio_venta, precio_compra) VALUES (${body.id}, ${body.nombre}, ${body.tipo || 'gas'}, ${pv}, ${pv}, ${pc}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, tipo=${body.tipo || 'gas'}, precio=${pv}, precio_venta=${pv}, precio_compra=${pc}`; return res.status(200).json({ ok: true }); }
+            if (table === 'productos') {
+        const idProd = String(body.id ?? body.producto_id ?? '');
+        if (!idProd) return res.status(200).json({ ok: false, error: 'falta id' });
+        const limpiar = (v) => { if (v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(/[^0-9.,-]/g, '').replace(',', '.')); return isNaN(n) ? null : n; };
+        const ex = await sql`SELECT * FROM productos WHERE id=${idProd}`;
+        const nombreFinal = body.nombre ?? ex.rows[0]?.nombre ?? '';
+        const tipoFinal = body.tipo ?? ex.rows[0]?.tipo ?? 'gas';
+        const pv = limpiar(body.precio_venta ?? body.precio ?? body.venta ?? body.precioVenta) ?? ex.rows[0]?.precio_venta ?? ex.rows[0]?.precio ?? 0;
+        const pc = limpiar(body.precio_compra ?? body.compra ?? body.precioCompra) ?? ex.rows[0]?.precio_compra ?? 0;
+        await sql`INSERT INTO productos (id, nombre, tipo, precio, precio_venta, precio_compra) VALUES (${idProd}, ${nombreFinal}, ${tipoFinal}, ${pv}, ${pv}, ${pc}) ON CONFLICT (id) DO UPDATE SET nombre=${nombreFinal}, tipo=${tipoFinal}, precio=${pv}, precio_venta=${pv}, precio_compra=${pc}`;
+        return res.status(200).json({ ok: true });
+      }
+      
       if (table === 'clientes') { await sql`INSERT INTO clientes (id, nombre, telefono, direccion, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.direccion || ''}, ${body.tipo || 'consumidor_final'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
