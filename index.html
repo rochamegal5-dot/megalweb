@@ -1217,7 +1217,7 @@ let productosCacheFiltrado = [];
 
 async function cargarProductosCatalogo(){ 
   try{ 
-    const r=await fetch(API+'?table=productos',{cache:'no-store'}); 
+    const r=await fetch(API+'?table=productos&_t='+Date.now(),{cache:'no-store'}); 
     const j=await r.json(); 
     productosCache=j.data||[]; 
     productosCacheFiltrado=[...productosCache];
@@ -1229,73 +1229,34 @@ async function cargarProductosCatalogo(){
   }catch(e){ console.error(e); } 
 }
 
-function renderProductosTabla(lista){
-  const tbody=document.getElementById('tablaProductos'); if(!tbody) return;
-  if(!lista.length){ tbody.innerHTML='<tr><td colspan="8" style="padding:12px;color:#64748b;text-align:center">Sin productos</td></tr>'; return; }
-  tbody.innerHTML=lista.map(p=>{
-    const compra=parseFloat(p.precio_compra)||0;
-    const venta=parseFloat(p.precio_venta)||0;
-    const gan=venta-compra;
-    const margen=venta>0?((gan/venta)*100).toFixed(1):0;
-    const colorMargen=margen>=30?'#22c55e':margen>=15?'#f59e0b':'#ef4444';
-    return `<tr style="${gan<0?'background:rgba(239,68,68,0.1)':''}">
-      <td style="padding:8px;border:1px solid #1f2937"><b>${p.id}</b></td>
-      <td style="padding:8px;border:1px solid #1f2937">${p.nombre||'-'}<br><span style="font-size:10px;color:#64748b">Prov: ${p.proveedor_id||'-'} | Min: ${p.stock_minimo||2}</span></td>
-      <td style="padding:8px;border:1px solid #1f2937"><span style="font-size:10px;background:#1f2937;padding:2px 6px;border-radius:4px">${p.tipo||'gas'}</span></td>
-      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#94a3b8">$${compra}</td>
-      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:#22c55e;font-weight:bold">$${venta}</td>
-      <td style="padding:8px;border:1px solid #1f2937;text-align:right;color:${gan>=0?'#22c55e':'#ef4444'};font-weight:bold">$${gan}</td>
-      <td style="padding:8px;border:1px solid #1f2937;text-align:center"><b style="color:${colorMargen}">${margen}%</b></td>
-      <td style="padding:8px;border:1px solid #1f2937"><button onclick="editarProducto('${p.id}')" style="background:#334155;color:white;padding:4px 8px;border:none;border-radius:4px;margin-right:4px">Editar</button><button onclick="eliminarProducto('${p.id}')" style="background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:4px">X</button></td>
-    </tr>`;
-  }).join('');
-}
+async function guardarProducto(){ 
+  const codigo=document.getElementById('prodCodigo').value.trim(); 
+  const nombre=document.getElementById('prodNombre').value.trim()||codigo; 
+  const tipo=document.getElementById('prodTipo').value;
+  const precio_compra=parseFloat(document.getElementById('prodCompra').value)||0;
+  const precio_venta=parseFloat(document.getElementById('prodVenta').value)||0;
+  const proveedor_id=document.getElementById('prodProveedor').value;
+  const stock_minimo=parseInt(document.getElementById('prodStockMin').value)||2;
+  const prodIdExistente=document.getElementById('prodId').value.trim();
+  if(!codigo) return alert('Código obligatorio');
+  if(precio_venta<=0) return alert('Precio venta debe ser >0');
+  if(precio_compra>precio_venta){ if(!confirm(`Atención: Comprás a $${precio_compra} y vendés a $${precio_venta} (pérdida de $${precio_venta-precio_compra}). ¿Guardar igual?`)) return; }
 
-function filtrarProductos(){
-  const q=(document.getElementById('buscarProducto').value||'').toLowerCase();
-  const tipo=document.getElementById('filtroTipoProd').value;
-  let f=productosCache;
-  if(q) f=f.filter(p=> (p.id||'').toLowerCase().includes(q) || (p.nombre||'').toLowerCase().includes(q));
-  if(tipo) f=f.filter(p=> (p.tipo||'gas')===tipo);
-  renderProductosTabla(f);
-}
+  // Si es edición, PUT con id. Si es nuevo, POST
+  const esEdicion = prodIdExistente !== '';
+  const metodo = esEdicion ? 'PUT' : 'POST';
+  const url = esEdicion ? API+'?table=productos&id='+encodeURIComponent(codigo) : API+'?table=productos';
 
-function calcularGananciaProd(){
-  const compra=parseFloat(document.getElementById('prodCompra').value)||0;
-  const venta=parseFloat(document.getElementById('prodVenta').value)||0;
-  const gan=venta-compra;
-  const margen=venta>0?((gan/venta)*100):0;
-  const gEl=document.getElementById('prodGananciaTexto'); if(gEl){ gEl.textContent='$'+gan; gEl.style.color=gan>=0?'#22c55e':'#ef4444'; }
-  const mEl=document.getElementById('prodMargenTexto'); if(mEl){ mEl.textContent=margen.toFixed(1)+'%'; mEl.style.color=margen>=30?'#22c55e':margen>=15?'#f59e0b':'#ef4444'; }
-}
+  const resp = await fetch(url,{method:metodo, headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:codigo, nombre, tipo, precio_compra, precio_venta, precio:precio_venta, proveedor_id, stock_minimo})}); 
+  if(!resp.ok){ alert('No se pudo guardar. Reintentá.'); return; }
 
-function abrirModalProducto(){ 
-  document.getElementById('prodId').value=''; 
-  document.getElementById('prodCodigo').value=''; 
-  document.getElementById('prodNombre').value=''; 
-  document.getElementById('prodTipo').value='gas';
-  document.getElementById('prodCompra').value=''; 
-  document.getElementById('prodVenta').value='';
-  document.getElementById('prodProveedor').value='';
-  document.getElementById('prodStockMin').value=2;
-  calcularGananciaProd();
-  document.getElementById('modalProducto').classList.remove('hidden'); 
-  document.getElementById('modalProducto').style.display='flex'; 
-}
-
-function editarProducto(id){ 
-  const p=productosCache.find(x=>x.id===id); if(!p) return; 
-  document.getElementById('prodId').value=p.id; 
-  document.getElementById('prodCodigo').value=p.id; 
-  document.getElementById('prodNombre').value=p.nombre||''; 
-  document.getElementById('prodTipo').value=p.tipo||'gas';
-  document.getElementById('prodCompra').value=p.precio_compra||0;
-  document.getElementById('prodVenta').value=p.precio_venta||0;
-  document.getElementById('prodProveedor').value=p.proveedor_id||'';
-  document.getElementById('prodStockMin').value=p.stock_minimo||2;
-  calcularGananciaProd();
-  document.getElementById('modalProducto').classList.remove('hidden'); 
-  document.getElementById('modalProducto').style.display='flex'; 
+  try{ cerrarModalProducto(); }catch(e){ 
+    const m=document.getElementById('modalProducto');
+    if(m){ m.classList.add('hidden'); m.style.display='none'; }
+  }
+  // Esperar a que recargue ANTES de seguir, y sin caché
+  await cargarProductosCatalogo(); 
+  if(typeof cargarStock === 'function') await cargarStock();
 }
 
 async function guardarProducto(){ 
