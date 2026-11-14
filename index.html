@@ -1297,14 +1297,13 @@ function editarProducto(id){
   document.getElementById('modalProducto').classList.remove('hidden'); 
   document.getElementById('modalProducto').style.display='flex'; 
 }
-
 async function guardarProducto(){ 
   const codigo=document.getElementById('prodCodigo').value.trim(); 
   const nombre=document.getElementById('prodNombre').value.trim()||codigo; 
   const tipo=document.getElementById('prodTipo').value;
   const precio_compra=parseFloat(document.getElementById('prodCompra').value)||0;
   const precio_venta=parseFloat(document.getElementById('prodVenta').value)||0;
-  const proveedor_id=document.getElementById('prodProveedor').value;
+  const proveedor_id=document.getElementById('prodProveedor').value || null;
   const stock_minimo=parseInt(document.getElementById('prodStockMin').value)||2;
   const prodIdExistente=document.getElementById('prodId').value.trim();
   if(!codigo) return alert('Código obligatorio');
@@ -1322,6 +1321,7 @@ async function guardarProducto(){
   await cargarProductosCatalogo(); 
   if(typeof cargarStock === 'function') await cargarStock();
 }
+
 
 // Auto-cargar precio en ventas
 document.addEventListener('change', (e)=>{
