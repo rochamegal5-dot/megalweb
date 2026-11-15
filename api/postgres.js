@@ -56,6 +56,8 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS stock_camioneta (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS stock_ (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS movimientos_stock (id TEXT PRIMARY KEY, tipo_mov TEXT DEFAULT '', producto_id TEXT DEFAULT '', repartidor_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0, observaciones TEXT DEFAULT '', referencia_id TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
+   await sql`CREATE TABLE IF NOT EXISTS stock_deposito (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
+await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo TEXT, fecha TEXT, fecha_local TEXT, hoy TEXT, total_ventas DOUBLE PRECISION DEFAULT 0, cantidad_ventas INTEGER DEFAULT 0, cambio_inicial DOUBLE PRECISION DEFAULT 0, efectivo_esperado DOUBLE PRECISION DEFAULT 0, efectivo_real DOUBLE PRECISION DEFAULT 0, diferencia DOUBLE PRECISION DEFAULT 0, nota TEXT DEFAULT '', canal TEXT DEFAULT 'mostrador')`;
     await sql`CREATE TABLE IF NOT EXISTS puntos_ruta (id TEXT PRIMARY KEY, nombre TEXT DEFAULT '', telefono TEXT DEFAULT '', latitud DOUBLE PRECISION DEFAULT 0, longitud DOUBLE PRECISION DEFAULT 0, tipo TEXT DEFAULT '', categoria TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS configuraciones (id TEXT PRIMARY KEY, clave TEXT DEFAULT '', valor TEXT DEFAULT '')`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS origen TEXT DEFAULT 'mostrador'`;
@@ -88,12 +90,15 @@ export default async function handler(req, res) {
      else if (table === 'gps_locations') {
   // Limpieza 48hs también al LEER, no solo al ESCRIBIR
   // Así aunque la camioneta esté apagada, nunca ves nada de más de 48hs
-  try { await sql`DELETE FROM gps_locations WHERE created_at < NOW() - INTERVAL '48 hours'`; } catch(e) {}
+   try { await sql`DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'`; } catch(e) {}    
+  
   rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
 }
       else if (table === 'puntos_ref') rows = (await sql`SELECT * FROM puntos_ref ORDER BY nombre`).rows;
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'cierres') rows = (await sql`SELECT * FROM cierres ORDER BY fecha DESC LIMIT 200`).rows;
+      else if (table === 'cierres_caja') rows = (await sql`SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 200`).rows;
+      else if (table === 'stock_deposito') rows = (await sql`SELECT * FROM stock_deposito ORDER BY producto_id`).rows;  
       else if (table === 'jornadas') rows = (await sql`SELECT * FROM jornadas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'stock_camioneta') rows = (await sql`SELECT * FROM stock_camioneta`).rows;
       else if (table === 'stock_') rows = (await sql`SELECT * FROM stock_`).rows;
@@ -222,7 +227,8 @@ export default async function handler(req, res) {
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
             if (table === 'gps_locations') {
-        await sql`DELETE FROM gps_locations WHERE created_at < NOW() - INTERVAL '48 hours'`;
+        DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'      
+        
         const lat = parseFloat(body.lat ?? body.latitude ?? 0) || 0;
         const lng = parseFloat(body.lng ?? body.longitude ?? 0) || 0;
         const vel = parseFloat(body.velocidad ?? body.speed ?? 0) || 0;
@@ -236,6 +242,10 @@ export default async function handler(req, res) {
       if (table === 'puntos_ref') { await sql`INSERT INTO puntos_ref (id, nombre, direccion, lat, lng, latitud, longitud) VALUES (${body.id}, ${body.nombre}, ${body.direccion||''}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, direccion=${body.direccion||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
       if (table === 'cierres') { await sql`INSERT INTO cierres (id, repartidor_id, tipo, monto, detalle, total_vendido, fecha) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.tipo||'parcial'}, ${parseFloat(body.monto)||0}, ${body.detalle||''}, ${parseFloat(body.total_vendido)||0}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET monto=${parseFloat(body.monto)||0}, tipo=${body.tipo||'parcial'}`; return res.status(200).json({ ok: true }); }
+      if (table === 'cierres_caja') { 
+  await sql`INSERT INTO cierres_caja (tipo, fecha, fecha_local, hoy, total_ventas, cantidad_ventas, cambio_inicial, efectivo_esperado, efectivo_real, diferencia, nota, canal) VALUES (${body.tipo||'parcial'}, ${body.fecha||''}, ${body.fecha_local||''}, ${body.hoy||''}, ${parseFloat(body.total_ventas)||0}, ${parseInt(body.cantidad_ventas)||0}, ${parseFloat(body.cambio_inicial)||0}, ${parseFloat(body.efectivo_esperado)||0}, ${parseFloat(body.efectivo_real)||0}, ${parseFloat(body.diferencia)||0}, ${body.nota||''}, ${body.canal||'mostrador'})`; 
+  return res.status(200).json({ ok: true }); 
+}
       if (table === 'jornadas') { await sql`INSERT INTO jornadas (id, repartidor_id, fecha, hora_salida, hora_cierre, km_inicio, stock_11_inicial, stock_13_inicial, stock_45_inicial, cambio_inicial, estado) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.fecha||''}, ${body.hora_salida||''}, ${body.hora_cierre||''}, ${parseInt(body.km_inicio)||0}, ${parseInt(body.stock_11_inicial)||0}, ${parseInt(body.stock_13_inicial)||0}, ${parseInt(body.stock_45_inicial)||0}, ${parseFloat(body.cambio_inicial)||0}, ${body.estado||'abierta'}) ON CONFLICT (id) DO UPDATE SET estado=${body.estado||'abierta'}, hora_cierre=${body.hora_cierre||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'stock_camioneta') { await sql`INSERT INTO stock_camioneta (id, repartidor_id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${body.repartidor_id||''}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
       if (table === 'stock_deposito') { await sql`INSERT INTO stock_deposito (id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
