@@ -1,7 +1,7 @@
 // api/postgres.js - UNICO BACKEND - POSTGRES ONLY
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   const table = (req.query.table || '').toLowerCase();
@@ -85,7 +85,12 @@ export default async function handler(req, res) {
       else if (table === 'clientes') rows = (await sql`SELECT * FROM clientes ORDER BY nombre`).rows;
       else if (table === 'proveedores') rows = (await sql`SELECT * FROM proveedores ORDER BY nombre`).rows;
       else if (table === 'repartidores') rows = (await sql`SELECT * FROM repartidores ORDER BY nombre`).rows;
-      else if (table === 'gps_locations') rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
+     else if (table === 'gps_locations') {
+  // Limpieza 48hs también al LEER, no solo al ESCRIBIR
+  // Así aunque la camioneta esté apagada, nunca ves nada de más de 48hs
+  try { await sql`DELETE FROM gps_locations WHERE created_at < NOW() - INTERVAL '48 hours'`; } catch(e) {}
+  rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
+}
       else if (table === 'puntos_ref') rows = (await sql`SELECT * FROM puntos_ref ORDER BY nombre`).rows;
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'cierres') rows = (await sql`SELECT * FROM cierres ORDER BY fecha DESC LIMIT 200`).rows;
