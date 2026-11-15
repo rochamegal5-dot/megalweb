@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   
   
 
-  try {
+try {
     await sql`CREATE TABLE IF NOT EXISTS deposito (producto_id TEXT PRIMARY KEY, llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, kilos_en_uso DOUBLE PRECISION DEFAULT 0, kilos_restantes DOUBLE PRECISION DEFAULT 0, para_cambio INTEGER DEFAULT 0, en_uso INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS ventas (id TEXT PRIMARY KEY, fecha TIMESTAMP DEFAULT NOW(), producto_id TEXT, cliente_nombre TEXT, cantidad INTEGER DEFAULT 1, total DOUBLE PRECISION DEFAULT 0, flete DOUBLE PRECISION DEFAULT 0, pago TEXT DEFAULT 'contado', tipo_cliente TEXT DEFAULT 'consumidor_final', modo TEXT DEFAULT 'mostrador', repartidor_id TEXT, kilos DOUBLE PRECISION DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS productos (id TEXT PRIMARY KEY, nombre TEXT, tipo TEXT DEFAULT 'gas', precio DOUBLE PRECISION DEFAULT 0)`;
@@ -56,10 +56,15 @@ export default async function handler(req, res) {
     await sql`CREATE TABLE IF NOT EXISTS stock_camioneta (id TEXT PRIMARY KEY, repartidor_id TEXT DEFAULT '', producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS stock_ (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS movimientos_stock (id TEXT PRIMARY KEY, tipo_mov TEXT DEFAULT '', producto_id TEXT DEFAULT '', repartidor_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0, observaciones TEXT DEFAULT '', referencia_id TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
-   await sql`CREATE TABLE IF NOT EXISTS stock_deposito (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
-await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo TEXT, fecha TEXT, fecha_local TEXT, hoy TEXT, total_ventas DOUBLE PRECISION DEFAULT 0, cantidad_ventas INTEGER DEFAULT 0, cambio_inicial DOUBLE PRECISION DEFAULT 0, efectivo_esperado DOUBLE PRECISION DEFAULT 0, efectivo_real DOUBLE PRECISION DEFAULT 0, diferencia DOUBLE PRECISION DEFAULT 0, nota TEXT DEFAULT '', canal TEXT DEFAULT 'mostrador')`;
+    await sql`CREATE TABLE IF NOT EXISTS stock_deposito (id TEXT PRIMARY KEY, producto_id TEXT DEFAULT '', llenas INTEGER DEFAULT 0, vacias INTEGER DEFAULT 0, defectuosas INTEGER DEFAULT 0)`;
+    await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo TEXT, fecha TEXT, fecha_local TEXT, hoy TEXT, total_ventas DOUBLE PRECISION DEFAULT 0, cantidad_ventas INTEGER DEFAULT 0, cambio_inicial DOUBLE PRECISION DEFAULT 0, efectivo_esperado DOUBLE PRECISION DEFAULT 0, efectivo_real DOUBLE PRECISION DEFAULT 0, diferencia DOUBLE PRECISION DEFAULT 0, nota TEXT DEFAULT '', canal TEXT DEFAULT 'mostrador')`;
     await sql`CREATE TABLE IF NOT EXISTS puntos_ruta (id TEXT PRIMARY KEY, nombre TEXT DEFAULT '', telefono TEXT DEFAULT '', latitud DOUBLE PRECISION DEFAULT 0, longitud DOUBLE PRECISION DEFAULT 0, tipo TEXT DEFAULT '', categoria TEXT DEFAULT '', fecha TIMESTAMP DEFAULT NOW())`;
     await sql`CREATE TABLE IF NOT EXISTS configuraciones (id TEXT PRIMARY KEY, clave TEXT DEFAULT '', valor TEXT DEFAULT '')`;
+    // === FINANZAS - DEUDAS / CHEQUES / NOTAS / TERCEROS - NUEVO ===
+    await sql`CREATE TABLE IF NOT EXISTS deudas (id TEXT PRIMARY KEY, tipo TEXT, proveedor_id TEXT DEFAULT '', proveedor_nombre TEXT DEFAULT '', concepto TEXT DEFAULT '', total DOUBLE PRECISION DEFAULT 0, pagado DOUBLE PRECISION DEFAULT 0, saldo DOUBLE PRECISION DEFAULT 0, cuota_mensual DOUBLE PRECISION DEFAULT 0, estado TEXT DEFAULT 'abierta', fecha TEXT DEFAULT '', vencimiento TEXT DEFAULT '')`;
+    await sql`CREATE TABLE IF NOT EXISTS cheques (id TEXT PRIMARY KEY, tipo TEXT, numero TEXT DEFAULT '', banco TEXT DEFAULT '', tercero_nombre TEXT DEFAULT '', proveedor_id TEXT DEFAULT '', proveedor_nombre TEXT DEFAULT '', monto DOUBLE PRECISION DEFAULT 0, fecha_emision TEXT DEFAULT '', fecha_vencimiento TEXT DEFAULT '', estado TEXT DEFAULT 'en_cartera', fecha_pago TEXT DEFAULT '')`;
+    await sql`CREATE TABLE IF NOT EXISTS notas_credito (id TEXT PRIMARY KEY, proveedor_id TEXT DEFAULT '', proveedor_nombre TEXT DEFAULT '', motivo TEXT DEFAULT '', monto DOUBLE PRECISION DEFAULT 0, fecha TEXT DEFAULT '', aplicado TEXT DEFAULT 'no')`;
+    await sql`CREATE TABLE IF NOT EXISTS terceros (id TEXT PRIMARY KEY, nombre TEXT, telefono TEXT DEFAULT '', tipo TEXT DEFAULT 'prestamista', activo INTEGER DEFAULT 1)`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS origen TEXT DEFAULT 'mostrador'`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cliente_id TEXT DEFAULT ''`;
     await sql`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS cantidad_llenas INTEGER DEFAULT 0`;
@@ -76,8 +81,7 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
       // CORREGIDO: antes decía INSERT INTO sin tabla
       await sql`INSERT INTO deposito (producto_id, llenas, vacias, kilos_en_uso, kilos_restantes) VALUES ('11',5,3,0,0),('13',8,5,0,0),('45',2,1,0,0),('43.5',0,0,43.5,43.5) ON CONFLICT (producto_id) DO NOTHING`;
     }
-
-    if (req.method === 'GET') {
+       if (req.method === 'GET') {
       let rows = [];
       if (table === '') rows = (await sql`SELECT * FROM deposito ORDER BY producto_id`).rows;
       // CORREGIDO: faltaba el GET de deposito, por eso la App veía stock vacío
@@ -87,24 +91,28 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
       else if (table === 'clientes') rows = (await sql`SELECT * FROM clientes ORDER BY nombre`).rows;
       else if (table === 'proveedores') rows = (await sql`SELECT * FROM proveedores ORDER BY nombre`).rows;
       else if (table === 'repartidores') rows = (await sql`SELECT * FROM repartidores ORDER BY nombre`).rows;
-     else if (table === 'gps_locations') {
-  // Limpieza 48hs también al LEER, no solo al ESCRIBIR
-  // Así aunque la camioneta esté apagada, nunca ves nada de más de 48hs
-   try { await sql`DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'`; } catch(e) {}    
-  
-  rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
-}
+      else if (table === 'gps_locations') {
+        // Limpieza 48hs también al LEER, no solo al ESCRIBIR
+        // Así aunque la camioneta esté apagada, nunca ves nada de más de 48hs
+        try { await sql`DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'`; } catch(e) {}
+        rows = (await sql`SELECT * FROM gps_locations ORDER BY created_at DESC LIMIT 5000`).rows;
+      }
       else if (table === 'puntos_ref') rows = (await sql`SELECT * FROM puntos_ref ORDER BY nombre`).rows;
       else if (table === 'finanzas') rows = (await sql`SELECT * FROM finanzas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'cierres') rows = (await sql`SELECT * FROM cierres ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'cierres_caja') rows = (await sql`SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 200`).rows;
-      else if (table === 'stock_deposito') rows = (await sql`SELECT * FROM stock_deposito ORDER BY producto_id`).rows;  
+      else if (table === 'stock_deposito') rows = (await sql`SELECT * FROM stock_deposito ORDER BY producto_id`).rows;
       else if (table === 'jornadas') rows = (await sql`SELECT * FROM jornadas ORDER BY fecha DESC LIMIT 200`).rows;
       else if (table === 'stock_camioneta') rows = (await sql`SELECT * FROM stock_camioneta`).rows;
       else if (table === 'stock_') rows = (await sql`SELECT * FROM stock_`).rows;
       else if (table === 'movimientos_stock') rows = (await sql`SELECT * FROM movimientos_stock ORDER BY fecha DESC LIMIT 500`).rows;
       else if (table === 'puntos_ruta') rows = (await sql`SELECT * FROM puntos_ruta ORDER BY nombre`).rows;
       else if (table === 'configuraciones') rows = (await sql`SELECT * FROM configuraciones`).rows;
+      // === FINANZAS - NUEVO ===
+      else if (table === 'deudas') rows = (await sql`SELECT * FROM deudas ORDER BY fecha DESC LIMIT 200`).rows;
+      else if (table === 'cheques') rows = (await sql`SELECT * FROM cheques ORDER BY fecha_vencimiento LIMIT 200`).rows;
+      else if (table === 'notas_credito') rows = (await sql`SELECT * FROM notas_credito ORDER BY fecha DESC LIMIT 200`).rows;
+      else if (table === 'terceros') rows = (await sql`SELECT * FROM terceros ORDER BY nombre`).rows;
       return res.status(200).json({ data: rows, ok: true });
     }
 
@@ -119,16 +127,22 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
         else if (table === 'finanzas') await sql`DELETE FROM finanzas WHERE id=${parseInt(id)}`;
         else if (table === 'puntos_ref') await sql`DELETE FROM puntos_ref WHERE id=${id}`;
         else if (table === 'cierres') await sql`DELETE FROM cierres WHERE id=${id}`;
+        else if (table === 'cierres_caja') await sql`DELETE FROM cierres_caja WHERE id=${parseInt(id)}`;
         else if (table === 'jornadas') await sql`DELETE FROM jornadas WHERE id=${id}`;
         else if (table === 'movimientos_stock') await sql`DELETE FROM movimientos_stock WHERE id=${id}`;
         else if (table === 'puntos_ruta') await sql`DELETE FROM puntos_ruta WHERE id=${id}`;
         else if (table === 'stock_camioneta') await sql`DELETE FROM stock_camioneta WHERE id=${id}`;
+        else if (table === 'stock_deposito') await sql`DELETE FROM stock_deposito WHERE id=${id}`;
+        // === FINANZAS - NUEVO ===
+        else if (table === 'deudas') await sql`DELETE FROM deudas WHERE id=${id}`;
+        else if (table === 'cheques') await sql`DELETE FROM cheques WHERE id=${id}`;
+        else if (table === 'notas_credito') await sql`DELETE FROM notas_credito WHERE id=${id}`;
+        else if (table === 'terceros') await sql`DELETE FROM terceros WHERE id=${id}`;
       } catch (e) {}
       return res.status(200).json({ ok: true });
     }
-
-    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
       // === DEPOSITO ===
       if (table === 'deposito') {
@@ -149,7 +163,6 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
           await sql`UPDATE deposito SET kilos_en_uso=${nuevo}, kilos_restantes=${nuevo} WHERE producto_id='43.5'`;
           return res.status(200).json({ ok: true, restante: nuevo, fracc: true });
         }
-        // Balance inicial / ajuste manual desde Stock - ESTO FALTABA, antes devolvía ok pero no guardaba nada
         if (body.accion === 'balance_inicial' || body.producto_id) {
           const pid = String(body.producto_id || '');
           const llenas = parseInt(body.llenas) || 0;
@@ -189,9 +202,7 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
         const cantParaGuardar = parseInt(body.cantidad_llenas ?? body.cantidad) || 1;
         const pagoParaGuardar = body.metodo_pago || body.pago || 'contado';
         const clienteNombreParaGuardar = body.cliente_nombre || body.cliente || 'Cliente';
-
         await sql`INSERT INTO ventas (id, fecha, fecha_hora, fecha_local, hoy, canal, tipo, tipo_venta, producto_id, cliente_nombre, cantidad, total, flete, pago, tipo_cliente, modo, repartidor_id, kilos, origen, cliente_id, cantidad_llenas, cantidad_vacias, cantidad_defectuosas, metodo_pago, estado) VALUES (${vid}, ${fechaParaGuardar}, ${fechaParaGuardar}, ${fechaLocalParaGuardar}, ${hoyParaGuardar}, ${canalParaGuardar}, ${tipoParaGuardar}, ${tipoParaGuardar}, ${pidRaw || '13'}, ${clienteNombreParaGuardar}, ${cantParaGuardar}, ${parseFloat(body.total) || 0}, ${parseFloat(body.flete) || 0}, ${pagoParaGuardar}, ${body.tipo_cliente || 'consumidor_final'}, ${body.modo || 'mostrador'}, ${body.repartidor_id || ''}, ${kilosVend || 0}, ${body.origen || 'mostrador'}, ${body.cliente_id || ''}, ${parseInt(body.cantidad_llenas ?? body.cantidad) || 1}, ${parseInt(body.cantidad_vacias) || 0}, ${parseInt(body.cantidad_defectuosas) || 0}, ${pagoParaGuardar}, ${body.estado || 'Cobrado'}) ON CONFLICT (id) DO UPDATE SET total=${parseFloat(body.total)||0}, estado=${body.estado||'Cobrado'}, metodo_pago=${pagoParaGuardar}, pago=${pagoParaGuardar}`;
-
         let restante = null;
         if (esFracc) {
           const dep = await sql`SELECT kilos_en_uso FROM deposito WHERE producto_id='43.5'`;
@@ -210,7 +221,8 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
         try { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE,'ingreso','Venta',${'Venta ' + pidRaw},${parseFloat(body.total) || 0},${pagoParaGuardar})`; } catch (e) {}
         return res.status(200).json({ ok: true, id: vid, fracc: esFracc, kilos: kilosVend, restante });
       }
-            if (table === 'productos') {
+
+      if (table === 'productos') {
         const idProd = String(body.id ?? body.producto_id ?? '');
         if (!idProd) return res.status(200).json({ ok: false, error: 'falta id' });
         const limpiar = (v) => { if (v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(/[^0-9.,-]/g, '').replace(',', '.')); return isNaN(n) ? null : n; };
@@ -222,13 +234,14 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
         await sql`INSERT INTO productos (id, nombre, tipo, precio, precio_venta, precio_compra) VALUES (${idProd}, ${nombreFinal}, ${tipoFinal}, ${pv}, ${pv}, ${pc}) ON CONFLICT (id) DO UPDATE SET nombre=${nombreFinal}, tipo=${tipoFinal}, precio=${pv}, precio_venta=${pv}, precio_compra=${pc}`;
         return res.status(200).json({ ok: true });
       }
-      
+
       if (table === 'clientes') { await sql`INSERT INTO clientes (id, nombre, telefono, direccion, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.direccion || ''}, ${body.tipo || 'consumidor_final'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'proveedores') { await sql`INSERT INTO proveedores (id, nombre, telefono, rut, direccion) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}, ${body.rut || ''}, ${body.direccion || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}`; return res.status(200).json({ ok: true }); }
       if (table === 'repartidores') { await sql`INSERT INTO repartidores (id, nombre, telefono) VALUES (${body.id}, ${body.nombre}, ${body.telefono || ''}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono || ''}`; return res.status(200).json({ ok: true }); }
-            if (table === 'gps_locations') {
-        DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'      
-        
+
+      if (table === 'gps_locations') {
+        // CORREGIDO: acá faltaba el await sql`...`
+        await sql`DELETE FROM gps_locations WHERE created_at IS NULL OR created_at < NOW() - INTERVAL '48 hours'`;
         const lat = parseFloat(body.lat ?? body.latitude ?? 0) || 0;
         const lng = parseFloat(body.lng ?? body.longitude ?? 0) || 0;
         const vel = parseFloat(body.velocidad ?? body.speed ?? 0) || 0;
@@ -237,20 +250,83 @@ await sql`CREATE TABLE IF NOT EXISTS cierres_caja (id SERIAL PRIMARY KEY, tipo T
         const fechaLocal = body.fecha_local || body.hoy || new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
         await sql`INSERT INTO gps_locations (repartidor_id, device_id, lat, lng, latitude, longitude, velocidad, speed, bateria, battery, fecha_local, hoy) VALUES (${repId}, ${repId}, ${lat}, ${lng}, ${lat}, ${lng}, ${vel}, ${vel}, ${bat}, ${bat}, ${fechaLocal}, ${fechaLocal})`;
         return res.status(200).json({ ok: true });
-      }    
-      
+      }
+
       if (table === 'puntos_ref') { await sql`INSERT INTO puntos_ref (id, nombre, direccion, lat, lng, latitud, longitud) VALUES (${body.id}, ${body.nombre}, ${body.direccion||''}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}, ${parseFloat(body.lat||body.latitud)||0}, ${parseFloat(body.lng||body.longitud)||0}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, direccion=${body.direccion||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'finanzas') { await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (${body.fecha || new Date().toISOString().split('T')[0]}, ${body.tipo}, ${body.categoria}, ${body.descripcion}, ${parseFloat(body.monto) || 0}, ${body.metodo_pago || 'contado'})`; return res.status(200).json({ ok: true }); }
       if (table === 'cierres') { await sql`INSERT INTO cierres (id, repartidor_id, tipo, monto, detalle, total_vendido, fecha) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.tipo||'parcial'}, ${parseFloat(body.monto)||0}, ${body.detalle||''}, ${parseFloat(body.total_vendido)||0}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET monto=${parseFloat(body.monto)||0}, tipo=${body.tipo||'parcial'}`; return res.status(200).json({ ok: true }); }
-      if (table === 'cierres_caja') { 
-  await sql`INSERT INTO cierres_caja (tipo, fecha, fecha_local, hoy, total_ventas, cantidad_ventas, cambio_inicial, efectivo_esperado, efectivo_real, diferencia, nota, canal) VALUES (${body.tipo||'parcial'}, ${body.fecha||''}, ${body.fecha_local||''}, ${body.hoy||''}, ${parseFloat(body.total_ventas)||0}, ${parseInt(body.cantidad_ventas)||0}, ${parseFloat(body.cambio_inicial)||0}, ${parseFloat(body.efectivo_esperado)||0}, ${parseFloat(body.efectivo_real)||0}, ${parseFloat(body.diferencia)||0}, ${body.nota||''}, ${body.canal||'mostrador'})`; 
-  return res.status(200).json({ ok: true }); 
-}
+      if (table === 'cierres_caja') {
+        await sql`INSERT INTO cierres_caja (tipo, fecha, fecha_local, hoy, total_ventas, cantidad_ventas, cambio_inicial, efectivo_esperado, efectivo_real, diferencia, nota, canal) VALUES (${body.tipo||'parcial'}, ${body.fecha||''}, ${body.fecha_local||''}, ${body.hoy||''}, ${parseFloat(body.total_ventas)||0}, ${parseInt(body.cantidad_ventas)||0}, ${parseFloat(body.cambio_inicial)||0}, ${parseFloat(body.efectivo_esperado)||0}, ${parseFloat(body.efectivo_real)||0}, ${parseFloat(body.diferencia)||0}, ${body.nota||''}, ${body.canal||'mostrador'})`;
+        return res.status(200).json({ ok: true });
+      }
       if (table === 'jornadas') { await sql`INSERT INTO jornadas (id, repartidor_id, fecha, hora_salida, hora_cierre, km_inicio, stock_11_inicial, stock_13_inicial, stock_45_inicial, cambio_inicial, estado) VALUES (${body.id}, ${body.repartidor_id||''}, ${body.fecha||''}, ${body.hora_salida||''}, ${body.hora_cierre||''}, ${parseInt(body.km_inicio)||0}, ${parseInt(body.stock_11_inicial)||0}, ${parseInt(body.stock_13_inicial)||0}, ${parseInt(body.stock_45_inicial)||0}, ${parseFloat(body.cambio_inicial)||0}, ${body.estado||'abierta'}) ON CONFLICT (id) DO UPDATE SET estado=${body.estado||'abierta'}, hora_cierre=${body.hora_cierre||''}`; return res.status(200).json({ ok: true }); }
       if (table === 'stock_camioneta') { await sql`INSERT INTO stock_camioneta (id, repartidor_id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${body.repartidor_id||''}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
       if (table === 'stock_deposito') { await sql`INSERT INTO stock_deposito (id, producto_id, llenas, vacias, defectuosas) VALUES (${body.id}, ${String(body.producto_id||'')}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}) ON CONFLICT (id) DO UPDATE SET llenas=${parseInt(body.llenas)||0}, vacias=${parseInt(body.vacias)||0}, defectuosas=${parseInt(body.defectuosas)||0}`; return res.status(200).json({ ok: true }); }
       if (table === 'movimientos_stock') { await sql`INSERT INTO movimientos_stock (id, tipo_mov, producto_id, repartidor_id, llenas, vacias, defectuosas, observaciones, referencia_id, fecha) VALUES (${body.id}, ${body.tipo_mov||''}, ${String(body.producto_id||'')}, ${body.repartidor_id||''}, ${parseInt(body.llenas)||0}, ${parseInt(body.vacias)||0}, ${parseInt(body.defectuosas)||0}, ${body.observaciones||''}, ${body.referencia_id||''}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO NOTHING`; return res.status(200).json({ ok: true }); }
       if (table === 'puntos_ruta') { await sql`INSERT INTO puntos_ruta (id, nombre, telefono, latitud, longitud, tipo, categoria, fecha) VALUES (${body.id}, ${body.nombre||''}, ${body.telefono||''}, ${parseFloat(body.latitud)||0}, ${parseFloat(body.longitud)||0}, ${body.tipo||''}, ${body.categoria||body.tipo||''}, ${body.fecha||new Date().toISOString()}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre||''}`; return res.status(200).json({ ok: true }); }
+
+      // === FINANZAS - DEUDAS / TERCEROS / NOTAS / CHEQUES - NUEVO ===
+      if (table === 'deudas') {
+        await sql`INSERT INTO deudas (id, tipo, proveedor_id, proveedor_nombre, concepto, total, pagado, saldo, cuota_mensual, estado, fecha, vencimiento) VALUES (${body.id}, ${body.tipo||'proveedor'}, ${body.proveedor_id||''}, ${body.proveedor_nombre||''}, ${body.concepto||''}, ${parseFloat(body.total)||0}, ${parseFloat(body.pagado)||0}, ${parseFloat(body.saldo ?? body.total)||0}, ${parseFloat(body.cuota_mensual)||0}, ${body.estado||'abierta'}, ${body.fecha||''}, ${body.vencimiento||''}) ON CONFLICT (id) DO UPDATE SET pagado=${parseFloat(body.pagado)||0}, saldo=${parseFloat(body.saldo)||0}, estado=${body.estado||'abierta'}`;
+        return res.status(200).json({ ok: true });
+      }
+      if (table === 'terceros') {
+        await sql`INSERT INTO terceros (id, nombre, telefono, tipo) VALUES (${body.id}, ${body.nombre}, ${body.telefono||''}, ${body.tipo||'prestamista'}) ON CONFLICT (id) DO UPDATE SET nombre=${body.nombre}, telefono=${body.telefono||''}`;
+        return res.status(200).json({ ok: true });
+      }
+      if (table === 'notas_credito') {
+        await sql`INSERT INTO notas_credito (id, proveedor_id, proveedor_nombre, motivo, monto, fecha, aplicado) VALUES (${body.id}, ${body.proveedor_id||''}, ${body.proveedor_nombre||''}, ${body.motivo||''}, ${parseFloat(body.monto)||0}, ${body.fecha||''}, ${body.aplicado||'no'}) ON CONFLICT (id) DO NOTHING`;
+        const dep = await sql`SELECT * FROM deudas WHERE tipo='proveedor' AND proveedor_nombre=${body.proveedor_nombre||''} AND estado='abierta'`;
+        if (dep.rows[0]) {
+          const nuevoSaldo = Math.max(0, (dep.rows[0].saldo||0) - (parseFloat(body.monto)||0));
+          await sql`UPDATE deudas SET saldo=${nuevoSaldo}, pagado=${(dep.rows[0].pagado||0)+(parseFloat(body.monto)||0)}, estado=${nuevoSaldo===0?'cerrada':'abierta'} WHERE id=${dep.rows[0].id}`;
+        }
+        return res.status(200).json({ ok: true });
+      }
+      if (table === 'cheques') {
+        const tercero = (body.tercero_nombre || body.tercero || '').trim();
+        const monto = parseFloat(body.monto) || 0;
+        if (body.accion === 'prestar') {
+          if (!tercero) return res.status(200).json({ ok: false, error: 'falta tercero_nombre' });
+          const cid = body.id || 'ch_' + Date.now();
+          await sql`INSERT INTO cheques (id, tipo, numero, banco, tercero_nombre, monto, fecha_emision, fecha_vencimiento, estado) VALUES (${cid}, 'tercero_prestado', ${body.numero||''}, ${body.banco||''}, ${tercero}, ${monto}, ${body.fecha_emision||''}, ${body.fecha_vencimiento||''}, 'en_cartera') ON CONFLICT (id) DO NOTHING`;
+          const ex = await sql`SELECT * FROM deudas WHERE tipo='tercero' AND proveedor_nombre=${tercero} AND estado='abierta'`;
+          if (ex.rows[0]) {
+            await sql`UPDATE deudas SET total=${(ex.rows[0].total||0)+monto}, saldo=${(ex.rows[0].saldo||0)+monto} WHERE id=${ex.rows[0].id}`;
+          } else {
+            await sql`INSERT INTO deudas (id, tipo, proveedor_nombre, concepto, total, pagado, saldo, estado, fecha) VALUES (${'deu_tercero_' + Date.now()}, 'tercero', ${tercero}, ${'Cheques prestados por ' + tercero}, ${monto}, 0, ${monto}, 'abierta', ${body.fecha_emision||new Date().toISOString().split('T')[0]})`;
+          }
+          return res.status(200).json({ ok: true, id: cid, tercero });
+        }
+        if (body.accion === 'entregar_a_proveedor') {
+          const ch = await sql`SELECT * FROM cheques WHERE id=${body.id}`;
+          if (!ch.rows[0]) return res.status(200).json({ ok: false, error: 'cheque no encontrado' });
+          const montoCh = ch.rows[0].monto || 0;
+          const prov = body.proveedor_nombre || body.proveedor || '';
+          const dep = await sql`SELECT * FROM deudas WHERE tipo='proveedor' AND proveedor_nombre=${prov} AND estado='abierta'`;
+          if (dep.rows[0]) {
+            const nuevoSaldo = Math.max(0, (dep.rows[0].saldo||0) - montoCh);
+            await sql`UPDATE deudas SET saldo=${nuevoSaldo}, pagado=${(dep.rows[0].pagado||0)+montoCh}, estado=${nuevoSaldo===0?'cerrada':'abierta'} WHERE id=${dep.rows[0].id}`;
+          }
+          await sql`UPDATE cheques SET estado='entregado_proveedor', proveedor_nombre=${prov} WHERE id=${body.id}`;
+          return res.status(200).json({ ok: true });
+        }
+        if (body.accion === 'pagar_tercero') {
+          if (!tercero) return res.status(200).json({ ok: false, error: 'falta tercero_nombre' });
+          await sql`INSERT INTO finanzas (fecha, tipo, categoria, descripcion, monto, metodo_pago) VALUES (CURRENT_DATE,'egreso','Pago cheque tercero',${'Pago a ' + tercero + ' - cheque prestado'},${monto},'efectivo')`;
+          const dep = await sql`SELECT * FROM deudas WHERE tipo='tercero' AND proveedor_nombre=${tercero} AND estado='abierta'`;
+          if (dep.rows[0]) {
+            const nuevoSaldo = Math.max(0, (dep.rows[0].saldo||0) - monto);
+            await sql`UPDATE deudas SET saldo=${nuevoSaldo}, pagado=${(dep.rows[0].pagado||0)+monto}, estado=${nuevoSaldo===0?'cerrada':'abierta'} WHERE id=${dep.rows[0].id}`;
+            if (nuevoSaldo === 0) {
+              await sql`UPDATE cheques SET estado='pagado_total', fecha_pago=${new Date().toISOString().split('T')[0]} WHERE tercero_nombre=${tercero} AND estado='entregado_proveedor'`;
+            }
+          }
+          return res.status(200).json({ ok: true });
+        }
+        return res.status(200).json({ ok: true });
+      }
+
       if (table === 'configuraciones') { await sql`INSERT INTO configuraciones (id, clave, valor) VALUES (${body.id||body.clave}, ${body.clave||''}, ${String(body.valor||'')}) ON CONFLICT (id) DO UPDATE SET valor=${String(body.valor||'')}`; return res.status(200).json({ ok: true }); }
       return res.status(200).json({ ok: true });
     }
