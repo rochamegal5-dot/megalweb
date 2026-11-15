@@ -533,7 +533,7 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
 
   
 
-<!-- FINANZAS -->
+<!-- FINANZAS - VERSION LIMPIA - BORRA TODO LO VIEJO DE FINANZAS Y PEGA ESTO -->
 <div id="view-finanzas" class="view-section hidden">
   <div class="gps-tabs" style="background:#1e293b;padding:8px;display:flex;gap:8px;flex-wrap:wrap">
     <button id="btnFinResumen" onclick="cambiarTabFinanzas('resumen')" style="background:#0ea5e9;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">📊 Resumen</button>
@@ -542,12 +542,12 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
     <button id="btnFinCaja" onclick="cambiarTabFinanzas('caja')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🏦 Flujo Caja</button>
     <button id="btnFinDeudas" onclick="cambiarTabFinanzas('deudas')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">📕 Deudas</button>
     <button id="btnFinCheques" onclick="cambiarTabFinanzas('cheques')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🧾 Cheques 3ros</button>
+    <button id="btnFinMeta" onclick="cambiarTabFinanzas('meta')" style="background:#1f2937;color:#94a3b8;padding:8px 14px;border:none;border-radius:8px">🎯 Meta / Bonif.</button>
     <button onclick="abrirModalFinanza()" style="background:#16a34a;color:white;padding:8px 14px;border:none;border-radius:8px;font-weight:bold;margin-left:auto">+ Nuevo Movimiento</button>
   </div>
 
-    <!-- RESUMEN -->
+  <!-- RESUMEN -->
   <div id="tabFinResumen">
-    <!-- 3 CUADROS DE DEUDAS -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px">
       <div style="background:#fee2e2;padding:12px;border-radius:12px">
         <div style="font-size:13px;color:#991b1b">Debo de CAPITAL</div>
@@ -571,10 +571,7 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
         <button onclick="abrirFormPagarTercero()" style="margin-top:6px;width:100%;padding:8px;border-radius:8px;background:#ef4444;color:#fff;border:0">💵 Pagar a tercero hoy</button>
       </div>
     </div>
-    <div style="background:#ecfdf5;padding:12px;border-radius:12px;margin:0 10px 10px">
-      <b>Caja de hoy:</b> <span id="fin-caja-hoy">$ 0</span>
-    </div>
-    <!-- TUS CUADROS VIEJOS DE RESUMEN - NO SE TOCAN -->
+    <div style="background:#ecfdf5;padding:12px;border-radius:12px;margin:0 10px 10px"><b>Caja de hoy:</b> <span id="fin-caja-hoy">$ 0</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:0 10px 10px">
       <div style="background:#0f172a;padding:12px;border-radius:10px"><div style="color:#94a3b8;font-size:12px">Ingresos mes</div><div id="finTotalIngresos" style="font-size:20px;font-weight:800;color:#22c55e">$0</div><div id="finCountIngresos" style="font-size:12px;color:#94a3b8"></div></div>
       <div style="background:#0f172a;padding:12px;border-radius:10px"><div style="color:#94a3b8;font-size:12px">Egresos mes</div><div id="finTotalEgresos" style="font-size:20px;font-weight:800;color:#ef4444">$0</div><div id="finCountEgresos" style="font-size:12px;color:#94a3b8"></div></div>
@@ -610,10 +607,7 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
   </div>
 
   <!-- FLUJO CAJA -->
-  <div id="tabFinCaja" class="hidden" style="padding:10px">
-    <b>Flujo últimos 30 días</b>
-    <div id="finFlujoCaja" style="margin-top:8px"></div>
-  </div>
+  <div id="tabFinCaja" class="hidden" style="padding:10px"><b>Flujo últimos 30 días</b><div id="finFlujoCaja" style="margin-top:8px"></div></div>
 
   <!-- DEUDAS -->
   <div id="tabFinDeudas" class="hidden">
@@ -640,7 +634,34 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
     <div id="fin-lista-terceros" style="padding:0 10px 10px"></div>
   </div>
 
-  <!-- FORMULARIO GENERICO FINANZAS -->
+  <!-- META DIARIA / BONIFICACION -->
+  <div id="tabFinMeta" class="hidden" style="padding:10px">
+    <div class="card">
+      <h4>🎯 Meta diaria para cubrir el mes</h4>
+      <p style="font-size:12px;color:#64748b">Se guarda en este navegador. Sin nombres ni valores fijos.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:11px">Gastos fijos del mes $</label><input type="number" id="metaGastosFijos" value="0" oninput="calcularMetaDiaria()" style="width:100%;padding:8px"></div>
+        <div><label style="font-size:11px">Cuota capital $</label><input type="number" id="metaCuotaCapital" value="0" oninput="calcularMetaDiaria()" style="width:100%;padding:8px"></div>
+        <div><label style="font-size:11px">Días que trabajás en el mes</label><input type="number" id="metaDias" value="26" oninput="calcularMetaDiaria()" style="width:100%;padding:8px"></div>
+      </div>
+      <div id="metaResultado" style="margin-top:10px;font-size:14px;line-height:1.7"></div>
+      <button onclick="guardarMetaDiaria()" style="margin-top:8px;background:#0ea5e9;color:#fff;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">Guardar meta</button>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h4>💰 Bonificación Megal (editable)</h4>
+      <p style="font-size:12px;color:#64748b">Solo 11kg y 13kg. Tubo 43.5 / 45kg = $0.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+        <div><label style="font-size:11px">Bonif. 11kg $ por unidad</label><input type="number" id="bonif11" value="0" oninput="calcularMetaDiaria()" style="width:100%;padding:8px"></div>
+        <div><label style="font-size:11px">Bonif. 13kg $ por unidad</label><input type="number" id="bonif13" value="0" oninput="calcularMetaDiaria()" style="width:100%;padding:8px"></div>
+        <div><label style="font-size:11px">Bonif. Tubo $</label><input type="number" value="0" disabled style="width:100%;padding:8px"></div>
+      </div>
+      <div id="bonifResultado" style="margin-top:10px;font-size:14px;line-height:1.7"></div>
+      <button onclick="guardarMetaDiaria()" style="margin-top:8px;background:#22c55e;color:#fff;padding:8px 14px;border:none;border-radius:8px;font-weight:bold">Guardar bonificación</button>
+    </div>
+    <div class="card" style="margin-top:12px"><h4>📦 Kilos y unidades del mes</h4><div id="metaKilos" style="font-size:13px;line-height:1.7">Cargando...</div></div>
+  </div>
+
+  <!-- FORMULARIO GENERICO FINANZAS - UNO SOLO -->
   <div id="fin-form" style="display:none;background:#fff;border:1px solid #ddd;padding:14px;border-radius:12px;margin:10px;color:#111">
     <h3 id="fin-form-titulo">Formulario</h3>
     <div id="fin-form-campos" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
@@ -648,128 +669,6 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
       <button id="fin-form-guardar" style="padding:10px 18px;border-radius:10px;background:#111;color:#fff;border:0">Guardar</button>
       <button onclick="document.getElementById('fin-form').style.display='none'" style="padding:10px 18px;border-radius:10px">Cancelar</button>
     </div>
-  </div>
-</div>
-
-  <!-- RESUMEN -->
-  <div id="fin-tab-resumen" class="fin-tab">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px">
-      <div style="background:#fee2e2;padding:12px;border-radius:12px">
-        <div style="font-size:13px;color:#991b1b">Debo de CAPITAL</div>
-        <div id="fin-capital-saldo" style="font-size:22px;font-weight:800">$ 0</div>
-        <div id="fin-capital-cuota" style="font-size:13px">Cuota mensual: $ 0</div>
-        <button onclick="pagarCuotaCapital()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;background:#dc2626;color:#fff;border:0;font-weight:bold">Pagar cuota capital este mes</button>
-        <button onclick="abrirFormCapital()" style="margin-top:6px;width:100%;padding:8px;border-radius:8px;background:#fff;border:1px solid #dc2626">＋ Registrar capital inicial</button>
-      </div>
-      <div style="background:#fef3c7;padding:12px;border-radius:12px">
-        <div style="font-size:13px;color:#92400e">Debo a PROVEEDORES</div>
-        <div id="fin-prov-total" style="font-size:22px;font-weight:800">$ 0</div>
-        <div id="fin-prov-detalle" style="font-size:13px">Sin deudas</div>
-        <button onclick="abrirFormCompra()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;background:#f59e0b;border:0;font-weight:bold">＋ Compra a proveedor</button>
-        <button onclick="abrirFormPagoProv()" style="margin-top:6px;width:100%;padding:8px;border-radius:8px;background:#fff;border:1px solid #f59e0b">💵 Pagar a proveedor</button>
-      </div>
-      <div style="background:#dbeafe;padding:12px;border-radius:12px">
-        <div style="font-size:13px;color:#1e40af">Debo a TERCEROS (cheques prestados)</div>
-        <div id="fin-terc-total" style="font-size:22px;font-weight:800">$ 0</div>
-        <div id="fin-terc-detalle" style="font-size:13px">Sin deudas</div>
-        <button onclick="abrirFormCheque()" style="margin-top:8px;width:100%;padding:8px;border-radius:8px;background:#3b82f6;color:#fff;border:0;font-weight:bold">＋ Me prestaron un cheque</button>
-        <button onclick="abrirFormPagarTercero()" style="margin-top:6px;width:100%;padding:8px;border-radius:8px;background:#ef4444;color:#fff;border:0">💵 Pagar a tercero hoy</button>
-      </div>
-    </div>
-    <div style="background:#ecfdf5;padding:12px;border-radius:12px;margin:0 10px 10px">
-      <b>Caja de hoy:</b> <span id="fin-caja-hoy">$ 0</span>
-      <span style="font-size:12px;color:#555"> = Ventas efectivo - Cuota capital - Pagos proveedores - Pagos a terceros - MIDES - Gastos</span>
-      <button onclick="cargarFinanzas()" style="float:right;padding:6px 12px;border-radius:8px">↻ Actualizar</button>
-    </div>
-    <div id="fin-tabla-deudas-resumen" style="padding:0 10px 10px"></div>
-  </div>
-
-  <!-- INGRESOS / EGRESOS / CAJA - TUS TABS VIEJOS, NO SE TOCAN -->
-  <div id="fin-tab-ingresos" class="fin-tab" style="display:none">
-    <div id="fin-lista-ingresos" style="padding:10px">Cargando...</div>
-  </div>
-  <div id="fin-tab-egresos" class="fin-tab" style="display:none">
-    <div id="fin-lista-egresos" style="padding:10px">Cargando...</div>
-  </div>
-  <div id="fin-tab-caja" class="fin-tab" style="display:none">
-    <div id="fin-lista-caja" style="padding:10px">Cargando...</div>
-  </div>
-
-  <!-- DEUDAS -->
-  <div id="fin-tab-deudas" class="fin-tab" style="display:none">
-    <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="abrirFormCapital()" style="padding:8px 12px;border-radius:8px;background:#111;color:#fff;border:0">＋ Capital</button>
-      <button onclick="abrirFormCompra()" style="padding:8px 12px;border-radius:8px;background:#f59e0b;border:0">＋ Compra proveedor</button>
-      <button onclick="abrirFormPagoProv()" style="padding:8px 12px;border-radius:8px;background:#10b981;color:#fff;border:0">💵 Pagar proveedor</button>
-      <button onclick="abrirFormNota()" style="padding:8px 12px;border-radius:8px;background:#f97316;color:#fff;border:0">↩ Nota de crédito</button>
-      <button onclick="abrirFormMides()" style="padding:8px 12px;border-radius:8px;background:#6b7280;color:#fff;border:0">🏛 Pago MIDES</button>
-    </div>
-    <div id="fin-tabla-deudas" style="padding:0 10px 10px">Cargando...</div>
-    <div id="fin-tabla-finanzas" style="padding:0 10px 10px"></div>
-  </div>
-
-  <!-- CHEQUES TERCEROS -->
-  <div id="fin-tab-cheques" class="fin-tab" style="display:none">
-    <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="abrirFormTercero()" style="padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #ccc">＋ Nuevo tercero</button>
-      <button onclick="abrirFormCheque()" style="padding:8px 12px;border-radius:8px;background:#3b82f6;color:#fff;border:0">＋ Me prestaron un cheque</button>
-      <button onclick="abrirFormEntregar()" style="padding:8px 12px;border-radius:8px;background:#8b5cf6;color:#fff;border:0">➡ Entregar a proveedor</button>
-      <button onclick="abrirFormPagarTercero()" style="padding:8px 12px;border-radius:8px;background:#ef4444;color:#fff;border:0">💵 Pagar a tercero hoy</button>
-    </div>
-    <div style="padding:0 10px;font-size:13px;color:#555">Recordá: el cheque que te prestan <b>NO</b> es ingreso. Cuando se lo das al proveedor, baja tu deuda con él. Cuando le pagás al tercero en efectivo, <b>ahí sí</b> sale de caja.</div>
-    <div id="fin-tabla-cheques" style="padding:10px">Cargando...</div>
-    <div id="fin-lista-terceros" style="padding:0 10px 10px"></div>
-  </div>
-
-  <!-- FORMULARIO GENERICO FINANZAS -->
-  <div id="fin-form" style="display:none;background:#fff;border:1px solid #ddd;padding:14px;border-radius:12px;margin:10px">
-    <h3 id="fin-form-titulo">Formulario</h3>
-    <div id="fin-form-campos" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <button id="fin-form-guardar" style="padding:10px 18px;border-radius:10px;background:#111;color:#fff;border:0">Guardar</button>
-      <button onclick="document.getElementById('fin-form').style.display='none'" style="padding:10px 18px;border-radius:10px">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-  <!-- RESUMEN -->
-  <div id="tabFinResumen">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
-      <div class="card" style="border-left:4px solid #22c55e;text-align:center"><p style="font-size:11px;color:#94a3b8">INGRESOS MES</p><b id="finTotalIngresos" style="font-size:22px;color:#22c55e">$0</b><p id="finCountIngresos" style="font-size:11px;color:#64748b">0 mov.</p></div>
-      <div class="card" style="border-left:4px solid #ef4444;text-align:center"><p style="font-size:11px;color:#94a3b8">EGRESOS MES</p><b id="finTotalEgresos" style="font-size:22px;color:#ef4444">$0</b><p id="finCountEgresos" style="font-size:11px;color:#64748b">0 mov.</p></div>
-      <div class="card" style="border-left:4px solid #0ea5e9;text-align:center"><p style="font-size:11px;color:#94a3b8">BALANCE MES</p><b id="finBalance" style="font-size:22px;color:white">$0</b><p id="finBalancePct" style="font-size:11px;color:#64748b">0% margen</p></div>
-      <div class="card" style="border-left:4px solid #f59e0b;text-align:center"><p style="font-size:11px;color:#94a3b8">CAJA TOTAL</p><b id="finCajaTotal" style="font-size:22px;color:#f59e0b">$0</b><p style="font-size:11px;color:#64748b">Acumulado</p></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="card"><h4 style="margin-bottom:8px">Top Categorías Egresos (Mes)</h4><div id="finTopEgresos" style="font-size:12px"></div></div>
-      <div class="card"><h4 style="margin-bottom:8px">Top Categorías Ingresos (Mes)</h4><div id="finTopIngresos" style="font-size:12px"></div></div>
-    </div>
-    <div class="card"><h4 style="margin-bottom:8px">Últimos 10 movimientos</h4><div id="finUltimos" style="font-size:12px"></div></div>
-  </div>
-
-  <!-- INGRESOS -->
-  <div id="tabFinIngresos" class="hidden">
-    <div class="card" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-      <input type="date" id="finFiltroDesde" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><input type="date" id="finFiltroHasta" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
-      <button onclick="cargarFinanzas()" style="background:#0ea5e9;color:white;padding:6px 12px;border:none;border-radius:6px">Filtrar</button>
-      <span id="finFiltroIngresosTotal" style="margin-left:auto;font-weight:bold;color:#22c55e"></span>
-    </div>
-    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Fecha</th><th style="padding:8px;border:1px solid #1f2937">Categoría</th><th style="padding:8px;border:1px solid #1f2937">Descripción</th><th style="padding:8px;border:1px solid #1f2937">Método</th><th style="padding:8px;border:1px solid #1f2937;text-align:right">Monto</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaFinIngresos"></tbody></table></div>
-  </div>
-
-  <!-- EGRESOS -->
-  <div id="tabFinEgresos" class="hidden">
-    <div class="card" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-      <input type="date" id="finFiltroDesdeE" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white"><input type="date" id="finFiltroHastaE" style="padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white">
-      <button onclick="cargarFinanzas()" style="background:#0ea5e9;color:white;padding:6px 12px;border:none;border-radius:6px">Filtrar</button>
-      <span id="finFiltroEgresosTotal" style="margin-left:auto;font-weight:bold;color:#ef4444"></span>
-    </div>
-    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#0f172a"><th style="padding:8px;border:1px solid #1f2937;text-align:left">Fecha</th><th style="padding:8px;border:1px solid #1f2937">Categoría</th><th style="padding:8px;border:1px solid #1f2937">Descripción</th><th style="padding:8px;border:1px solid #1f2937">Método</th><th style="padding:8px;border:1px solid #1f2937;text-align:right">Monto</th><th style="padding:8px;border:1px solid #1f2937">Acc</th></tr></thead><tbody id="tablaFinEgresos"></tbody></table></div>
-  </div>
-
-  <!-- CAJA -->
-  <div id="tabFinCaja" class="hidden">
-    <div class="card"><h4 style="margin-bottom:12px">Flujo de Caja - Últimos 30 días</h4><div id="finFlujoCaja" style="font-size:12px"></div></div>
   </div>
 </div>
 
@@ -786,11 +685,70 @@ th[style*="#0f172a"], th[style*="#1e293b"], th[style*="#1f2937"]{
       <div><label style="font-size:11px">Categoría *</label><select id="finCategoria" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></select></div>
       <div><label style="font-size:11px">Método Pago</label><select id="finMetodo" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"><option value="contado">Contado</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option><option value="cheque">Cheque</option><option value="credito">Crédito</option><option value="mixto">Mixto</option></select></div>
     </div>
-    <div style="margin-bottom:10px"><label style="font-size:11px">Descripción *</label><input type="text" id="finDescripcion" placeholder="Ej: Venta mostrador, Compra Acodike 20 garrafas, Sueldo Juan, Combustible" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
+    <div style="margin-bottom:10px"><label style="font-size:11px">Descripción *</label><input type="text" id="finDescripcion" placeholder="Ej: Venta mostrador, Compra gas, Sueldo, Combustible" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px"></div>
     <div style="margin-bottom:14px"><label style="font-size:11px">Monto *</label><input type="number" id="finMonto" min="0" step="0.01" placeholder="0" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:white;margin-top:4px;font-size:18px;font-weight:bold"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="cerrarModalFinanza()" style="padding:8px 14px;background:#334155;color:white;border:none;border-radius:6px">Cancelar</button><button onclick="guardarFinanza()" style="padding:8px 14px;background:#16a34a;color:white;border:none;border-radius:6px;font-weight:bold">Guardar</button></div>
   </div>
 </div>
+
+<script>
+/* PARCHE JS FINANZAS - pegalo UNA sola vez, reemplaza tu cambiarTabFinanzas viejo */
+function cambiarTabFinanzas(t){
+  const todos=['tabFinResumen','tabFinIngresos','tabFinEgresos','tabFinCaja','tabFinDeudas','tabFinCheques','tabFinMeta'];
+  todos.forEach(id=>{const el=document.getElementById(id); if(el) el.classList.add('hidden');});
+  ['btnFinResumen','btnFinIngresos','btnFinEgresos','btnFinCaja','btnFinDeudas','btnFinCheques','btnFinMeta'].forEach(id=>{const b=document.getElementById(id); if(b){b.style.background='#1f2937';b.style.color='#94a3b8';}});
+  const mapa={resumen:'tabFinResumen',ingresos:'tabFinIngresos',egresos:'tabFinEgresos',caja:'tabFinCaja',deudas:'tabFinDeudas',cheques:'tabFinCheques',meta:'tabFinMeta'};
+  const btnMapa={resumen:'btnFinResumen',ingresos:'btnFinIngresos',egresos:'btnFinEgresos',caja:'btnFinCaja',deudas:'btnFinDeudas',cheques:'btnFinCheques',meta:'btnFinMeta'};
+  const div=document.getElementById(mapa[t]); if(div) div.classList.remove('hidden');
+  const btn=document.getElementById(btnMapa[t]); if(btn){btn.style.background='#0ea5e9';btn.style.color='white';}
+  if(t==='deudas'||t==='cheques'||t==='resumen') cargarDeudasCheques();
+  if(t==='meta') calcularMetaDiaria();
+}
+function cargarMetaGuardada(){
+  try{const g=JSON.parse(localStorage.getItem('megal_meta')||'{}');
+  if(g.gastos!=null) document.getElementById('metaGastosFijos').value=g.gastos;
+  if(g.cuota!=null) document.getElementById('metaCuotaCapital').value=g.cuota;
+  if(g.dias!=null) document.getElementById('metaDias').value=g.dias;
+  if(g.b11!=null) document.getElementById('bonif11').value=g.b11;
+  if(g.b13!=null) document.getElementById('bonif13').value=g.b13;
+  }catch(e){}
+}
+function guardarMetaDiaria(){
+  localStorage.setItem('megal_meta',JSON.stringify({gastos:parseFloat(document.getElementById('metaGastosFijos').value)||0,cuota:parseFloat(document.getElementById('metaCuotaCapital').value)||0,dias:parseInt(document.getElementById('metaDias').value)||26,b11:parseFloat(document.getElementById('bonif11').value)||0,b13:parseFloat(document.getElementById('bonif13').value)||0}));
+  alert('✅ Meta y bonificación guardadas'); calcularMetaDiaria();
+}
+async function calcularMetaDiaria(){
+  cargarMetaGuardadaOnce();
+  const gastos=parseFloat(document.getElementById('metaGastosFijos')?.value)||0;
+  const cuota=parseFloat(document.getElementById('metaCuotaCapital')?.value)||0;
+  const dias=parseInt(document.getElementById('metaDias')?.value)||26;
+  const b11=parseFloat(document.getElementById('bonif11')?.value)||0;
+  const b13=parseFloat(document.getElementById('bonif13')?.value)||0;
+  const totalMes=gastos+cuota;
+  const porDia=dias>0?totalMes/dias:0;
+  const el=document.getElementById('metaResultado');
+  if(el) el.innerHTML=`Necesitás cubrir en el mes: <b>$${totalMes.toLocaleString('es-UY')}</b><br>Meta diaria de ganancia: <b style="color:#22c55e">$${porDia.toFixed(0)} / día</b><br><span style="font-size:12px;color:#64748b">Esto es ganancia, no venta total. Si tu ganancia promedio por garrafa es $131 (11kg) o $38-158 (13kg según precio), dividí la meta diaria por esa ganancia para saber cuántas garrafas/día.</span>`;
+  // Kilos / unidades del mes desde ventas
+  try{
+    const r=await fetch('/api/postgres?table=ventas',{cache:'no-store'}); const j=await r.json(); const ventas=j.data||[];
+    const hoy=new Date(); const mes=hoy.getMonth(), anio=hoy.getFullYear();
+    const delMes=ventas.filter(v=>{const d=new Date(v.fecha); return d.getMonth()===mes&&d.getFullYear()===anio;});
+    let k11=0,k13=0,k45=0,c11=0,c13=0,c45=0,bonif=0;
+    delMes.forEach(v=>{const cant=parseInt(v.cantidad)||0; const pid=String(v.producto_id||'');
+      if(pid==='11'){c11+=cant;k11+=cant*11;bonif+=cant*b11;}
+      else if(pid==='13'){c13+=cant;k13+=cant*13;bonif+=cant*b13;}
+      else if(pid==='45'){c45+=cant;k45+=cant*45;}
+      else if(pid.startsWith('FRACC')){const m=pid.match(/([\d.]+)/); if(m) k11+=parseFloat(m[1])*cant;}
+    });
+    const elK=document.getElementById('metaKilos');
+    if(elK) elK.innerHTML=`11kg: <b>${c11} garrafas = ${k11} kg</b><br>13kg: <b>${c13} garrafas = ${k13} kg</b><br>45kg: <b>${c45} garrafas = ${k45} kg</b><br>Total kilos: <b>${k11+k13+k45} kg</b><br>Bonificación estimada del mes: <b style="color:#22c55e">$${bonif.toLocaleString('es-UY')}</b> (11kg x $${b11} + 13kg x $${b13})<br><span style="font-size:12px">¿Cubriste el mes? Compará ganancia real (Finanzas > Balance mes) con $${totalMes.toLocaleString('es-UY')} de gastos+cuota.</span>`;
+    const elB=document.getElementById('bonifResultado');
+    if(elB) elB.innerHTML=`Este mes estimás cobrar <b>$${bonif.toLocaleString('es-UY')}</b> de bonificación.`;
+  }catch(e){}
+}
+let _metaLoaded=false;
+function cargarMetaGuardadaOnce(){ if(_metaLoaded) return; _metaLoaded=true; cargarMetaGuardada(); }
+</script>
 
 <!-- CAMARAS -->
 <div id="view-camaras" class="view-section hidden">
